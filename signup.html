@@ -15,6 +15,7 @@
     button{cursor:pointer;background:#0b5fff;color:#fff;border:0}
     button:disabled{opacity:.6;cursor:not-allowed}
     .note{color:#555;margin:6px 0 0 0;font-size:.9rem}
+    .error{color:#b00020;margin-top:8px}
     .pill{display:inline-block;background:#eef3ff;color:#0b3366;border-radius:999px;padding:6px 10px;margin:4px 6px 0 0;font-size:.85rem}
     .cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px}
     .card{background:#0b5fff;color:#fff;border-radius:12px;padding:14px;text-align:center;text-decoration:none}
@@ -25,6 +26,8 @@
   <div class="wrap">
     <h1>BankMaps – Signup</h1>
     <p class="muted">Pick your lender and market. We’ll calculate percentiles and show Tier 1 payment options.</p>
+
+    <div id="loadError" class="error" style="display:none;"></div>
 
     <div class="field">
       <label for="lenderSelect">Lender</label>
@@ -69,13 +72,9 @@
   <script>
   (async function(){
     const lenderUrl = '/include/cache/loan_volume_cache.json';
-    const geoUrl = '/include/cache/peer_geo_cache.json';
-    const tiersUrl = '/include/tiers.config.json';
+    const geoUrl    = '/include/cache/peer_geo_cache.json';
+    const tiersUrl  = '/include/tiers.config.json';
 
-    // auto-detect field names from the cache
-const sample = geos && geos[0] ? geos[0] : {};
-const stateKey  = 'statename'  in sample ? 'statename'  : ('state' in sample ? 'state' : 'state_name');
-const countyKey = 'county'     in sample ? 'county'     : ('countyname' in sample ? 'countyname' : 'county_name');
     const lenderSelect = document.getElementById('lenderSelect');
     const stateSelect  = document.getElementById('stateSelect');
     const countySelect = document.getElementById('countySelect');
@@ -84,64 +83,79 @@ const countyKey = 'county'     in sample ? 'county'     : ('countyname' in sampl
     const countyChips  = document.getElementById('countyChips');
     const resultsEl    = document.getElementById('results');
     const tierBlock    = document.getElementById('tierBlock');
+    const loadError    = document.getElementById('loadError');
 
     const linkAnnualUpfront = document.getElementById('linkAnnualUpfront');
     const linkAnnualMonthly = document.getElementById('linkAnnualMonthly');
     const linkMTM           = document.getElementById('linkMTM');
 
-    let lenders = [];
-    let geos = [];
-    let tiers = null;
+    let lenders = [], geos = [], tiers = null;
 
-    // Fetch all three JSONs
+    // --- Load config files
     try {
-      const [lendersRes, geosRes, tiersRes] = await Promise.all([
+      const [lr, gr, tr] = await Promise.all([
         fetch(lenderUrl, { cache: 'no-store' }),
-        fetch(geoUrl, { cache: 'no-store' }),
-        fetch(tiersUrl, { cache: 'no-store' })
+        fetch(geoUrl,    { cache: 'no-store' }),
+        fetch(tiersUrl,  { cache: 'no-store' })
       ]);
-      if (!lendersRes.ok || !geosRes.ok || !tiersRes.ok) throw new Error('Failed to fetch one or more configuration files.');
-
-      lenders = await lendersRes.json();
-      geos    = await geosRes.json();
-      tiers   = await tiersRes.json();
+      if (!lr.ok || !gr.ok || !tr.ok) throw new Error('One or more files not found.');
+      lenders = await lr.json();
+      geos    = await gr.json();
+      tiers   = await tr.json();
+      if (!Array.isArray(lenders) || !Array.isArray(geos) || !tiers?.tiers?.tier1?.links) {
+        throw new Error('Invalid JSON shape.');
+      }
     } catch (e) {
-      resultsEl.textContent = 'Error loading configuration. Please refresh.';
-      console.error(e);
+      loadError.style.display = 'block';
+      loadError.textContent = 'Error loading configuration. Please verify JSON files and refresh.';
+      console.error('Load error:', e);
       return;
     }
 
-    // Populate lender dropdown (sorted by lendername)
-    lenders.sort((a,b)=> (a.lendername||'').localeCompare(b.lendername||''));
+    // --- Auto-detect keys from cache rows
+    const s0 = geos[0] || {};
+    const l0 = lenders[0] || {};
+
+    const stateKey  = ('statename' in s0) ? 'statename' : (('state' in s0) ? 'state' : 'state_name');
+    const countyKey = ('county'    in s0) ? 'county'    : (('countyname' in s0) ? 'countyname' : 'county_name');
+
+    const lenderIdKey   = ('lenderid'   in l0) ? 'lenderid'   : (('lender_id' in l0) ? 'lender_id' : 'lei');
+    const lenderNameKey = ('lendername' in l0) ? 'lendername' : (('lender_name' in l0) ? 'lender_name' : lenderIdKey);
+
+    // --- Populate lenders (sorted by name)
+    lenders.sort((a,b)=> String(a[lenderNameKey]||'').localeCompare(String(b[lenderNameKey]||'')));
     for (const r of lenders) {
       const opt = document.createElement('option');
-      opt.value = r.lenderid;
-      opt.textContent = r.lendername || r.lenderid;
+      opt.value = r[lenderIdKey];
+      opt.textContent = r[lenderNameKey] || r[lenderIdKey];
       lenderSelect.appendChild(opt);
     }
 
-    // Build state list from geos
-    const states = Array.from(new Set(geos.map(g => g.statename))).sort((a,b)=>a.localeCompare(b));
+    // --- Populate states
+    const states = Array.from(new Set(
+      geos.map(g => (g[stateKey] ?? '').toString().trim()).filter(Boolean)
+    )).sort((a,b)=>a.localeCompare(b));
     for (const s of states) {
       const opt = document.createElement('option');
-      opt.value = s;
-      opt.textContent = s;
+      opt.value = s; opt.textContent = s;
       stateSelect.appendChild(opt);
     }
 
     function refreshCountyList() {
       countySelect.innerHTML = '';
-      countyChips.innerHTML = '';
-      const s = stateSelect.value;
+      countyChips.innerHTML  = '';
+      const s = (stateSelect.value || '').toString().trim();
       if (!s) return;
-      const counties = geos.filter(g => g.statename === s)
-                           .map(g => g.county)
-                           .filter(Boolean);
+
+      const counties = geos
+        .filter(g => (g[stateKey] ?? '').toString().trim() === s)
+        .map(g => (g[countyKey] ?? '').toString().trim())
+        .filter(Boolean);
+
       const unique = Array.from(new Set(counties)).sort((a,b)=>a.localeCompare(b));
       for (const c of unique) {
         const opt = document.createElement('option');
-        opt.value = c;
-        opt.textContent = c;
+        opt.value = c; opt.textContent = c;
         countySelect.appendChild(opt);
       }
     }
@@ -152,9 +166,11 @@ const countyKey = 'county'     in sample ? 'county'     : ('countyname' in sampl
     });
 
     lenderSelect.addEventListener('change', () => {
-      const r = lenders.find(x => String(x.lenderid) === String(lenderSelect.value));
+      const r = lenders.find(x => String(x[lenderIdKey]) === String(lenderSelect.value));
       if (r) {
-        lenderMeta.textContent = `Records: ${r.record_count.toLocaleString()}  •  Percentile: ${Number(r.percentile).toFixed(2)}`;
+        const rc  = Number(r.record_count) || 0;
+        const pct = Number(r.percentile) || 0;
+        lenderMeta.textContent = `Records: ${rc.toLocaleString()}  •  Percentile: ${pct.toFixed(2)}`;
       } else {
         lenderMeta.textContent = '';
       }
@@ -173,66 +189,43 @@ const countyKey = 'county'     in sample ? 'county'     : ('countyname' in sampl
     });
 
     function percentileFromSum(sumCount, baseArray) {
-      // Percentile of sumCount vs distribution of single-county counts (approximation for MVP)
       const counts = baseArray.map(x => Number(x.record_count) || 0);
       const belowOrEqual = counts.filter(v => v <= sumCount).length;
-      return (belowOrEqual / counts.length) * 100;
+      return counts.length ? (belowOrEqual / counts.length) * 100 : 0;
     }
+
+    const t1 = tiers.tiers.tier1.links || {};
+    linkAnnualUpfront.href = t1.annual_upfront || '#';
+    linkAnnualMonthly.href = t1.annual_monthly || '#';
+    linkMTM.href           = t1.month_to_month || '#';
 
     calcBtn.addEventListener('click', () => {
       tierBlock.style.display = 'none';
       resultsEl.textContent = '';
 
       const lenderId = lenderSelect.value;
-      const lenderRow = lenders.find(x => String(x.lenderid) === String(lenderId));
-      if (!lenderRow) {
-        resultsEl.textContent = 'Please select a lender.';
-        return;
-      }
+      const lenderRow = lenders.find(x => String(x[lenderIdKey]) === String(lenderId));
+      if (!lenderRow) { resultsEl.textContent = 'Please select a lender.'; return; }
 
       const state = stateSelect.value;
       const selectedCounties = Array.from(countySelect.selectedOptions).map(o=>o.value);
-      const countyRows = geos.filter(g => g.statename === state && (selectedCounties.length===0 || selectedCounties.includes(g.county)));
 
-      // Sum record_count across selected counties (union). If none selected, treat as whole state.
-      const peerRows = (selectedCounties.length ? countyRows : geos.filter(g=>g.statename===state));
-      const peerCountSum = peerRows.reduce((acc,g)=> acc + (Number(g.record_count)||0), 0);
+      const peerRows = selectedCounties.length
+        ? geos.filter(g => g[stateKey] === state && selectedCounties.includes((g[countyKey]||'').toString()))
+        : geos.filter(g => g[stateKey] === state);
 
-      // Approx percentile vs all counties (MVP). We can refine later.
+      const peerCountSum   = peerRows.reduce((acc,g)=> acc + (Number(g.record_count)||0), 0);
       const peerPercentile = percentileFromSum(peerCountSum, geos);
 
       const lenderPct = Number(lenderRow.percentile) || 0;
       resultsEl.textContent = `Lender percentile: ${lenderPct.toFixed(2)} • Peer percentile (approx.): ${peerPercentile.toFixed(2)} • Peer records: ${peerCountSum.toLocaleString()}`;
 
-      // For now, always Tier 1 (you’ll tune the rule later)
-      const t1 = tiers?.tiers?.tier1?.links || {};
-      const params = new URLSearchParams({
-        lenderid: String(lenderRow.lenderid || ''),
-        lendername: String(lenderRow.lendername || ''),
-        lender_pct: lenderPct.toFixed(2),
-        state,
-        counties: selectedCounties.join('|'),
-        peer_pct: peerPercentile.toFixed(2),
-        peer_records: String(peerCountSum)
-      }).toString();
-
-      // Attach params so you can inspect after redirect (Stripe won’t forward them; this is just for transparency if needed)
-      linkAnnualUpfront.href = (t1.annual_upfront || '#') + '';
-      linkAnnualMonthly.href = (t1.annual_monthly || '#') + '';
-      linkMTM.href           = (t1.month_to_month || '#') + '';
-
+      // Reveal Tier 1 links (rule tuning comes next)
       tierBlock.style.display = 'block';
       tierBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
-    // Prefill links (disabled until calculation)
-    const t1 = tiers?.tiers?.tier1?.links || {};
-    linkAnnualUpfront.href = t1.annual_upfront || '#';
-    linkAnnualMonthly.href = t1.annual_monthly || '#';
-    linkMTM.href           = t1.month_to_month || '#';
   })();
   </script>
 </body>
 </html>
-
-
