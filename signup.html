@@ -2,30 +2,28 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>BankMaps – Signup (MVP)</title>
+  <title>BankMaps – Signup</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#f6f8fb;margin:0;padding:24px}
-    .wrap{max-width:860px;margin:0 auto;background:#fff;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.08);padding:24px}
+    .wrap{max-width:720px;margin:0 auto;background:#fff;border-radius:14px;box-shadow:0 6px 18px rgba(0,0,0,.08);padding:24px}
     h1{margin:0 0 12px;color:#0b3366}
-    .row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
     .field{margin:12px 0}
     label{display:block;font-weight:600;margin-bottom:6px}
     select,button{width:100%;padding:10px 12px;border:1px solid #ccd5e0;border-radius:10px;background:#fff}
     button{cursor:pointer;background:#0b5fff;color:#fff;border:0}
     button:disabled{opacity:.6;cursor:not-allowed}
     .note{color:#555;margin:6px 0 0 0;font-size:.9rem}
-    .error{color:#b00020;margin-top:8px}
-    .pill{display:inline-block;background:#eef3ff;color:#0b3366;border-radius:999px;padding:6px 10px;margin:4px 6px 0 0;font-size:.85rem}
     .cards{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-top:16px}
     .card{background:#0b5fff;color:#fff;border-radius:12px;padding:14px;text-align:center;text-decoration:none}
+    .error{color:#b00020;margin-top:8px}
     .muted{color:#6b7280}
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>BankMaps – Signup</h1>
-    <p class="muted">Pick your lender and market. We’ll calculate percentiles and show Tier 1 payment options.</p>
+    <p class="muted">Select your lender. We’ll show your percentile and Tier 1 payment options.</p>
 
     <div id="loadError" class="error" style="display:none;"></div>
 
@@ -37,22 +35,8 @@
       <div id="lenderMeta" class="note"></div>
     </div>
 
-    <div class="row">
-      <div class="field">
-        <label for="stateSelect">State</label>
-        <select id="stateSelect">
-          <option value="">— Select state —</option>
-        </select>
-      </div>
-      <div class="field">
-        <label for="countySelect">Counties (hold Ctrl/⌘ for multi-select)</label>
-        <select id="countySelect" multiple size="8"></select>
-        <div id="countyChips"></div>
-      </div>
-    </div>
-
     <div class="field">
-      <button id="calcBtn" disabled>Calculate Percentiles</button>
+      <button id="continueBtn" disabled>Continue</button>
       <div id="results" class="note"></div>
     </div>
 
@@ -66,21 +50,17 @@
       <p class="note">After checkout you’ll be redirected to the login page.</p>
     </div>
 
-    <p class="note">Data sources: cached lender and geo rankings from latest year.</p>
+    <p class="note">Uses cached lender rankings from the latest data year.</p>
   </div>
 
   <script>
   (async function(){
     const lenderUrl = '/include/cache/loan_volume_cache.json';
-    const geoUrl    = '/include/cache/peer_geo_cache.json';
     const tiersUrl  = '/include/tiers.config.json';
 
     const lenderSelect = document.getElementById('lenderSelect');
-    const stateSelect  = document.getElementById('stateSelect');
-    const countySelect = document.getElementById('countySelect');
-    const calcBtn      = document.getElementById('calcBtn');
     const lenderMeta   = document.getElementById('lenderMeta');
-    const countyChips  = document.getElementById('countyChips');
+    const continueBtn  = document.getElementById('continueBtn');
     const resultsEl    = document.getElementById('results');
     const tierBlock    = document.getElementById('tierBlock');
     const loadError    = document.getElementById('loadError');
@@ -89,22 +69,18 @@
     const linkAnnualMonthly = document.getElementById('linkAnnualMonthly');
     const linkMTM           = document.getElementById('linkMTM');
 
-    let lenders = [], geos = [], tiers = null;
+    let lenders = [], tiers = null;
 
-    // --- Load config files
+    // Load lenders + tier links
     try {
-      const [lr, gr, tr] = await Promise.all([
+      const [lr, tr] = await Promise.all([
         fetch(lenderUrl, { cache: 'no-store' }),
-        fetch(geoUrl,    { cache: 'no-store' }),
         fetch(tiersUrl,  { cache: 'no-store' })
       ]);
-      if (!lr.ok || !gr.ok || !tr.ok) throw new Error('One or more files not found.');
+      if (!lr.ok || !tr.ok) throw new Error('Missing JSON files.');
       lenders = await lr.json();
-      geos    = await gr.json();
       tiers   = await tr.json();
-      if (!Array.isArray(lenders) || !Array.isArray(geos) || !tiers?.tiers?.tier1?.links) {
-        throw new Error('Invalid JSON shape.');
-      }
+      if (!Array.isArray(lenders) || !tiers?.tiers?.tier1?.links) throw new Error('Invalid JSON shape.');
     } catch (e) {
       loadError.style.display = 'block';
       loadError.textContent = 'Error loading configuration. Please verify JSON files and refresh.';
@@ -112,17 +88,12 @@
       return;
     }
 
-    // --- Auto-detect keys from cache rows
-    const s0 = geos[0] || {};
+    // Detect lender keys (robust to minor naming differences)
     const l0 = lenders[0] || {};
-
-    const stateKey  = ('statename' in s0) ? 'statename' : (('state' in s0) ? 'state' : 'state_name');
-    const countyKey = ('county'    in s0) ? 'county'    : (('countyname' in s0) ? 'countyname' : 'county_name');
-
     const lenderIdKey   = ('lenderid'   in l0) ? 'lenderid'   : (('lender_id' in l0) ? 'lender_id' : 'lei');
     const lenderNameKey = ('lendername' in l0) ? 'lendername' : (('lender_name' in l0) ? 'lender_name' : lenderIdKey);
 
-    // --- Populate lenders (sorted by name)
+    // Populate lender dropdown
     lenders.sort((a,b)=> String(a[lenderNameKey]||'').localeCompare(String(b[lenderNameKey]||'')));
     for (const r of lenders) {
       const opt = document.createElement('option');
@@ -131,100 +102,47 @@
       lenderSelect.appendChild(opt);
     }
 
-    // --- Populate states
-    const states = Array.from(new Set(
-      geos.map(g => (g[stateKey] ?? '').toString().trim()).filter(Boolean)
-    )).sort((a,b)=>a.localeCompare(b));
-    for (const s of states) {
-      const opt = document.createElement('option');
-      opt.value = s; opt.textContent = s;
-      stateSelect.appendChild(opt);
-    }
-
-    function refreshCountyList() {
-      countySelect.innerHTML = '';
-      countyChips.innerHTML  = '';
-      const s = (stateSelect.value || '').toString().trim();
-      if (!s) return;
-
-      const counties = geos
-        .filter(g => (g[stateKey] ?? '').toString().trim() === s)
-        .map(g => (g[countyKey] ?? '').toString().trim())
-        .filter(Boolean);
-
-      const unique = Array.from(new Set(counties)).sort((a,b)=>a.localeCompare(b));
-      for (const c of unique) {
-        const opt = document.createElement('option');
-        opt.value = c; opt.textContent = c;
-        countySelect.appendChild(opt);
-      }
-    }
-
-    stateSelect.addEventListener('change', () => {
-      refreshCountyList();
-      calcBtn.disabled = !(lenderSelect.value && stateSelect.value);
-    });
-
     lenderSelect.addEventListener('change', () => {
       const r = lenders.find(x => String(x[lenderIdKey]) === String(lenderSelect.value));
       if (r) {
         const rc  = Number(r.record_count) || 0;
-        const pct = Number(r.percentile) || 0;
-        lenderMeta.textContent = `Records: ${rc.toLocaleString()}  •  Percentile: ${pct.toFixed(2)}`;
+        const pct = Number(r.percentile)   || 0;
+        lenderMeta.textContent = `Records: ${rc.toLocaleString()} • Percentile: ${pct.toFixed(2)}`;
+        continueBtn.disabled = false;
       } else {
         lenderMeta.textContent = '';
+        continueBtn.disabled = true;
       }
-      calcBtn.disabled = !(lenderSelect.value && stateSelect.value);
-    });
-
-    countySelect.addEventListener('change', () => {
-      countyChips.innerHTML = '';
-      const sel = Array.from(countySelect.selectedOptions).map(o=>o.value);
-      for (const c of sel) {
-        const span = document.createElement('span');
-        span.className='pill';
-        span.textContent = c;
-        countyChips.appendChild(span);
-      }
-    });
-
-    function percentileFromSum(sumCount, baseArray) {
-      const counts = baseArray.map(x => Number(x.record_count) || 0);
-      const belowOrEqual = counts.filter(v => v <= sumCount).length;
-      return counts.length ? (belowOrEqual / counts.length) * 100 : 0;
-    }
-
-    const t1 = tiers.tiers.tier1.links || {};
-    linkAnnualUpfront.href = t1.annual_upfront || '#';
-    linkAnnualMonthly.href = t1.annual_monthly || '#';
-    linkMTM.href           = t1.month_to_month || '#';
-
-    calcBtn.addEventListener('click', () => {
       tierBlock.style.display = 'none';
       resultsEl.textContent = '';
+    });
 
-      const lenderId = lenderSelect.value;
-      const lenderRow = lenders.find(x => String(x[lenderIdKey]) === String(lenderId));
-      if (!lenderRow) { resultsEl.textContent = 'Please select a lender.'; return; }
+    continueBtn.addEventListener('click', () => {
+      const r = lenders.find(x => String(x[lenderIdKey]) === String(lenderSelect.value));
+      if (!r) return;
 
-      const state = stateSelect.value;
-      const selectedCounties = Array.from(countySelect.selectedOptions).map(o=>o.value);
+      // Persist selection for login/provisioning status page (same-origin)
+      try {
+        localStorage.setItem('signup_lender', JSON.stringify({
+          lenderid:   r[lenderIdKey],
+          lendername: r[lenderNameKey],
+          percentile: Number(r.percentile) || 0,
+          record_count: Number(r.record_count) || 0,
+          saved_at: new Date().toISOString()
+        }));
+      } catch {}
 
-      const peerRows = selectedCounties.length
-        ? geos.filter(g => g[stateKey] === state && selectedCounties.includes((g[countyKey]||'').toString()))
-        : geos.filter(g => g[stateKey] === state);
+      resultsEl.textContent = `Selected: ${r[lenderNameKey] || r[lenderIdKey]} • Percentile ${Number(r.percentile||0).toFixed(2)}`;
 
-      const peerCountSum   = peerRows.reduce((acc,g)=> acc + (Number(g.record_count)||0), 0);
-      const peerPercentile = percentileFromSum(peerCountSum, geos);
+      // Show Tier 1 links
+      const t1 = tiers.tiers.tier1.links || {};
+      linkAnnualUpfront.href = t1.annual_upfront || '#';
+      linkAnnualMonthly.href = t1.annual_monthly || '#';
+      linkMTM.href           = t1.month_to_month || '#';
 
-      const lenderPct = Number(lenderRow.percentile) || 0;
-      resultsEl.textContent = `Lender percentile: ${lenderPct.toFixed(2)} • Peer percentile (approx.): ${peerPercentile.toFixed(2)} • Peer records: ${peerCountSum.toLocaleString()}`;
-
-      // Reveal Tier 1 links (rule tuning comes next)
       tierBlock.style.display = 'block';
       tierBlock.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
-
   })();
   </script>
 </body>
