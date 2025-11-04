@@ -9,4 +9,15 @@
   <p>(Later: replace with your real auth form and post-payment provisioning status.)</p>
   <p><a href="/index.html">Home</a> • <a href="/payment.html">Pricing</a></p>
 </main>
+<script>
+try{
+  const x = JSON.parse(localStorage.getItem('signup_lender')||'{}');
+  if(x && x.lendername){
+    const p = document.createElement('p');
+    p.textContent = `Signup selection: ${x.lendername} (percentile ${Number(x.percentile||0).toFixed(2)})`;
+    document.body.appendChild(p);
+  }
+}catch(e){}
+</script>
 </body></html>
+
