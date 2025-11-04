@@ -131,7 +131,7 @@
       const s = stateSelect.value;
       if (!s) return;
       const counties = geos.filter(g => g.statename === s)
-                           .map(g => g.countyname)
+                           .map(g => g.county)
                            .filter(Boolean);
       const unique = Array.from(new Set(counties)).sort((a,b)=>a.localeCompare(b));
       for (const c of unique) {
@@ -188,7 +188,7 @@
 
       const state = stateSelect.value;
       const selectedCounties = Array.from(countySelect.selectedOptions).map(o=>o.value);
-      const countyRows = geos.filter(g => g.statename === state && (selectedCounties.length===0 || selectedCounties.includes(g.countyname)));
+      const countyRows = geos.filter(g => g.statename === state && (selectedCounties.length===0 || selectedCounties.includes(g.county)));
 
       // Sum record_count across selected counties (union). If none selected, treat as whole state.
       const peerRows = (selectedCounties.length ? countyRows : geos.filter(g=>g.statename===state));
@@ -230,3 +230,4 @@
   </script>
 </body>
 </html>
+
