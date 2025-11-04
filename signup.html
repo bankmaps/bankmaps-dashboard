@@ -72,6 +72,10 @@
     const geoUrl = '/include/cache/peer_geo_cache.json';
     const tiersUrl = '/include/tiers.config.json';
 
+    // auto-detect field names from the cache
+const sample = geos && geos[0] ? geos[0] : {};
+const stateKey  = 'statename'  in sample ? 'statename'  : ('state' in sample ? 'state' : 'state_name');
+const countyKey = 'county'     in sample ? 'county'     : ('countyname' in sample ? 'countyname' : 'county_name');
     const lenderSelect = document.getElementById('lenderSelect');
     const stateSelect  = document.getElementById('stateSelect');
     const countySelect = document.getElementById('countySelect');
@@ -230,4 +234,5 @@
   </script>
 </body>
 </html>
+
 
