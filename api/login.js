@@ -1,10 +1,25 @@
-// /api/login.js  (CommonJS)
-const cookie = require('cookie');
+// /api/login.js
+const cookie = require("cookie");
+
+async function getBody(req) {
+  if (req.body && typeof req.body === "object") return req.body;
+  return await new Promise((resolve, reject) => {
+    let data = "";
+    req.on("data", c => (data += c));
+    req.on("end", () => {
+      try { resolve(data ? JSON.parse(data) : {}); }
+      catch (e) { resolve({}); }
+    });
+    req.on("error", reject);
+  });
+}
 
 module.exports = async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
-  const { username, password } = req.body || {};
+  const body = await getBody(req);
+  const username = (body && body.username) || "";
+  const password = (body && body.password) || "";
   if (!username || !password) return res.status(400).json({ error: "Missing fields" });
 
   try {
@@ -12,9 +27,9 @@ module.exports = async function handler(req, res) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Auth-Secret": process.env.AUTH_SHARED_SECRET,
+        "X-Auth-Secret": process.env.AUTH_SHARED_SECRET
       },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password })
     });
 
     const text = await r.text();
@@ -28,8 +43,8 @@ module.exports = async function handler(req, res) {
       httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 8
     }));
 
-    res.status(200).json({ ok: true });
+    return res.status(200).json({ ok: true });
   } catch (e) {
-    res.status(500).json({ error: "server_err", msg: String(e) });
+    return res.status(500).json({ error: "server_err", msg: String(e) });
   }
 };
