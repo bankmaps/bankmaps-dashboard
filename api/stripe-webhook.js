@@ -1,5 +1,5 @@
 // Vercel Serverless Function (Node 18+)
-import { sendAdminPurchaseNotice } from '@/lib/email';
+import { sendAdminPurchaseNotice } from '../lib/email.js';
 import { buffer } from 'node:stream/consumers';
 import Stripe from 'stripe';
 import { Client } from 'pg';
