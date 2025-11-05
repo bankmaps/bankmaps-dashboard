@@ -31,11 +31,14 @@ export default async function handler(req, res) {
   }
 
   const session = event.data.object;
+
+  // quick notification for every completed checkout
   await sendAdminPurchaseNotice(
-  ` purchase: ${session.id}`,
-  `<p>Customer: ${session.customer_details?.email || session.customer_email || 'unknown'}</p>
-   <p>Amount: ${session.amount_total ? (session.amount_total/100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}</p>`
-);
+    `Purchase received – ${session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}`,
+    `<p>Customer: ${session.customer_details?.email || session.customer_email || 'unknown'}</p>
+     <p>Amount: ${session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}</p>`
+  );
+
   const clientRef = session.client_reference_id || ''; // base64 payload from signup
   let payload = {};
   try {
@@ -55,7 +58,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, missing: 'lenderid' });
   }
 
-  // Use short, deterministic table names per customer/org
   const cust = (session.customer || session.customer_email || lenderid)
     .toString()
     .replace(/[^a-zA-Z0-9_]/g, '_')
@@ -63,60 +65,46 @@ export default async function handler(req, res) {
   const tblLender = `cust_${cust}_hmda_lender`;
   const tblPeer = `cust_${cust}_hmda_peer`;
 
-  const pg =  Client({ connectionString: process.env.NEON_DB_URL, ssl: { rejectUnauthorized: false } });
+  const pg = new Client({ connectionString: process.env.NEON_DB_URL, ssl: { rejectUnauthorized: false } });
   await pg.connect();
 
   try {
-    // 1) Scope to latest year if none was provided
     const { rows: yearRow } = await pg.query(
       datayear ? 'SELECT $1::int AS y' : 'SELECT MAX(datayear) AS y FROM hmda_test',
       datayear ? [datayear] : []
     );
     const y = Number(yearRow?.[0]?.y);
 
-    // 2) Create/refresh lender slice
+    // lender slice
     await pg.query(`DROP TABLE IF EXISTS ${tblLender}`);
     await pg.query(
-      `
-      CREATE TABLE ${tblLender} AS
-      SELECT *
-      FROM hmda_test
-      WHERE datayear = $1 AND lenderid = $2
-    `,
+      `CREATE TABLE ${tblLender} AS
+       SELECT * FROM hmda_test
+       WHERE datayear = $1 AND lenderid = $2`,
       [y, lenderid]
     );
     await pg.query(`CREATE INDEX ON ${tblLender}(msa)`);
     await pg.query(`CREATE INDEX ON ${tblLender}(datayear)`);
 
-    // 3) Determine the MSA set
+    // MSA set
     const { rows: msaRows } = await pg.query(`SELECT DISTINCT msa FROM ${tblLender} WHERE msa IS NOT NULL`);
     const msaList = msaRows.map(r => r.msa).filter(v => v !== null);
 
-    // If the lender has no MSA values, bail gracefully
     if (msaList.length === 0) {
       console.warn('No MSAs found for lender; peer slice will be empty');
       await pg.query(`DROP TABLE IF EXISTS ${tblPeer}`);
       await pg.query(`CREATE TABLE ${tblPeer} AS SELECT * FROM hmda_test WHERE false`);
     } else {
-      // 4) Create/refresh peer slice
       await pg.query(`DROP TABLE IF EXISTS ${tblPeer}`);
       await pg.query(
-        `
-        CREATE TABLE ${tblPeer} AS
-        SELECT *
-        FROM hmda_test
-        WHERE datayear = $1 AND msa = ANY($2)
-      `,
+        `CREATE TABLE ${tblPeer} AS
+         SELECT * FROM hmda_test
+         WHERE datayear = $1 AND msa = ANY($2)`,
         [y, msaList]
       );
       await pg.query(`CREATE INDEX ON ${tblPeer}(msa)`);
       await pg.query(`CREATE INDEX ON ${tblPeer}(datayear)`);
     }
-
-    // TODO: Kick off vector ingestion for this customer’s namespaces here.
-    // e.g., POST to your internal ingestion endpoint with { cust, tblLender, tblPeer }.
-
-    console.log('Provisioned tables:', { y, cust, tblLender, tblPeer, lenderid, lendername, percentile });
 
     // ===== EMAIL NOTIFICATION (ADMIN) =====
     try {
@@ -125,27 +113,25 @@ export default async function handler(req, res) {
         session.customer_email ||
         'unknown';
 
-await sendAdminPurchaseNotice(
-  `New BankMaps Purchase – ${session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}`,
-  `
-  <h3>New BankMaps purchase</h3>
-  <p><b>Lender:</b> ${lendername || lenderid}</p>
-  <p><b>Customer email:</b> ${customerEmail}</p>
-  <p><b>Year:</b> ${y}</p>
-  <p><b>Tables:</b> ${tblLender}, ${tblPeer}</p>
-  <p><b>Stripe amount:</b> ${
-    session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'
-  } ${session.currency ? String(session.currency).toUpperCase() : ''}
-  </p>
-  `
-);
+      await sendAdminPurchaseNotice(
+        `New BankMaps Purchase – ${session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}`,
+        `
+        <h3>New BankMaps purchase</h3>
+        <p><b>Lender:</b> ${lendername || lenderid}</p>
+        <p><b>Customer email:</b> ${customerEmail}</p>
+        <p><b>Year:</b> ${y}</p>
+        <p><b>Tables:</b> ${tblLender}, ${tblPeer}</p>
+        <p><b>Stripe amount:</b> ${
+          session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'
+        } ${session.currency ? String(session.currency).toUpperCase() : ''}
+        </p>
         `
       );
     } catch (e) {
       console.error('Postmark admin email failed:', e);
-      // Don’t fail the webhook if email fails
     }
 
+    console.log('Provisioned tables:', { y, cust, tblLender, tblPeer, lenderid, lendername, percentile });
     return res.status(200).json({ ok: true, y, cust, tblLender, tblPeer });
   } catch (e) {
     console.error('Provisioning failed:', e);
