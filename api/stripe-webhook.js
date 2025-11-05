@@ -33,8 +33,8 @@ export default async function handler(req, res) {
   const session = event.data.object;
 
   // quick notification for every completed checkout
-  await sendAdminPurchaseNotice(
-    `Purchase received – ${session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}`,
+  await sendAdminNotice(
+    `New Purchase - ${session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}`,
     `<p>Customer: ${session.customer_details?.email || session.customer_email || 'unknown'}</p>
      <p>Amount: ${session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}</p>`
   );
