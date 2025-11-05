@@ -8,6 +8,14 @@
   <!-- Mapbox v2 -->
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+async function geocodeCounty(name, token){
+  const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(name + ' County, USA')}.json?limit=1&access_token=${token}`;
+  const r = await fetch(url);
+  if(!r.ok) return null;
+  const j = await r.json();
+  const f = j.features && j.features[0];
+  return f ? f.center : null; // [lng, lat]
+}
 
   <style>
     html, body { height: 100%; margin: 0; }
