@@ -1,37 +1,60 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dashboard</title></head><body>
-<div>
-  <a href="/logout.html" id="logout">Logout</a>
-  <h1>Report</h1>
-  <label>datayear <input id="year" placeholder="e.g. 2023"></label>
-  <label>county <input id="county" placeholder="e.g. Travis"></label>
-  <button id="run">Generate report</button>
-  <table id="tbl" border="1" cellspacing="0" cellpadding="6">
-    <thead><tr><th>lendername</th><th>count_records</th><th>sum_amount</th></tr></thead>
-    <tbody></tbody>
-  </table>
-</div>
-<script>
-async function checkSession(){
-  const r = await fetch('/api/session'); if(!r.ok){ location.href='/login.html'; }
-}
-async function run(){
-  const y = document.querySelector('#year').value.trim();
-  const c = document.querySelector('#county').value.trim();
-  const q = new URLSearchParams(); if(y) q.set('year', y); if(c) q.set('county', c);
-  const r = await fetch('/api/report?'+q.toString());
-  if(!r.ok){ alert('Failed'); return; }
-  const data = await r.json();
-  const tbody = document.querySelector('#tbl tbody'); tbody.innerHTML='';
-  (data.rows||[]).forEach(row=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${row.lendername||''}</td>
-      <td style="text-align:right">${row.count_records}</td>
-      <td style="text-align:right">${Number(row.sum_amount||0).toLocaleString()}</td>`;
-    tbody.appendChild(tr);
-  });
-}
-document.querySelector('#run').addEventListener('click', run);
-checkSession();
-</script>
-</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>BankMaps • Dashboard</title>
+  <style>
+    :root { --bg:#f6f8fb; --card:#fff; --ink:#0b3366; }
+    body { margin:0; font-family:Arial, sans-serif; background:var(--bg); color:#222; }
+    main { max-width:960px; margin:8vh auto; padding:28px; background:var(--card);
+           border-radius:14px; box-shadow:0 6px 18px rgba(0,0,0,.08); }
+    h1 { margin:0 0 8px; color:var(--ink); }
+    .sub { color:#555; margin:0 0 18px; }
+    .grid { display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); }
+    .btn { display:flex; align-items:center; justify-content:center; gap:8px;
+           padding:14px 16px; border-radius:10px; background:var(--ink); color:#fff;
+           text-decoration:none; border:none; cursor:pointer; text-align:center; }
+    .btn:hover { filter:brightness(1.08); }
+    .row { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+    .right a { color:#1951a3; text-decoration:none; }
+    .right a:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="row">
+      <div>
+        <h1>Dashboard (Test)</h1>
+        <p class="sub">Choose a tool below. You can add more buttons anytime.</p>
+      </div>
+      <div class="right">
+        <a href="#" onclick="logout();return false;">Logout</a>
+      </div>
+    </div>
+
+    <section class="grid" id="actions">
+      <!-- Current buttons -->
+      <a class="btn" href="/report.html">📊 View Report</a>
+      <a class="btn" href="#" onclick="logout();return false;">🚪 Logout</a>
+
+      <!-- Future buttons (examples) -->
+      <!-- <a class="btn" href="/map.html">🗺️ Map View</a> -->
+      <!-- <a class="btn" href="/peers.html">🤝 Peer Comparison</a> -->
+      <!-- <a class="btn" href="/performance.html">📈 Performance Report</a> -->
+    </section>
+  </main>
+
+  <script>
+    async function guard(){
+      const r = await fetch('/api/session');
+      if (!r.ok) location.href = '/login.html';
+    }
+    async function logout(){
+      await fetch('/api/logout');
+      location.href = '/login.html';
+    }
+    guard();
+  </script>
+</body>
+</html>
