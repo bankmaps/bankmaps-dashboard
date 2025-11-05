@@ -17,7 +17,10 @@ async function doLogin(e){
     body: JSON.stringify({ username, password })
   });
   if(res.ok){ location.href = '/dashboard.html'; }
-  else{ alert('Invalid credentials'); }
+  else {
+  const err = await res.json().catch(()=>({}));
+  alert('Invalid credentials\n' + JSON.stringify(err));
 }
 document.querySelector('#login-form').addEventListener('submit', doLogin);
 </script>
+
