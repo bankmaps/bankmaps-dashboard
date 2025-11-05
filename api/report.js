@@ -1,23 +1,19 @@
-import { query } from "../lib/db.js";
-import cookie from "cookie";
+// /api/report.js
+const { query } = require("../lib/db.js");
+const cookie = require("cookie");
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const cookies = cookie.parse(req.headers.cookie || "");
   if (!cookies.session) return res.status(401).json({ error: "Unauthorized" });
 
-  const { year, county } = req.query;
-  const filters = [];
+  const { year } = req.query || {};
   const params = [];
-
-  if (year) { params.push(year); filters.push(`datayear = $${params.length}`); }
-  if (county) { params.push(county); filters.push(`county = $${params.length}`); }
-
-  const where = filters.length ? `WHERE ${filters.join(" AND ")}` : "";
+  const where = year ? (params.push(parseInt(year, 10)), `WHERE datayear = $1`) : "";
 
   const rows = await query(
     `SELECT lendername,
             COUNT(*) AS count_records,
-            SUM(amount) AS sum_amount
+            COALESCE(SUM(amount),0) AS sum_amount
      FROM hmda_test
      ${where}
      GROUP BY lendername
@@ -27,4 +23,4 @@ export default async function handler(req, res) {
   );
 
   res.json({ rows });
-}
+};
