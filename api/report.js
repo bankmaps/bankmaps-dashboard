@@ -1,4 +1,3 @@
-// /api/report.js
 const { query } = require("../lib/db.js");
 const cookie = require("cookie");
 
@@ -13,7 +12,7 @@ module.exports = async function handler(req, res) {
     const rows = await query(
       `SELECT lendername,
               COUNT(*)::int AS count_records,
-              COALESCE(SUM(amount)::bigint, 0) AS sum_amount
+              COALESCE(SUM(NULLIF(amount, '')::numeric), 0) AS sum_amount
        FROM hmda_test
        WHERE datayear = $1
        GROUP BY lendername
