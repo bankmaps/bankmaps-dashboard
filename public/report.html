@@ -8,14 +8,10 @@
     main{max-width:960px;margin:6vh auto;padding:24px;background:#fff;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
     h1{margin:0 0 10px;color:#0b3366}
     .row{display:flex;gap:10px;align-items:end;margin:14px 0 18px}
-    select,button{padding:8px 10px;border:1px solid #ccc;border-radius:6px}
-    button{background:#0b3366;color:#fff;border:none;cursor:pointer}
-    button:hover{filter:brightness(1.08)}
+    select{padding:8px 10px;border:1px solid #ccc;border-radius:6px}
     table{width:100%;border-collapse:collapse}
     th,td{padding:8px;border-top:1px solid #eee}
-    th{text-align:left}
-    .right{text-align:right}
-    .muted{color:#666}
+    th{text-align:left}.right{text-align:right}.muted{color:#666}
   </style>
 </head>
 <body>
@@ -28,13 +24,11 @@
   <div class="row">
     <label>Year<br>
       <select id="year">
-        <option value="">All</option>
         <option>2024</option><option>2023</option><option>2022</option>
         <option>2021</option><option>2020</option><option>2019</option>
         <option>2018</option>
       </select>
     </label>
-    <button id="run">Generate report</button>
   </div>
 
   <p id="status" class="muted"></p>
@@ -52,30 +46,25 @@ async function guard(){ const r=await fetch('/api/session'); if(!r.ok){ location
 function fmt(n){ try{ return Number(n||0).toLocaleString(); } catch { return n; } }
 
 async function run(){
-  const year = document.querySelector('#year').value;
-  const q = new URLSearchParams(); if(year) q.set('year', year);
-  const status = document.querySelector('#status');
-  status.textContent = 'Loading…';
-  const res = await fetch('/api/report?' + q.toString());
-  const tbody = document.querySelector('#rows'); tbody.innerHTML = '';
-  if(!res.ok){
-    const txt = await res.text(); status.textContent = 'Error: ' + txt; return;
-  }
-  const data = await res.json();
-  const rows = data.rows || [];
-  if(rows.length === 0){ status.textContent = 'No data found for the selected filters.'; return; }
-  status.textContent = '';
+  const year=document.querySelector('#year').value;
+  const status=document.querySelector('#status'); status.textContent='Loading…';
+  const res=await fetch('/api/report?year='+encodeURIComponent(year));
+  const tbody=document.querySelector('#rows'); tbody.innerHTML='';
+  if(!res.ok){ const t=await res.text(); status.textContent='Error: '+t; return; }
+  const data=await res.json(); const rows=data.rows||[];
+  if(rows.length===0){ status.textContent='No data found.'; return; }
+  status.textContent='';
   rows.forEach(r=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `<td>${r.lendername ?? ''}</td>
-                    <td class="right">${fmt(r.count_records)}</td>
-                    <td class="right">${fmt(r.sum_amount)}</td>`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${r.lendername??''}</td>
+                  <td class="right">${fmt(r.count_records)}</td>
+                  <td class="right">${fmt(r.sum_amount)}</td>`;
     tbody.appendChild(tr);
   });
 }
-
-document.querySelector('#run').addEventListener('click', run);
+document.querySelector('#year').addEventListener('change', run);
 guard();
+run(); // auto-load initial year
 </script>
 </body>
 </html>
