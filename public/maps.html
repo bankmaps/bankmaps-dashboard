@@ -1,76 +1,125 @@
-<link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
-<style>
-  html,body { height:100%; }
-  body { margin:0; font-family:Arial,sans-serif; background:#f6f8fb; }
-  /* Fullscreen map behind UI */
-  #map { position:fixed; inset:0; min-height:100vh; }
-  /* UI panels */
-  aside{ position:fixed; top:16px; left:16px; z-index:2; background:#fff; padding:12px 14px;
-         border-radius:10px; box-shadow:0 6px 18px rgba(0,0,0,.08); width:300px }
-  label{ font-size:12px; color:#333 }
-  select{ width:100%; padding:8px; border:1px solid #ccc; border-radius:6px }
-  #panel{ position:fixed; right:16px; bottom:16px; z-index:2; background:#fff; padding:10px;
-          border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.08); max-height:40vh; overflow:auto; min-width:280px }
-  #status{ font-size:12px; color:#666; margin-top:6px }
-</style>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BankMaps • Map</title>
 
-<div id="map"></div>
-<aside>
-  <div><label>Lender</label>
-    <select id="lender"></select>
-  </div>
-  <div id="status"></div>
-</aside>
-<div id="panel"><strong>Top Counties</strong><ol id="list"></ol></div>
+  <!-- Mapbox v2 -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
-<script>
-let map;
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body { font-family: Arial, sans-serif; background: #f6f8fb; }
+    #map { 
+      position: fixed; 
+      top: 0; left: 0; right: 0; bottom: 0;
+      width: 100vw; 
+      height: 100vh; 
+    }
+    aside {
+      position: fixed;
+      top: 16px; left: 16px;
+      z-index: 2;
+      background: #fff;
+      padding: 12px 14px;
+      border-radius: 10px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.08);
+      width: 300px;
+    }
+    label { font-size: 12px; color: #333; }
+    select {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    #panel {
+      position: fixed;
+      right: 16px; bottom: 16px;
+      z-index: 2;
+      background: #fff;
+      padding: 10px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,.08);
+      max-height: 40vh;
+      overflow: auto;
+      min-width: 280px;
+    }
+    #status { font-size: 12px; color: #666; margin-top: 6px; }
+  </style>
+</head>
 
-async function init(){
-  const { token } = await fetch('/api/mapbox-token').then(r=>r.json()).catch(()=>({token:''}));
-  const status = document.getElementById('status');
+<body>
+  <div id="map"></div>
 
-  if (!token || !token.startsWith('pk.')) {
-    status.textContent = 'Mapbox token missing or invalid.';
-    return;
+  <aside>
+    <div><label>Map Filter</label>
+      <select id="lender"></select>
+    </div>
+    <div id="status">Loading map…</div>
+  </aside>
+
+  <div id="panel"><strong>Top Counties</strong><ol id="list"></ol></div>
+
+  <script>
+  let map;
+
+  async function init() {
+    const status = document.getElementById('status');
+
+    // Fetch Mapbox token
+    const { token } = await fetch('/api/mapbox-token').then(r => r.json()).catch(() => ({ token: '' }));
+    if (!token || !token.startsWith('pk.')) {
+      status.textContent = 'Mapbox token missing or invalid.';
+      return;
+    }
+
+    // Initialize Mapbox
+    mapboxgl.accessToken = token;
+    map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/light-v11',
+      center: [-98.5, 39.8],
+      zoom: 3.5
+    });
+
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    map.on('load', () => {
+      status.textContent = 'Map loaded.';
+    });
+
+    // Populate dropdown
+    const dd = document.getElementById('lender');
+    const L = await fetch('/api/maps').then(r => r.json()).catch(() => ({ lenders: [] }));
+    dd.innerHTML = (L.lenders || []).map(name => `<option>${name}</option>`).join('');
+    dd.addEventListener('change', loadData);
+
+    await loadData();
   }
 
-  mapboxgl.accessToken = token;
+  async function loadData() {
+    const lender = document.getElementById('lender').value;
+    const status = document.getElementById('status');
+    const list = document.getElementById('list');
+    status.textContent = 'Loading data…';
+    list.innerHTML = '';
 
-  // Create the map
-  map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/light-v11',
-    center: [-98.5, 39.8],
-    zoom: 3.5
-  });
-  map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+    const res = await fetch('/api/map-data?lender=' + encodeURIComponent(lender));
+    if (!res.ok) {
+      status.textContent = 'Error: ' + (await res.text());
+      return;
+    }
 
-  // Populate lenders and load data
-  const dd = document.getElementById('lender');
-  const L = await fetch('/api/maps').then(r=>r.json()).catch(()=>({lenders:[]}));
-  dd.innerHTML = (L.lenders||[]).map(name=>`<option>${name}</option>`).join('');
-  dd.addEventListener('change', loadData);
+    const data = await res.json();
+    const rows = data.rows || [];
+    status.textContent = rows.length ? '' : 'No data found.';
+    list.innerHTML = rows.slice(0, 20).map(r => `<li>${r.count} — ${r.county || '(no county)'}</li>`).join('');
+  }
 
-  await loadData();
-}
-
-async function loadData(){
-  const lender = document.getElementById('lender').value;
-  const status = document.getElementById('status');
-  const list = document.getElementById('list');
-  status.textContent = 'Loading…';
-  list.innerHTML = '';
-
-  const res = await fetch('/api/map-data?lender='+encodeURIComponent(lender));
-  if(!res.ok){ status.textContent = 'Error: ' + (await res.text()); return; }
-
-  const data = await res.json();
-  const rows = data.rows || [];
-  status.textContent = rows.length ? '' : 'No data found.';
-  list.innerHTML = rows.slice(0, 20).map(r=>`<li>${r.count} — ${r.county||'(no county)'}</li>`).join('');
-}
-
-init();
-</script>
+  init();
+  </script>
+</body>
+</html>
