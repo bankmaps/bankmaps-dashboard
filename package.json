@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "type": "module",
     "pg": "^8.11.3",
     "postmark": "^4.0.5",
     "stripe": "^14.0.0"
