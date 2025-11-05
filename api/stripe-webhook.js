@@ -31,6 +31,11 @@ export default async function handler(req, res) {
   }
 
   const session = event.data.object;
+  await sendAdminPurchaseNotice(
+  `New purchase: ${session.id}`,
+  `<p>Customer: ${session.customer_details?.email || session.customer_email || 'unknown'}</p>
+   <p>Amount: ${session.amount_total ? (session.amount_total/100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}</p>`
+);
   const clientRef = session.client_reference_id || ''; // base64 payload from signup
   let payload = {};
   try {
