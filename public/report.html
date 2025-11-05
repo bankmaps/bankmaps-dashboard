@@ -4,67 +4,88 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
   <title>BankMaps • Report</title>
   <style>
+    :root { --gap:20px; --sidew:220px; }
     body{font-family:Arial,sans-serif;background:#f6f8fb;margin:0}
-    main{max-width:960px;margin:6vh auto;padding:24px;background:#fff;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
+    /* Fixed filter panel (outside report area) */
+    aside#filters{
+      position:fixed; top:20px; left:20px; width:var(--sidew);
+      background:#fff; padding:14px; border-radius:10px;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);
+    }
+    aside label{font-size:13px;color:#333;display:block;margin-bottom:6px}
+    aside select{width:100%;padding:8px;border:1px solid #ccc;border-radius:6px}
+    /* Report card shifted right so it doesn't overlap the panel */
+    main{
+      max-width:960px;
+      margin:40px calc(var(--gap)) 40px calc(var(--sidew) + var(--gap)*2);
+      padding:24px;background:#fff;border-radius:12px;
+      box-shadow:0 6px 18px rgba(0,0,0,.08);
+    }
     h1{margin:0 0 10px;color:#0b3366}
-    .row{display:flex;gap:10px;align-items:end;margin:14px 0 18px}
-    select{padding:8px 10px;border:1px solid #ccc;border-radius:6px}
+    a.back{float:right;margin-top:4px}
     table{width:100%;border-collapse:collapse}
     th,td{padding:8px;border-top:1px solid #eee}
-    th{text-align:left}.right{text-align:right}.muted{color:#666}
+    th{text-align:left}
+    .right{text-align:right}
+    /* Reserve space to prevent layout jump */
+    #status{min-height:22px;color:#666;margin:6px 0 10px}
+    #tableWrap{min-height:160px}
   </style>
 </head>
 <body>
+
+<aside id="filters">
+  <label>Year</label>
+  <select id="year">
+    <option>2024</option><option>2023</option><option>2022</option>
+    <option>2021</option><option>2020</option><option>2019</option>
+    <option>2018</option>
+  </select>
+</aside>
+
 <main>
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <h1>Lender Report</h1>
-    <a href="/dashboard.html">← Back to Dashboard</a>
+  <a class="back" href="/dashboard.html">← Back to Dashboard</a>
+  <h1>Lender Report</h1>
+
+  <p id="status"></p>
+
+  <div id="tableWrap">
+    <table>
+      <thead>
+        <tr><th>lendername</th><th class="right">count_records</th><th class="right">sum_amount</th></tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
   </div>
-
-  <div class="row">
-    <label>Year<br>
-      <select id="year">
-        <option>2024</option><option>2023</option><option>2022</option>
-        <option>2021</option><option>2020</option><option>2019</option>
-        <option>2018</option>
-      </select>
-    </label>
-  </div>
-
-  <p id="status" class="muted"></p>
-
-  <table>
-    <thead>
-      <tr><th>lendername</th><th class="right">count_records</th><th class="right">sum_amount</th></tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
 </main>
 
 <script>
 async function guard(){ const r=await fetch('/api/session'); if(!r.ok){ location.href='/login.html'; } }
 function fmt(n){ try{ return Number(n||0).toLocaleString(); } catch { return n; } }
 
+let loading = false;
 async function run(){
+  if(loading) return; loading = true;
   const year=document.querySelector('#year').value;
   const status=document.querySelector('#status'); status.textContent='Loading…';
-  const res=await fetch('/api/report?year='+encodeURIComponent(year));
   const tbody=document.querySelector('#rows'); tbody.innerHTML='';
-  if(!res.ok){ const t=await res.text(); status.textContent='Error: '+t; return; }
-  const data=await res.json(); const rows=data.rows||[];
-  if(rows.length===0){ status.textContent='No data found.'; return; }
-  status.textContent='';
-  rows.forEach(r=>{
-    const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${r.lendername??''}</td>
-                  <td class="right">${fmt(r.count_records)}</td>
-                  <td class="right">${fmt(r.sum_amount)}</td>`;
-    tbody.appendChild(tr);
-  });
+  try{
+    const res=await fetch('/api/report?year='+encodeURIComponent(year));
+    if(!res.ok){ status.textContent='Error: '+await res.text(); return; }
+    const data=await res.json(); const rows=data.rows||[];
+    status.textContent = rows.length ? '' : 'No data found.';
+    rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML=`<td>${r.lendername??''}</td>
+                    <td class="right">${fmt(r.count_records)}</td>
+                    <td class="right">${fmt(r.sum_amount)}</td>`;
+      tbody.appendChild(tr);
+    });
+  } finally { loading = false; }
 }
+
 document.querySelector('#year').addEventListener('change', run);
-guard();
-run(); // auto-load initial year
+guard(); run(); // initial load
 </script>
 </body>
 </html>
