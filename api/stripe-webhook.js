@@ -32,7 +32,7 @@ export default async function handler(req, res) {
 
   const session = event.data.object;
   await sendAdminPurchaseNotice(
-  `New purchase: ${session.id}`,
+  ` purchase: ${session.id}`,
   `<p>Customer: ${session.customer_details?.email || session.customer_email || 'unknown'}</p>
    <p>Amount: ${session.amount_total ? (session.amount_total/100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}</p>`
 );
@@ -63,7 +63,7 @@ export default async function handler(req, res) {
   const tblLender = `cust_${cust}_hmda_lender`;
   const tblPeer = `cust_${cust}_hmda_peer`;
 
-  const pg = new Client({ connectionString: process.env.NEON_DB_URL, ssl: { rejectUnauthorized: false } });
+  const pg =  Client({ connectionString: process.env.NEON_DB_URL, ssl: { rejectUnauthorized: false } });
   await pg.connect();
 
   try {
@@ -125,18 +125,20 @@ export default async function handler(req, res) {
         session.customer_email ||
         'unknown';
 
-      await sendAdminPurchaseNotice(
-        `New purchase: ${session.id}`,
-        `
-        <h3>New BankMaps purchase</h3>
-        <p><b>Lender:</b> ${lendername || lenderid}</p>
-        <p><b>Customer email:</b> ${customerEmail}</p>
-        <p><b>Year:</b> ${y}</p>
-        <p><b>Tables:</b> ${tblLender}, ${tblPeer}</p>
-        <p><b>Stripe amount:</b> ${
-          session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'
-        } ${session.currency ? String(session.currency).toUpperCase() : ''}
-        </p>
+await sendAdminPurchaseNotice(
+  `New BankMaps Purchase – ${session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'} ${session.currency ? String(session.currency).toUpperCase() : ''}`,
+  `
+  <h3>New BankMaps purchase</h3>
+  <p><b>Lender:</b> ${lendername || lenderid}</p>
+  <p><b>Customer email:</b> ${customerEmail}</p>
+  <p><b>Year:</b> ${y}</p>
+  <p><b>Tables:</b> ${tblLender}, ${tblPeer}</p>
+  <p><b>Stripe amount:</b> ${
+    session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'
+  } ${session.currency ? String(session.currency).toUpperCase() : ''}
+  </p>
+  `
+);
         `
       );
     } catch (e) {
