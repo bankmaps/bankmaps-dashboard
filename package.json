@@ -2,11 +2,7 @@
   "name": "bankmaps",
   "version": "1.0.0",
   "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "echo ok",
-    "start": "echo ok"
-  },
+  "scripts": { "build": "echo ok", "start": "echo ok" },
   "dependencies": {
     "cookie": "^0.6.0",
     "pg": "^8.11.3",
