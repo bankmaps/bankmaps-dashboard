@@ -1,4 +1,5 @@
 // Vercel Serverless Function (Node 18+)
+import { sendAdminPurchaseNotice } from '@/lib/email';
 import { buffer } from 'node:stream/consumers';
 import Stripe from 'stripe';
 import { Client } from 'pg';
@@ -50,11 +51,14 @@ export default async function handler(req, res) {
   }
 
   // Use short, deterministic table names per customer/org
-  const cust = (session.customer || session.customer_email || lenderid).toString().replace(/[^a-zA-Z0-9_]/g,'_').slice(0,40);
+  const cust = (session.customer || session.customer_email || lenderid)
+    .toString()
+    .replace(/[^a-zA-Z0-9_]/g, '_')
+    .slice(0, 40);
   const tblLender = `cust_${cust}_hmda_lender`;
-  const tblPeer   = `cust_${cust}_hmda_peer`;
+  const tblPeer = `cust_${cust}_hmda_peer`;
 
-  const pg = new Client({ connectionString: process.env.NEON_DB_URL, ssl: { rejectUnauthorized: false }});
+  const pg = new Client({ connectionString: process.env.NEON_DB_URL, ssl: { rejectUnauthorized: false } });
   await pg.connect();
 
   try {
@@ -67,12 +71,15 @@ export default async function handler(req, res) {
 
     // 2) Create/refresh lender slice
     await pg.query(`DROP TABLE IF EXISTS ${tblLender}`);
-    await pg.query(`
+    await pg.query(
+      `
       CREATE TABLE ${tblLender} AS
       SELECT *
       FROM hmda_test
       WHERE datayear = $1 AND lenderid = $2
-    `, [y, lenderid]);
+    `,
+      [y, lenderid]
+    );
     await pg.query(`CREATE INDEX ON ${tblLender}(msa)`);
     await pg.query(`CREATE INDEX ON ${tblLender}(datayear)`);
 
@@ -88,12 +95,15 @@ export default async function handler(req, res) {
     } else {
       // 4) Create/refresh peer slice
       await pg.query(`DROP TABLE IF EXISTS ${tblPeer}`);
-      await pg.query(`
+      await pg.query(
+        `
         CREATE TABLE ${tblPeer} AS
         SELECT *
         FROM hmda_test
         WHERE datayear = $1 AND msa = ANY($2)
-      `, [y, msaList]);
+      `,
+        [y, msaList]
+      );
       await pg.query(`CREATE INDEX ON ${tblPeer}(msa)`);
       await pg.query(`CREATE INDEX ON ${tblPeer}(datayear)`);
     }
@@ -102,6 +112,33 @@ export default async function handler(req, res) {
     // e.g., POST to your internal ingestion endpoint with { cust, tblLender, tblPeer }.
 
     console.log('Provisioned tables:', { y, cust, tblLender, tblPeer, lenderid, lendername, percentile });
+
+    // ===== EMAIL NOTIFICATION (ADMIN) =====
+    try {
+      const customerEmail =
+        (session.customer_details && session.customer_details.email) ||
+        session.customer_email ||
+        'unknown';
+
+      await sendAdminPurchaseNotice(
+        `New purchase: ${session.id}`,
+        `
+        <h3>New BankMaps purchase</h3>
+        <p><b>Lender:</b> ${lendername || lenderid}</p>
+        <p><b>Customer email:</b> ${customerEmail}</p>
+        <p><b>Year:</b> ${y}</p>
+        <p><b>Tables:</b> ${tblLender}, ${tblPeer}</p>
+        <p><b>Stripe amount:</b> ${
+          session.amount_total ? (session.amount_total / 100).toFixed(2) : 'n/a'
+        } ${session.currency ? String(session.currency).toUpperCase() : ''}
+        </p>
+        `
+      );
+    } catch (e) {
+      console.error('Postmark admin email failed:', e);
+      // Don’t fail the webhook if email fails
+    }
+
     return res.status(200).json({ ok: true, y, cust, tblLender, tblPeer });
   } catch (e) {
     console.error('Provisioning failed:', e);
