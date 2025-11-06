@@ -1,4 +1,3 @@
-// /api/map-data-tracts.js
 const { query } = require("../lib/db.js");
 const cookie = require("cookie");
 
@@ -15,20 +14,20 @@ module.exports = async function handler(req, res) {
     const rows = await query(
       `
       SELECT
-        "GEOID" AS "GEOID",
+        stfid AS "GEOID",        -- map DB's stfid to API's GEOID
         COUNT(*)::int AS count
       FROM hmda_test
       WHERE lendername = $1
-        AND "Year" = $2
-        AND "GEOID" IS NOT NULL
-        AND "GEOID" <> ''
-      GROUP BY "GEOID"
+        AND datayear = $2
+        AND stfid IS NOT NULL
+        AND stfid <> ''
+      GROUP BY stfid
       ORDER BY count DESC
       `,
       [lender, year]
     );
 
-    res.json({ rows });
+    res.json({ rows }); // [{ GEOID: '11001006202', count: ... }]
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
