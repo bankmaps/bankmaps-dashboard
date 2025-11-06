@@ -60,4 +60,20 @@
 
     // Any error
     map.on("error", (e) => {
-      status.innerHTML = `Error: ${e.error?.message || "Failed to load"}
+      status.innerHTML = `Error: ${e.error?.message || "Failed to load"}`;
+      status.style.background = "#f8d7da";
+      status.style.color = "#721c24";
+      console.error("Mapbox error:", e);
+    });
+
+    // Debug: log if background layer exists
+    map.on("styledata", () => {
+      const bg = map.getStyle().layers.find(l => l.type === "background");
+      if (bg) {
+        console.log("Background layer found:", bg);
+      }
+    });
+  </script>
+
+</body>
+</html>
