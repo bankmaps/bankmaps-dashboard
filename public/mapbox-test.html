@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BasicBackground Style Test</title>
+
+  <!-- Mapbox GL JS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; font-family: Arial, sans-serif; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    #status {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(255,255,255,0.9);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      z-index: 1000;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="status">Loading style…</div>
+  <div id="map"></div>
+
+  <script>
+    // Your token & style
+    mapboxgl.accessToken = "pk.eyJ1Ijoic3R1YXJ0bWFwcyIsImEiOiJjamNtOTRpaWkwMHFpMnFvMGNlaTBsMzBmIn0.fBYpWRazxS74AaFUWMUpiA";
+    const styleURL = "mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk";
+
+    const status = document.getElementById("status");
+
+    // Create map
+    const map = new mapboxgl.Map({
+      container: "map",
+      style: styleURL,
+      center: [-95, 38.5],
+      zoom: 4,
+      hash: false
+    });
+
+    // Success
+    map.on("load", () => {
+      const styleName = map.getStyle().name || "Unknown";
+      status.innerHTML = `
+        <strong>Style Loaded!</strong><br>
+        <small>Name: <strong>${styleName}</strong></small><br>
+        <small>Zoom in to see layers</small>
+      `;
+      status.style.background = "#d4edda";
+      status.style.color = "#155724";
+    });
+
+    // Any error
+    map.on("error", (e) => {
+      status.innerHTML = `Error: ${e.error?.message || "Failed to load"}
