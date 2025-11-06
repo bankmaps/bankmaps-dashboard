@@ -146,9 +146,9 @@ async function loadCounts(){
   status.textContent = `Loaded ${counts.size} tracts. Coloring…`;
 
   // apply counts via feature-state (id = GEOID because of promoteId)
-  for (const [geoid, value] of counts.entries()) {
+  for (const [GEOID, value] of counts.entries()) {
     map.setFeatureState(
-      { source: t.id, sourceLayer: t.layer, id: geoid },
+      { source: t.id, sourceLayer: t.layer, id: GEOID },
       { value }
     );
   }
