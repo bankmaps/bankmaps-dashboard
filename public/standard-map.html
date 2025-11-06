@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Standard Mapbox Map — Full Roads & Labels</title>
+
+  <!-- Mapbox GL JS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; font-family: sans-serif; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    #status {
+      position: absolute;
+      top: 10px; left: 10px;
+      background: rgba(0,0,0,0.75);
+      color: white;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 1000;
+      max-width: 300px;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="status">Loading standard map…</div>
+  <div id="map"></div>
+
+  <script>
+    // Your public token
+    mapboxgl.accessToken = "pk.eyJ1Ijoic3R1YXJ0bWFwcyIsImEiOiJjamNtOTRpaWkwMHFpMnFvMGNlaTBsMzBmIn0.fBYpWRazxS74AaFUWMUpiA";
+
+    const status = document.getElementById("status");
+
+    // USE MAPBOX'S OFFICIAL STREETS STYLE — ROADS, LABELS, WATER, EVERYTHING
+    const styleURL = "mapbox://styles/mapbox/streets-v12";
+
+    const map = new mapboxgl.Map({
+      container: "map",
+      style: styleURL,
+      center: [-95, 38.5],
+      zoom: 6  // Show features immediately
+    });
+
+    // Add zoom controls
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    map.on("load", () => {
+      status.textContent = "Standard Map Loaded! Roads, cities, and labels are live.";
+      status.style.background = "#1e7e34";
+      status.style.color = "white";
+    });
+
+    map.on("error", (e) => {
+      status.textContent = "Error: " + (e.error?.message || "Unknown");
+      status.style.background = "#dc3545";
+      console.error(e);
+    });
+  </script>
+
+</body>
+</html>
