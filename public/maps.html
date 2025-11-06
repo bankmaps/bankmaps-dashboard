@@ -38,10 +38,7 @@ let map;
 let counts = new Map();
 let currentYear = "2024";
 
-// Background style
 const MAP_STYLE = 'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk';
-
-// Year → tileset mapping (add more years later)
 const TILESETS = {
   "2024": { id: 'tracts2024', url: 'mapbox://stuartmaps.58y5r823', layer: '2024-1pvgy8' }
 };
@@ -78,7 +75,6 @@ async function init(){
   });
   await new Promise(res => map.once('load', res));
 
-  // Brightness slider (optional)
   const slider = document.createElement('input');
   slider.type = 'range'; slider.min = 0; slider.max = 1; slider.step = 0.05; slider.value = 0.8;
   slider.style.position = 'fixed'; slider.style.top = '16px'; slider.style.right = '16px'; slider.style.zIndex = '10';
@@ -92,7 +88,6 @@ async function init(){
     await loadCounts();
   });
 
-  // Lender dropdown
   const dd = document.getElementById('lender');
   const L = await fetch('/api/maps').then(r=>r.json()).catch(()=>({lenders:[]}));
   dd.innerHTML = (L.lenders||[]).map(n=>`<option>${n}</option>`).join('');
@@ -106,7 +101,6 @@ async function updateTileset(){
   const t = TILESETS[currentYear];
   if(!t){ alert(`No tileset defined for year ${currentYear}`); return; }
 
-  // Remove any existing layers/sources
   for (const yr in TILESETS){
     const l = TILESETS[yr];
     if(map.getLayer(l.id+'-fill')) map.removeLayer(l.id+'-fill');
@@ -114,30 +108,25 @@ async function updateTileset(){
     if(map.getSource(l.id)) map.removeSource(l.id);
   }
 
-  // Add current year's vector tiles; promote GEOID as feature id
   map.addSource(t.id, {
     type: 'vector',
     url: t.url,
     promoteId: 'GEOID'
   });
 
-  // Fill layer: filtered by tileset property Year (uppercase)
   map.addLayer({
     id: t.id+'-fill',
     type: 'fill',
     source: t.id,
     'source-layer': t.layer,
-    filter: ['==', ['get', 'Year'], Number(currentYear)],
     paint:{ 'fill-color': colorRampExpr(), 'fill-opacity': 0.75 }
   });
 
-  // Outline layer
   map.addLayer({
     id: t.id+'-outline',
     type: 'line',
     source: t.id,
     'source-layer': t.layer,
-    filter: ['==', ['get', 'Year'], Number(currentYear)],
     paint:{ 'line-color':'#ffffff','line-width':0.3,'line-opacity':0.6 }
   });
 }
@@ -149,16 +138,13 @@ async function loadCounts(){
   if(!t){ status.textContent = `No tileset for ${currentYear}`; return; }
 
   status.textContent = 'Loading counts…';
-  // DB fields: stfid (→ GEOID), datayear
   const res = await fetch(`/api/map-data-tracts?lender=${encodeURIComponent(lender)}&year=${currentYear}`);
   if(!res.ok){ status.textContent = 'Error: '+(await res.text()); return; }
   const data = await res.json();
 
-  // API returns [{ GEOID, count }]
   counts = new Map((data.rows||[]).map(r => [String(r.GEOID), r.count]));
   status.textContent = `Loaded ${counts.size} tracts. Coloring…`;
 
-  // Apply counts via feature-state (id is GEOID due to promoteId)
   for (const [geoid, value] of counts.entries()) {
     map.setFeatureState(
       { source: t.id, sourceLayer: t.layer, id: geoid },
