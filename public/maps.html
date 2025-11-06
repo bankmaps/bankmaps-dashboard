@@ -35,13 +35,13 @@
 
 <script>
 let map;
-let prevGeoids = new Set();
+let prevIds = new Set();
 let currentYear = "2024";
 
-// Use neutral base to guarantee visibility
+// Neutral base to avoid style issues
 const MAP_STYLE = 'mapbox://styles/mapbox/light-v11';
 
-// Tileset config (your IDs)
+// Tileset config (YOUR IDs)
 const TILESETS = {
   "2024": { id: 'tracts2024', url: 'mapbox://stuartmaps.58y5r823', layer: '2024-1pvgy8' }
 };
@@ -87,10 +87,11 @@ function waitForTiles(sourceId){
 async function init(){
   const status = document.getElementById('status');
 
-  // Token
+  // Mapbox token
   const { token } = await fetch('/api/mapbox-token').then(r=>r.json()).catch(()=>({token:''}));
   if(!token || !token.startsWith('pk.')) { status.textContent='Mapbox token missing or invalid.'; return; }
 
+  // Map
   mapboxgl.accessToken = token;
   map = new mapboxgl.Map({
     container:'map',
@@ -101,9 +102,9 @@ async function init(){
   map.addControl(new mapboxgl.NavigationControl(),'top-right');
   map.on('error', e => { status.textContent = 'Map error: ' + (e?.error?.message || JSON.stringify(e)); });
   await new Promise(res => map.once('load', res));
-  status.textContent = 'Base map loaded. Adding tiles…';
+  status.textContent = 'Base map loaded.';
 
-  // Year change
+  // Year change (only one year for now, but wired)
   document.getElementById('year').addEventListener('change', async e => {
     currentYear = e.target.value;
     await updateTileset();
@@ -137,7 +138,7 @@ async function updateTileset(){
   // Add source
   map.addSource(t.id, { type:'vector', url:t.url, promoteId:'GEOID' });
 
-  // Backdrop (faint magenta so you ALWAYS see tracts)
+  // Backdrop so you always see tracts
   map.addLayer({
     id: t.id+'-backdrop',
     type: 'fill',
@@ -146,7 +147,7 @@ async function updateTileset(){
     paint:{ 'fill-color':'#ff00ff', 'fill-opacity':0.12 }
   });
 
-  // Choropleth on top (only tracts with counts)
+  // Choropleth (only features with value)
   map.addLayer({
     id: t.id+'-choropleth',
     type: 'fill',
@@ -175,28 +176,31 @@ async function loadCounts(){
   const t = TILESETS[currentYear];
   if(!t){ status.textContent = `No tileset for ${currentYear}`; return; }
 
-  // API uses DB fields: stfid → GEOID, datayear
+  // Fetch counts from API (DB: stfid → GEOID, datayear)
   const res = await fetch(`/api/map-data-tracts?lender=${encodeURIComponent(lender)}&year=${currentYear}`);
   if(!res.ok){ status.textContent = 'Error: '+(await res.text()); return; }
   const data = await res.json();
-
   const counts = new Map((data.rows||[]).map(r => [String(r.GEOID), r.count]));
-  status.textContent = `Loaded ${counts.size} tracts. Applying colors…`;
 
-  // Ensure tiles are ready
+  status.textContent = `Loaded ${counts.size} tracts. Applying colors…`;
   await waitForTiles(t.id);
 
-  // Clear previous states
-  for (const geoid of prevGeoids) {
-    map.setFeatureState({ source: t.id, sourceLayer: t.layer, id: geoid }, { value: null });
-  }
-  prevGeoids.clear();
+  // Determine if tile feature IDs are numbers or strings
+  const sample = map.querySourceFeatures(t.id, { sourceLayer: t.layer })[0];
+  const idsAreNumbers = sample && typeof sample.id === 'number';
 
-  // Apply new values
+  // Clear previous states
+  for (const oldId of prevIds) {
+    map.setFeatureState({ source: t.id, sourceLayer: t.layer, id: oldId }, { value: null });
+  }
+  prevIds.clear();
+
+  // Apply new values (cast IDs to match tile ID type)
   let applied = 0;
-  for (const [geoid, value] of counts.entries()) {
-    map.setFeatureState({ source: t.id, sourceLayer: t.layer, id: geoid }, { value });
-    prevGeoids.add(geoid);
+  for (const [geoidStr, value] of counts.entries()) {
+    const id = idsAreNumbers ? Number(geoidStr) : String(geoidStr);
+    map.setFeatureState({ source: t.id, sourceLayer: t.layer, id }, { value });
+    prevIds.add(id);
     applied++;
   }
 
