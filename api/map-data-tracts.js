@@ -15,20 +15,20 @@ module.exports = async function handler(req, res) {
     const rows = await query(
       `
       SELECT
-        GEOID AS "GEOID",
+        "GEOID" AS "GEOID",
         COUNT(*)::int AS count
       FROM hmda_test
       WHERE lendername = $1
-        AND Year = $2
-        AND GEOID IS NOT NULL
-        AND GEOID <> ''
-      GROUP BY GEOID
+        AND "Year" = $2
+        AND "GEOID" IS NOT NULL
+        AND "GEOID" <> ''
+      GROUP BY "GEOID"
       ORDER BY count DESC
       `,
       [lender, year]
     );
 
-    res.json({ rows }); // [{ GEOID: '11001006202', count: 37 }, ...]
+    res.json({ rows });
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
