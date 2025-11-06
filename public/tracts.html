@@ -33,7 +33,6 @@ let map;
 let counts = new Map();
 
 function colorRampExpr() {
-  // Color scale based on feature-state value
   return [
     'interpolate', ['linear'], ['coalesce', ['to-number', ['feature-state', 'value']], 0],
     0,  '#f0f4ff',
@@ -57,25 +56,23 @@ async function init(){
   mapboxgl.accessToken = token;
   map = new mapboxgl.Map({
     container:'map',
-    style:'mapbox://styles/mapbox/light-v11',
+    style:'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk', // your custom background
     center:[-98.5,39.8],
     zoom:3.5
   });
   map.addControl(new mapboxgl.NavigationControl(),'top-right');
   await new Promise(res => map.once('load', res));
 
-  // --- Add your 2024 tileset source ---
+  // --- Add your 2024 tileset ---
   map.addSource('tracts2024', {
     type: 'vector',
     url: 'mapbox://stuartmaps.58y5r823'
   });
-
-  // --- Add layers (fill + outline) ---
   map.addLayer({
     id:'tracts-fill',
     type:'fill',
     source:'tracts2024',
-    'source-layer':'2024-1pvgy8',   // your actual layer name
+    'source-layer':'2024-1pvgy8',  // your tileset layer name
     paint:{
       'fill-color': colorRampExpr(),
       'fill-opacity': 0.75
@@ -89,7 +86,24 @@ async function init(){
     paint:{'line-color':'#ffffff','line-width':0.3,'line-opacity':0.6}
   });
 
-  // --- Populate lender dropdown ---
+  // --- Brightness slider ---
+  const slider = document.createElement('input');
+  slider.type = 'range';
+  slider.min = 0;
+  slider.max = 1;
+  slider.step = 0.05;
+  slider.value = 0.8;
+  slider.style.position = 'fixed';
+  slider.style.top = '16px';
+  slider.style.right = '16px';
+  slider.style.zIndex = '10';
+  slider.title = 'Background brightness';
+  document.body.appendChild(slider);
+  slider.oninput = e => {
+    map.setPaintProperty('background', 'background-opacity', parseFloat(e.target.value));
+  };
+
+  // --- Lender dropdown ---
   const dd = document.getElementById('lender');
   const L = await fetch('/api/maps').then(r=>r.json()).catch(()=>({lenders:[]}));
   dd.innerHTML = (L.lenders||[]).map(n=>`<option>${n}</option>`).join('');
@@ -103,10 +117,13 @@ async function loadCounts(){
   const status = document.getElementById('status');
   status.textContent = 'Loading counts…';
 
+  // Use Year=2024 to match your DB + GeoJSON field
   const res = await fetch(`/api/map-data-tracts?lender=${encodeURIComponent(lender)}&year=2024`);
   if(!res.ok){ status.textContent = 'Error: '+(await res.text()); return; }
   const data = await res.json();
-  counts = new Map((data.rows||[]).map(r => [String(r.geoid), r.count]));
+
+  // Expect GEOID instead of geoid
+  counts = new Map((data.rows||[]).map(r => [String(r.geoid || r.GEOID), r.count]));
 
   status.textContent = `Loaded ${counts.size} tracts. Coloring…`;
   applyCounts();
@@ -114,7 +131,6 @@ async function loadCounts(){
 }
 
 function applyCounts(){
-  // Apply counts to map features via feature-state
   for (const [geoid, value] of counts.entries()) {
     map.setFeatureState(
       { source: 'tracts2024', sourceLayer: '2024-1pvgy8', id: geoid },
