@@ -6,9 +6,9 @@
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <style>
-  html,body{height:100%;margin:0}
+  html,body,#map{height:100%;margin:0}
   body{font-family:Arial,sans-serif;background:#f6f8fb}
-  #map{position:fixed;inset:0;width:100vw;height:100vh}
+  #map{width:100%}
   aside{
     position:fixed;top:16px;left:16px;z-index:2;background:#fff;
     padding:12px 14px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.08);
@@ -38,16 +38,16 @@ let map;
 let prevGeoids = new Set();
 let currentYear = "2024";
 
-// Background style (your custom style)
-const MAP_STYLE = 'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk';
+// Use neutral base to guarantee visibility
+const MAP_STYLE = 'mapbox://styles/mapbox/light-v11';
 
-// Year → tileset mapping (add more years as needed)
+// Tileset config (your IDs)
 const TILESETS = {
   "2024": { id: 'tracts2024', url: 'mapbox://stuartmaps.58y5r823', layer: '2024-1pvgy8' }
 };
 
-// Choropleth color ramp (uses feature-state "value")
-function fillPaint() {
+// Choropleth paint (only tracts with counts are opaque)
+function choroplethPaint(){
   return {
     'fill-color': [
       'case',
@@ -70,8 +70,8 @@ function fillPaint() {
   };
 }
 
-// Wait until the vector source is fully ready
-function waitForTiles(sourceId) {
+// Wait until a vector source is fully ready
+function waitForTiles(sourceId){
   return new Promise((resolve) => {
     if (map.isSourceLoaded(sourceId)) return resolve();
     const onData = (e) => {
@@ -87,11 +87,10 @@ function waitForTiles(sourceId) {
 async function init(){
   const status = document.getElementById('status');
 
-  // Mapbox token
+  // Token
   const { token } = await fetch('/api/mapbox-token').then(r=>r.json()).catch(()=>({token:''}));
   if(!token || !token.startsWith('pk.')) { status.textContent='Mapbox token missing or invalid.'; return; }
 
-  // Map
   mapboxgl.accessToken = token;
   map = new mapboxgl.Map({
     container:'map',
@@ -102,14 +101,7 @@ async function init(){
   map.addControl(new mapboxgl.NavigationControl(),'top-right');
   map.on('error', e => { status.textContent = 'Map error: ' + (e?.error?.message || JSON.stringify(e)); });
   await new Promise(res => map.once('load', res));
-
-  // Optional background brightness slider
-  const slider = document.createElement('input');
-  slider.type = 'range'; slider.min = 0; slider.max = 1; slider.step = 0.05; slider.value = 0.8;
-  slider.style.position = 'fixed'; slider.style.top = '16px'; slider.style.right = '16px'; slider.style.zIndex = '10';
-  slider.title = 'Background brightness';
-  document.body.appendChild(slider);
-  slider.oninput = e => map.setPaintProperty('background', 'background-opacity', parseFloat(e.target.value));
+  status.textContent = 'Base map loaded. Adding tiles…';
 
   // Year change
   document.getElementById('year').addEventListener('change', async e => {
@@ -130,34 +122,51 @@ async function init(){
 
 async function updateTileset(){
   const t = TILESETS[currentYear];
-  if(!t){ alert(`No tileset defined for year ${currentYear}`); return; }
+  const status = document.getElementById('status');
+  if(!t){ status.textContent = `No tileset for ${currentYear}`; return; }
 
   // Remove existing
   for (const yr in TILESETS){
     const l = TILESETS[yr];
-    if(map.getLayer(l.id+'-fill')) map.removeLayer(l.id+'-fill');
+    if(map.getLayer(l.id+'-choropleth')) map.removeLayer(l.id+'-choropleth');
+    if(map.getLayer(l.id+'-backdrop')) map.removeLayer(l.id+'-backdrop');
     if(map.getLayer(l.id+'-outline')) map.removeLayer(l.id+'-outline');
     if(map.getSource(l.id)) map.removeSource(l.id);
   }
 
-  // Add tileset (promote GEOID as feature id)
-  map.addSource(t.id, { type: 'vector', url: t.url, promoteId: 'GEOID' });
+  // Add source
+  map.addSource(t.id, { type:'vector', url:t.url, promoteId:'GEOID' });
 
+  // Backdrop (faint magenta so you ALWAYS see tracts)
   map.addLayer({
-    id: t.id+'-fill',
+    id: t.id+'-backdrop',
     type: 'fill',
     source: t.id,
     'source-layer': t.layer,
-    paint: fillPaint()
+    paint:{ 'fill-color':'#ff00ff', 'fill-opacity':0.12 }
   });
 
+  // Choropleth on top (only tracts with counts)
+  map.addLayer({
+    id: t.id+'-choropleth',
+    type: 'fill',
+    source: t.id,
+    'source-layer': t.layer,
+    paint: choroplethPaint()
+  });
+
+  // Outline
   map.addLayer({
     id: t.id+'-outline',
     type: 'line',
     source: t.id,
     'source-layer': t.layer,
-    paint:{ 'line-color':'#ffffff','line-width':0.3,'line-opacity':0.6 }
+    paint:{ 'line-color':'#000','line-width':0.8,'line-opacity':0.6 }
   });
+
+  await waitForTiles(t.id);
+  const rendered = map.queryRenderedFeatures({ layers:[t.id+'-backdrop'] }).length;
+  status.textContent = `Tiles ready. Tracts on screen: ${rendered}. Loading counts…`;
 }
 
 async function loadCounts(){
@@ -166,18 +175,18 @@ async function loadCounts(){
   const t = TILESETS[currentYear];
   if(!t){ status.textContent = `No tileset for ${currentYear}`; return; }
 
-  status.textContent = 'Loading counts…';
   // API uses DB fields: stfid → GEOID, datayear
   const res = await fetch(`/api/map-data-tracts?lender=${encodeURIComponent(lender)}&year=${currentYear}`);
   if(!res.ok){ status.textContent = 'Error: '+(await res.text()); return; }
   const data = await res.json();
 
   const counts = new Map((data.rows||[]).map(r => [String(r.GEOID), r.count]));
+  status.textContent = `Loaded ${counts.size} tracts. Applying colors…`;
 
-  status.textContent = `Loaded ${counts.size} tracts. Waiting for tiles…`;
+  // Ensure tiles are ready
   await waitForTiles(t.id);
 
-  // Clear previous feature-state values
+  // Clear previous states
   for (const geoid of prevGeoids) {
     map.setFeatureState({ source: t.id, sourceLayer: t.layer, id: geoid }, { value: null });
   }
@@ -186,10 +195,7 @@ async function loadCounts(){
   // Apply new values
   let applied = 0;
   for (const [geoid, value] of counts.entries()) {
-    map.setFeatureState(
-      { source: t.id, sourceLayer: t.layer, id: geoid },
-      { value }
-    );
+    map.setFeatureState({ source: t.id, sourceLayer: t.layer, id: geoid }, { value });
     prevGeoids.add(geoid);
     applied++;
   }
