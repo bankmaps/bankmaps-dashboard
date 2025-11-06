@@ -16,61 +16,76 @@
     #status {
       position: absolute;
       top: 10px; left: 10px;
-      background: rgba(255,255,255,0.9);
-      padding: 8px 12px;
-      border-radius: 6px;
+      background: rgba(255,255,255,0.95);
+      padding: 10px 14px;
+      border-radius: 8px;
       font-size: 14px;
       z-index: 1000;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      max-width: 300px;
     }
   </style>
 </head>
 <body>
 
-  <div id="status">Loading style…</div>
+  <div id="status">Loading your style…</div>
   <div id="map"></div>
 
   <script>
-    // Your token & style
+    // Your Mapbox public token
     mapboxgl.accessToken = "pk.eyJ1Ijoic3R1YXJ0bWFwcyIsImEiOiJjamNtOTRpaWkwMHFpMnFvMGNlaTBsMzBmIn0.fBYpWRazxS74AaFUWMUpiA";
+
+    // Your custom style
     const styleURL = "mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk";
 
     const status = document.getElementById("status");
 
-    // Create map
+    // Create the map
     const map = new mapboxgl.Map({
       container: "map",
       style: styleURL,
-      center: [-95, 38.5],
-      zoom: 4,
-      hash: false
+      center: [-95, 38.5],  // Center of USA
+      zoom: 4               // Start zoomed out
     });
 
-    // Success
+    // Add zoom & pan controls (top-right)
+    map.addControl(new mapboxgl.NavigationControl());
+
+    // When style fully loads
     map.on("load", () => {
       const styleName = map.getStyle().name || "Unknown";
       status.innerHTML = `
         <strong>Style Loaded!</strong><br>
         <small>Name: <strong>${styleName}</strong></small><br>
-        <small>Zoom in to see layers</small>
+        <small>Use + / - to zoom in and see roads & labels</small>
       `;
       status.style.background = "#d4edda";
       status.style.color = "#155724";
+      status.style.border = "1px solid #c3e6cb";
+
+      // Optional: Auto-zoom to show content
+      setTimeout(() => {
+        map.easeTo({ zoom: 6, duration: 2000 });
+      }, 1500);
     });
 
-    // Any error
+    // Catch any errors
     map.on("error", (e) => {
-      status.innerHTML = `Error: ${e.error?.message || "Failed to load"}`;
+      status.innerHTML = `
+        <strong>Error</strong><br>
+        <small>${e.error?.message || "Unknown error"}</small>
+      `;
       status.style.background = "#f8d7da";
       status.style.color = "#721c24";
       console.error("Mapbox error:", e);
     });
 
-    // Debug: log if background layer exists
+    // Debug: Show background color
     map.on("styledata", () => {
-      const bg = map.getStyle().layers.find(l => l.type === "background");
-      if (bg) {
-        console.log("Background layer found:", bg);
+      const bgLayer = map.getStyle().layers.find(l => l.type === "background");
+      if (bgLayer) {
+        const color = bgLayer.paint["background-color"];
+        console.log("Background color:", color);
       }
     });
   </script>
