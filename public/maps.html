@@ -36,13 +36,18 @@
 <script>
 let map;
 let counts = new Map();
+let prevGeoids = new Set();   // to clear previous feature-state safely
 let currentYear = "2024";
 
+// Background style
 const MAP_STYLE = 'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk';
+
+// Year → tileset mapping
 const TILESETS = {
   "2024": { id: 'tracts2024', url: 'mapbox://stuartmaps.58y5r823', layer: '2024-1pvgy8' }
 };
 
+// Choropleth ramp (feature-state 'value')
 function colorRampExpr() {
   return [
     'interpolate', ['linear'], ['coalesce', ['to-number', ['feature-state', 'value']], 0],
@@ -54,6 +59,20 @@ function colorRampExpr() {
     250,'#174db6',
     500,'#0b3366'
   ];
+}
+
+// Wait until vector tiles for a source are fully available
+function waitForTiles(sourceId) {
+  return new Promise((resolve) => {
+    if (map.isSourceLoaded(sourceId)) return resolve();
+    const onData = (e) => {
+      if (e.sourceId === sourceId && map.isSourceLoaded(sourceId)) {
+        map.off('sourcedata', onData);
+        resolve();
+      }
+    };
+    map.on('sourcedata', onData);
+  });
 }
 
 async function init(){
@@ -70,11 +89,11 @@ async function init(){
   });
   map.addControl(new mapboxgl.NavigationControl(),'top-right');
   map.on('error', e => {
-    const s = document.getElementById('status');
-    s.textContent = 'Map error: ' + (e && e.error && e.error.message ? e.error.message : JSON.stringify(e));
+    status.textContent = 'Map error: ' + (e?.error?.message || JSON.stringify(e));
   });
   await new Promise(res => map.once('load', res));
 
+  // Optional background brightness
   const slider = document.createElement('input');
   slider.type = 'range'; slider.min = 0; slider.max = 1; slider.step = 0.05; slider.value = 0.8;
   slider.style.position = 'fixed'; slider.style.top = '16px'; slider.style.right = '16px'; slider.style.zIndex = '10';
@@ -88,6 +107,7 @@ async function init(){
     await loadCounts();
   });
 
+  // Lender dropdown
   const dd = document.getElementById('lender');
   const L = await fetch('/api/maps').then(r=>r.json()).catch(()=>({lenders:[]}));
   dd.innerHTML = (L.lenders||[]).map(n=>`<option>${n}</option>`).join('');
@@ -101,6 +121,7 @@ async function updateTileset(){
   const t = TILESETS[currentYear];
   if(!t){ alert(`No tileset defined for year ${currentYear}`); return; }
 
+  // Remove any existing layers/sources
   for (const yr in TILESETS){
     const l = TILESETS[yr];
     if(map.getLayer(l.id+'-fill')) map.removeLayer(l.id+'-fill');
@@ -108,12 +129,14 @@ async function updateTileset(){
     if(map.getSource(l.id)) map.removeSource(l.id);
   }
 
+  // Add current year's vector tiles; promote GEOID as feature id
   map.addSource(t.id, {
     type: 'vector',
     url: t.url,
     promoteId: 'GEOID'
   });
 
+  // Fill + outline (no Year filter — API filters by datayear)
   map.addLayer({
     id: t.id+'-fill',
     type: 'fill',
@@ -138,21 +161,35 @@ async function loadCounts(){
   if(!t){ status.textContent = `No tileset for ${currentYear}`; return; }
 
   status.textContent = 'Loading counts…';
+  // DB fields: stfid (→ GEOID), datayear
   const res = await fetch(`/api/map-data-tracts?lender=${encodeURIComponent(lender)}&year=${currentYear}`);
   if(!res.ok){ status.textContent = 'Error: '+(await res.text()); return; }
   const data = await res.json();
 
   counts = new Map((data.rows||[]).map(r => [String(r.GEOID), r.count]));
-  status.textContent = `Loaded ${counts.size} tracts. Coloring…`;
+  status.textContent = `Loaded ${counts.size} tracts. Waiting for tiles…`;
 
+  // Ensure tiles are ready before applying feature-state
+  await waitForTiles(t.id);
+
+  // Clear previous states
+  for (const geoid of prevGeoids) {
+    map.setFeatureState({ source: t.id, sourceLayer: t.layer, id: geoid }, { value: null });
+  }
+  prevGeoids.clear();
+
+  // Apply new counts
+  let applied = 0;
   for (const [geoid, value] of counts.entries()) {
     map.setFeatureState(
       { source: t.id, sourceLayer: t.layer, id: geoid },
       { value }
     );
+    prevGeoids.add(geoid);
+    applied++;
   }
 
-  status.textContent = '';
+  status.textContent = `Colored ${applied} tracts.`;
 }
 
 init();
