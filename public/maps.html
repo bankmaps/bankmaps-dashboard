@@ -39,7 +39,10 @@ let map;
 let prevIds = new Set();
 let currentYear = "2024";
 
+// ✅ Your custom Mapbox style:
 const MAP_STYLE = 'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk';
+
+// ✅ Your existing tileset info:
 const TILESETS = {
   "2024": { id: 'tracts2024', url: 'mapbox://stuartmaps.58y5r823', layer: '2024-1pvgy8' }
 };
@@ -73,8 +76,8 @@ async function init(){
   mapboxgl.accessToken = token;
   map = new mapboxgl.Map({
     container:'map',
-    style: MAP_STYLE,
-    center:[-95, 38.5], // ensures the map shows immediately on page load
+    style: MAP_STYLE, // ✅ your background style
+    center:[-95, 38.5],
     zoom:4.2
   });
   map.addControl(new mapboxgl.NavigationControl(),'top-right');
@@ -82,7 +85,7 @@ async function init(){
   await new Promise(res => map.once('load', res));
   status.textContent = 'Map ready.';
 
-  // Restore previously selected lender (if any)
+  // Restore previously selected lender
   const savedLender = localStorage.getItem('selectedLender');
 
   // Populate lenders
@@ -134,7 +137,7 @@ async function updateTileset(){
     alert(`GEOID: ${f.properties.GEOID}\nValue(state): ${JSON.stringify(st)}`);
   });
 
-  // Ensure it’s immediately visible
+  // Ensure the map is visible immediately
   map.resize();
   map.triggerRepaint();
   status.textContent = 'Tileset loaded.';
