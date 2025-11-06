@@ -1,56 +1,39 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mapbox Style Test</title>
-<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
-<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-<style>
-  html, body { margin:0; padding:0; height:100%; }
-  #map { width:100%; height:100%; }
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mapbox Style Test</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <style>html,body,#map{height:100%;margin:0}</style>
 </head>
 <body>
+  <div id="map"></div>
+  <script>
+    (async () => {
+      // QUICK TEST: hardcode a pk token here if you prefer
+      // const token = 'pk.xxxxx';  // remove after testing
+      // Or use your API:
+      const { token } = await fetch('/api/mapbox-token').then(r=>r.json()).catch(()=>({token:''}));
+      if(!token || !token.startsWith('pk.')) { alert('Missing/invalid Mapbox token'); return; }
 
-<div id="map"></div>
+      mapboxgl.accessToken = token;
+      const styleURL = 'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk';
 
-<script>
-(async () => {
-  // fetch token from your API (you can also hardcode it temporarily)
-  const { token } = await fetch('/api/mapbox-token')
-    .then(r => r.json())
-    .catch(() => ({ token: '' }));
+      const map = new mapboxgl.Map({
+        container: 'map',
+        style: styleURL,
+        center: [-95, 38.5],
+        zoom: 4
+      });
 
-  if (!token || !token.startsWith('pk.')) {
-    alert('Invalid or missing Mapbox token.');
-    return;
-  }
-
-  mapboxgl.accessToken = token;
-
-  // ✅ use your exact style ID
-  const styleURL = 'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk';
-
-  const map = new mapboxgl.Map({
-    container: 'map',
-    style: styleURL,
-    center: [-95, 38.5],
-    zoom: 4
-  });
-
-  map.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-  map.on('load', () => {
-    console.log('✅ Map style loaded successfully');
-  });
-
-  map.on('error', (e) => {
-    console.error('❌ Mapbox error', e.error);
-    alert('Mapbox error: ' + (e?.error?.message || JSON.stringify(e)));
-  });
-})();
-</script>
-
+      map.on('load', () => console.log('STYLE LOADED'));
+      map.on('error', (e) => {
+        console.error(e.error);
+        alert('Mapbox error: ' + (e?.error?.message || JSON.stringify(e)));
+      });
+    })();
+  </script>
 </body>
 </html>
