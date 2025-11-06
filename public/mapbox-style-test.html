@@ -47,7 +47,21 @@
     mapboxgl.accessToken = "pk.eyJ1Ijoic3R1YXJ0bWFwcyIsImEiOiJjamNtOTRpaWkwMHFpMnFvMGNlaTBsMzBmIn0.fBYpWRazxS74AaFUWMUpiA";
 
     // ✅ Your green "BasicBackground" style ID
-    const styleURL = "mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk";
+    const styleURL = {
+ version: 8,
+ name: "BasicBackground",
+ sources: {},
+ layers: [
+ {
+ id: "base-fill",
+ type: "background",
+ paint: {
+ "background-color": "#e6f3e6" // Your exact color
+ }
+ }
+ ]
+};
+51";
 
     const status = document.getElementById("status");
 
