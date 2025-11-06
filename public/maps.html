@@ -38,15 +38,15 @@ let map;
 let prevIds = new Set();
 let currentYear = "2024";
 
-// Neutral base to avoid style issues
+// Neutral basemap (stable)
 const MAP_STYLE = 'mapbox://styles/mapbox/light-v11';
 
-// Tileset config (YOUR IDs)
+// Your tileset config
 const TILESETS = {
   "2024": { id: 'tracts2024', url: 'mapbox://stuartmaps.58y5r823', layer: '2024-1pvgy8' }
 };
 
-// Choropleth paint (only tracts with counts are opaque)
+// Choropleth paint (only tracts with counts are visible/opaque)
 function choroplethPaint(){
   return {
     'fill-color': [
@@ -65,7 +65,7 @@ function choroplethPaint(){
     ],
     'fill-opacity': [
       'case',
-      ['has', 'value', ['feature-state']], 0.85, 0
+      ['has', 'value', ['feature-state']], 0.9, 0
     ]
   };
 }
@@ -87,7 +87,7 @@ function waitForTiles(sourceId){
 async function init(){
   const status = document.getElementById('status');
 
-  // Mapbox token
+  // Token
   const { token } = await fetch('/api/mapbox-token').then(r=>r.json()).catch(()=>({token:''}));
   if(!token || !token.startsWith('pk.')) { status.textContent='Mapbox token missing or invalid.'; return; }
 
@@ -104,7 +104,7 @@ async function init(){
   await new Promise(res => map.once('load', res));
   status.textContent = 'Base map loaded.';
 
-  // Year change (only one year for now, but wired)
+  // Year change
   document.getElementById('year').addEventListener('change', async e => {
     currentYear = e.target.value;
     await updateTileset();
@@ -138,7 +138,7 @@ async function updateTileset(){
   // Add source
   map.addSource(t.id, { type:'vector', url:t.url, promoteId:'GEOID' });
 
-  // Backdrop so you always see tracts
+  // Backdrop so tracts are always visible
   map.addLayer({
     id: t.id+'-backdrop',
     type: 'fill',
@@ -168,6 +168,16 @@ async function updateTileset(){
   await waitForTiles(t.id);
   const rendered = map.queryRenderedFeatures({ layers:[t.id+'-backdrop'] }).length;
   status.textContent = `Tiles ready. Tracts on screen: ${rendered}. Loading counts…`;
+
+  // Click probe (on both layers)
+  map.on('click', t.id+'-backdrop', (e) => {
+    const f = e.features && e.features[0];
+    if (f) alert('feature.id: '+f.id+' (type '+typeof f.id+')\nGEOID prop: '+f.properties?.GEOID);
+  });
+  map.on('click', t.id+'-choropleth', (e) => {
+    const f = e.features && e.features[0];
+    if (f) alert('feature.id: '+f.id+' (type '+typeof f.id+')\nGEOID prop: '+f.properties?.GEOID+'\nvalue(state): '+JSON.stringify(map.getFeatureState({source:t.id, sourceLayer:t.layer, id:f.id})));
+  });
 }
 
 async function loadCounts(){
@@ -176,7 +186,7 @@ async function loadCounts(){
   const t = TILESETS[currentYear];
   if(!t){ status.textContent = `No tileset for ${currentYear}`; return; }
 
-  // Fetch counts from API (DB: stfid → GEOID, datayear)
+  // Fetch counts (DB: stfid → GEOID, datayear)
   const res = await fetch(`/api/map-data-tracts?lender=${encodeURIComponent(lender)}&year=${currentYear}`);
   if(!res.ok){ status.textContent = 'Error: '+(await res.text()); return; }
   const data = await res.json();
@@ -185,7 +195,7 @@ async function loadCounts(){
   status.textContent = `Loaded ${counts.size} tracts. Applying colors…`;
   await waitForTiles(t.id);
 
-  // Determine if tile feature IDs are numbers or strings
+  // Detect id type from a sample feature (if available)
   const sample = map.querySourceFeatures(t.id, { sourceLayer: t.layer })[0];
   const idsAreNumbers = sample && typeof sample.id === 'number';
 
@@ -195,12 +205,22 @@ async function loadCounts(){
   }
   prevIds.clear();
 
-  // Apply new values (cast IDs to match tile ID type)
+  // Apply new values — cast BOTH ways to be safe (string & number)
   let applied = 0;
   for (const [geoidStr, value] of counts.entries()) {
-    const id = idsAreNumbers ? Number(geoidStr) : String(geoidStr);
-    map.setFeatureState({ source: t.id, sourceLayer: t.layer, id }, { value });
-    prevIds.add(id);
+    const asString = String(geoidStr);
+    const asNumber = Number(geoidStr);
+
+    // primary (based on detected type)
+    const primaryId = idsAreNumbers ? asNumber : asString;
+    map.setFeatureState({ source: t.id, sourceLayer: t.layer, id: primaryId }, { value });
+
+    // secondary (opposite type) — harmless if it doesn't exist
+    const secondaryId = idsAreNumbers ? asString : asNumber;
+    map.setFeatureState({ source: t.id, sourceLayer: t.layer, id: secondaryId }, { value });
+
+    prevIds.add(primaryId);
+    prevIds.add(secondaryId);
     applied++;
   }
 
