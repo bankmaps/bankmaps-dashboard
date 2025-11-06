@@ -3,76 +3,63 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mapbox Tileset Test (diagnostic)</title>
+<title>Mapbox Style Test (identify style)</title>
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <style>
   html,body {height:100%;margin:0}
   #top {position:fixed;z-index:2;top:8px;left:8px;background:#fff;padding:8px 10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12);font:13px system-ui,Arial}
   #map {position:absolute;inset:0}
+  code{background:#f3f3f3;padding:1px 4px;border-radius:4px}
 </style>
 </head>
 <body>
-<div id="top"><strong>Status:</strong> <span id="s">Starting…</span></div>
+<div id="top">
+  <div><strong>Status:</strong> <span id="s">Starting…</span></div>
+  <div><small>Using style: <code id="styleUrl"></code></small></div>
+  <div><small>Loaded style name: <code id="styleName">—</code></small></div>
+</div>
 <div id="map"></div>
 
 <script>
 (async () => {
-  const s = (t) => document.getElementById('s').textContent = t;
+  const set = (id,t) => document.getElementById(id).textContent = t;
 
-  // Token
+  // 1) Your intended style ID — if this isn’t the colorful one, paste the correct one here.
+  const STYLE_ID = 'cmhmpa5i4000s01ql6lrwh3tk'; // <- paste the EXACT ID of your colorful style
+  const STYLE_URL = `mapbox://styles/stuartmaps/${STYLE_ID}`;
+  set('styleUrl', STYLE_URL);
+
+  // 2) Token
   let token = '';
   try { token = (await fetch('/api/mapbox-token').then(r=>r.json())).token || ''; } catch {}
-  if (!token || !token.startsWith('pk.')) { s('Missing/invalid Mapbox token'); alert('Missing/invalid Mapbox token'); return; }
+  if (!token || !token.startsWith('pk.')) { set('s','Missing/invalid Mapbox token'); alert('Missing/invalid Mapbox token'); return; }
   mapboxgl.accessToken = token;
 
-  // Your style + tileset info
-  const STYLE = 'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk';
-  const SRC_ID = 'tracts2024';
-  const SRC_URL = 'mapbox://stuartmaps.58y5r823';
-  const LAYER = '2024-1pvgy8';
+  // 3) Fetch style JSON first so we can read its name
+  set('s','Fetching style JSON…');
+  const apiURL = `https://api.mapbox.com/styles/v1/stuartmaps/${STYLE_ID}?access_token=${encodeURIComponent(token)}`;
+  const r = await fetch(apiURL, { cache:'no-store' });
+  if (!r.ok) {
+    const body = await r.text();
+    set('s', `Fetch failed (HTTP ${r.status})`);
+    alert(`Failed to fetch style JSON (HTTP ${r.status}). Body:\n${body}`);
+    return;
+  }
+  const styleJson = await r.json();
+  set('styleName', styleJson.name || '(no name)');
+  set('s','Applying style…');
 
-  const map = new mapboxgl.Map({ container:'map', style:STYLE, center:[-95,38.5], zoom:4 });
+  // 4) Render it
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: STYLE_URL,
+    center: [-95, 38.5],
+    zoom: 4
+  });
   map.addControl(new mapboxgl.NavigationControl(),'top-right');
-
-  map.on('error', (e) => {
-    console.error('Mapbox error:', e && e.error);
-    alert('Mapbox error: ' + (e?.error?.message || JSON.stringify(e)));
-  });
-
-  await new Promise(res => map.once('styledata', res));
-  await new Promise(res => map.once('idle', res));
-  s('Style ready — adding source/layers…');
-
-  // Add vector source and flat fill to prove rendering
-  map.addSource(SRC_ID, { type:'vector', url:SRC_URL });
-  map.addLayer({
-    id: SRC_ID + '-testfill',
-    type: 'fill',
-    source: SRC_ID,
-    'source-layer': LAYER,
-    paint: { 'fill-color': '#a855f7', 'fill-opacity': 0.25 }
-  });
-  map.addLayer({
-    id: SRC_ID + '-outline',
-    type: 'line',
-    source: SRC_ID,
-    'source-layer': LAYER,
-    paint: { 'line-color': '#000', 'line-width': 0.3, 'line-opacity': 0.4 }
-  });
-
-  // Count rendered features after a tick
-  setTimeout(() => {
-    const feats = map.queryRenderedFeatures({ layers:[SRC_ID + '-testfill'] });
-    s(`Rendered features: ${feats.length}. Click a tract to inspect.`);
-  }, 600);
-
-  // Click to inspect a feature’s properties
-  map.on('click', SRC_ID + '-testfill', (e) => {
-    const f = e.features && e.features[0];
-    if (!f) return;
-    alert(`feature.id: ${f.id}\nGEOID prop: ${f.properties?.GEOID}`);
-  });
+  await new Promise(res => map.once('load', res));
+  set('s','Custom style applied ✅');
 })();
 </script>
 </body>
