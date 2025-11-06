@@ -1,66 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mapbox Style Test (identify style)</title>
-<link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-<script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
-<style>
-  html,body {height:100%;margin:0}
-  #top {position:fixed;z-index:2;top:8px;left:8px;background:#fff;padding:8px 10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12);font:13px system-ui,Arial}
-  #map {position:absolute;inset:0}
-  code{background:#f3f3f3;padding:1px 4px;border-radius:4px}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BankMaps • Background Style Test</title>
+
+  <!-- Mapbox CSS & JS -->
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: #eaeaea;
+      font-family: Arial, sans-serif;
+    }
+    #map {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+    }
+    #status {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 10;
+      background: rgba(255,255,255,0.9);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+  </style>
 </head>
+
 <body>
-<div id="top">
-  <div><strong>Status:</strong> <span id="s">Starting…</span></div>
-  <div><small>Using style: <code id="styleUrl"></code></small></div>
-  <div><small>Loaded style name: <code id="styleName">—</code></small></div>
-</div>
-<div id="map"></div>
+  <div id="status">Loading Mapbox style…</div>
+  <div id="map"></div>
 
-<script>
-(async () => {
-  const set = (id,t) => document.getElementById(id).textContent = t;
+  <script>
+    // ✅ Your PUBLIC Mapbox token (visible from earlier)
+    mapboxgl.accessToken = "pk.eyJ1Ijoic3R1YXJ0bWFwcyIsImEiOiJjamNtOTRpaWkwMHFpMnFvMGNlaTBsMzBmIn0.fBYpWRazxS74AaFUWMUpiA";
 
-  // 1) Your intended style ID — if this isn’t the colorful one, paste the correct one here.
-  const STYLE_ID = 'cmhmpa5i4000s01ql6lrwh3tk'; // <- paste the EXACT ID of your colorful style
-  const STYLE_URL = `mapbox://styles/stuartmaps/${STYLE_ID}`;
-  set('styleUrl', STYLE_URL);
+    // ✅ Your green "BasicBackground" style ID
+    const styleURL = "mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk";
 
-  // 2) Token
-  let token = '';
-  try { token = (await fetch('/api/mapbox-token').then(r=>r.json())).token || ''; } catch {}
-  if (!token || !token.startsWith('pk.')) { set('s','Missing/invalid Mapbox token'); alert('Missing/invalid Mapbox token'); return; }
-  mapboxgl.accessToken = token;
+    const status = document.getElementById("status");
 
-  // 3) Fetch style JSON first so we can read its name
-  set('s','Fetching style JSON…');
-  const apiURL = `https://api.mapbox.com/styles/v1/stuartmaps/${STYLE_ID}?access_token=${encodeURIComponent(token)}`;
-  const r = await fetch(apiURL, { cache:'no-store' });
-  if (!r.ok) {
-    const body = await r.text();
-    set('s', `Fetch failed (HTTP ${r.status})`);
-    alert(`Failed to fetch style JSON (HTTP ${r.status}). Body:\n${body}`);
-    return;
-  }
-  const styleJson = await r.json();
-  set('styleName', styleJson.name || '(no name)');
-  set('s','Applying style…');
+    // Create the map
+    const map = new mapboxgl.Map({
+      container: "map",
+      style: styleURL,
+      center: [-95, 38.5],  // USA center
+      zoom: 4
+    });
 
-  // 4) Render it
-  const map = new mapboxgl.Map({
-    container: 'map',
-    style: STYLE_URL,
-    center: [-95, 38.5],
-    zoom: 4
-  });
-  map.addControl(new mapboxgl.NavigationControl(),'top-right');
-  await new Promise(res => map.once('load', res));
-  set('s','Custom style applied ✅');
-})();
-</script>
+    map.on("load", () => {
+      status.textContent = "✅ Style loaded successfully.";
+    });
+
+    map.on("error", (e) => {
+      console.error("Mapbox error:", e);
+      status.textContent = "❌ Error loading style: " + (e.error?.message || "Unknown error");
+    });
+  </script>
 </body>
 </html>
