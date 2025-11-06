@@ -3,90 +3,75 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Mapbox Style Test (diagnostic)</title>
+<title>Mapbox Tileset Test (diagnostic)</title>
 <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
 <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
 <style>
   html,body {height:100%;margin:0}
-  #top {position:fixed;z-index:2;top:8px;left:8px;background:#fff;padding:8px 10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12);font:13px/1.4 system-ui,Arial}
+  #top {position:fixed;z-index:2;top:8px;left:8px;background:#fff;padding:8px 10px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.12);font:13px system-ui,Arial}
   #map {position:absolute;inset:0}
-  code{background:#f3f3f3;padding:1px 4px;border-radius:4px}
 </style>
 </head>
 <body>
-<div id="top">
-  <div><strong>Status:</strong> <span id="s">Starting…</span></div>
-  <div><small>Style: <code id="styleTxt">mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk</code></small></div>
-</div>
+<div id="top"><strong>Status:</strong> <span id="s">Starting…</span></div>
 <div id="map"></div>
 
 <script>
 (async () => {
   const s = (t) => document.getElementById('s').textContent = t;
 
-  // 1) Get token (or hardcode a known-good pk for this test)
+  // Token
   let token = '';
-  try {
-    const j = await fetch('/api/mapbox-token').then(r => r.json());
-    token = j.token || '';
-  } catch(e) {}
-  // --- TEMP: uncomment to hardcode a pk token you know works, then test:
-  // token = 'pk.REPLACE_ME';
-
-  if (!token || !token.startsWith('pk.')) {
-    s('Missing/invalid Mapbox token');
-    alert('Missing/invalid Mapbox token');
-    return;
-  }
+  try { token = (await fetch('/api/mapbox-token').then(r=>r.json())).token || ''; } catch {}
+  if (!token || !token.startsWith('pk.')) { s('Missing/invalid Mapbox token'); alert('Missing/invalid Mapbox token'); return; }
   mapboxgl.accessToken = token;
 
-  // 2) Control test: render default style (should ALWAYS show)
-  s('Rendering control style (light-v11)…');
-  const map = new mapboxgl.Map({
-    container: 'map',
-    style: 'mapbox://styles/mapbox/light-v11',
-    center: [-95, 38.5],
-    zoom: 4
-  });
-  map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+  // Your style + tileset info
+  const STYLE = 'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk';
+  const SRC_ID = 'tracts2024';
+  const SRC_URL = 'mapbox://stuartmaps.58y5r823';
+  const LAYER = '2024-1pvgy8';
 
-  await new Promise(res => map.once('load', res));
-  s('Control style loaded ✅ — trying your custom style next…');
+  const map = new mapboxgl.Map({ container:'map', style:STYLE, center:[-95,38.5], zoom:4 });
+  map.addControl(new mapboxgl.NavigationControl(),'top-right');
 
-  // 3) Try your custom style; fetch the style JSON first so we can see HTTP status
-  const styleURL = 'https://api.mapbox.com/styles/v1/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk?access_token=' + encodeURIComponent(token);
-
-  let ok = false, status = 0, text = '';
-  try {
-    const r = await fetch(styleURL, { cache: 'no-store' });
-    status = r.status;
-    if (!r.ok) {
-      text = await r.text();
-      s(`Custom style fetch failed ❌ HTTP ${status}`);
-      alert(`Custom style fetch failed (HTTP ${status}). Body:\n${text}`);
-    } else {
-      ok = true;
-      s('Custom style JSON fetched ✅ — applying style…');
-    }
-  } catch (e) {
-    s('Custom style fetch threw an error ❌');
-    alert('Custom style fetch error: ' + e.message);
-  }
-
-  if (!ok) return;
-
-  // 4) Apply your custom style
-  map.setStyle('mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk');
-
-  // Wait for the new style to load (styledata → idle)
-  await new Promise(res => map.once('styledata', res).catch?.(()=>res()));
-  await new Promise(res => map.once('idle', res).catch?.(()=>res()));
-  s('Custom style applied ✅');
-
-  // Any mapbox errors?
   map.on('error', (e) => {
     console.error('Mapbox error:', e && e.error);
     alert('Mapbox error: ' + (e?.error?.message || JSON.stringify(e)));
+  });
+
+  await new Promise(res => map.once('styledata', res));
+  await new Promise(res => map.once('idle', res));
+  s('Style ready — adding source/layers…');
+
+  // Add vector source and flat fill to prove rendering
+  map.addSource(SRC_ID, { type:'vector', url:SRC_URL });
+  map.addLayer({
+    id: SRC_ID + '-testfill',
+    type: 'fill',
+    source: SRC_ID,
+    'source-layer': LAYER,
+    paint: { 'fill-color': '#a855f7', 'fill-opacity': 0.25 }
+  });
+  map.addLayer({
+    id: SRC_ID + '-outline',
+    type: 'line',
+    source: SRC_ID,
+    'source-layer': LAYER,
+    paint: { 'line-color': '#000', 'line-width': 0.3, 'line-opacity': 0.4 }
+  });
+
+  // Count rendered features after a tick
+  setTimeout(() => {
+    const feats = map.queryRenderedFeatures({ layers:[SRC_ID + '-testfill'] });
+    s(`Rendered features: ${feats.length}. Click a tract to inspect.`);
+  }, 600);
+
+  // Click to inspect a feature’s properties
+  map.on('click', SRC_ID + '-testfill', (e) => {
+    const f = e.features && e.features[0];
+    if (!f) return;
+    alert(`feature.id: ${f.id}\nGEOID prop: ${f.properties?.GEOID}`);
   });
 })();
 </script>
