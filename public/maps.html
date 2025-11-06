@@ -36,60 +36,59 @@ let map;
 let prevIds = new Set();
 let currentYear = "2024";
 
+// ✅ Use your custom style and tileset info
 const MAP_STYLE = 'mapbox://styles/stuartmaps/cmhmpa5i4000s01ql6lrwh3tk';
 const TILESETS = {
   "2024": { id: 'tracts2024', url: 'mapbox://stuartmaps.58y5r823', layer: '2024-1pvgy8' }
 };
 
-// Coloring function
+// Coloring gradient
 function choroplethPaint(){
   return {
     'fill-color': [
       'case',
       ['has', 'value', ['feature-state']],
       ['interpolate', ['linear'], ['to-number', ['feature-state', 'value']],
-        0,   '#f0f4ff',
-        5,   '#c8d8ff',
-        20,  '#91b4ff',
-        50,  '#5f90f6',
-        100, '#2b6ce3',
-        250, '#174db6',
-        500, '#0b3366'
+        1, '#e6f0ff',
+        5, '#bcd6ff',
+        20, '#85b8ff',
+        50, '#589aff',
+        100, '#256fd8',
+        250, '#0f4ca3',
+        500, '#002b73'
       ],
       'rgba(0,0,0,0)'
     ],
-    'fill-opacity': ['case', ['has', 'value', ['feature-state']], 0.85, 0]
+    'fill-opacity': [
+      'case',
+      ['has', 'value', ['feature-state']], 0.9, 0.1
+    ]
   };
-}
-
-async function waitForTiles(sourceId){
-  return new Promise(resolve=>{
-    if(map.isSourceLoaded(sourceId)) return resolve();
-    const check=()=>{ if(map.isSourceLoaded(sourceId)){ map.off('sourcedata',check); resolve(); }};
-    map.on('sourcedata',check);
-  });
 }
 
 async function init(){
   const status=document.getElementById('status');
-  const { token } = await fetch('/api/mapbox-token').then(r=>r.json()).catch(()=>({token:''}));
-  if(!token.startsWith('pk.')){ status.textContent='Mapbox token invalid.'; return; }
 
-  mapboxgl.accessToken=token;
-  map=new mapboxgl.Map({
+  // Load token
+  const { token } = await fetch('/api/mapbox-token').then(r=>r.json()).catch(()=>({token:''}));
+  if(!token.startsWith('pk.')){ status.textContent='Invalid Mapbox token.'; return; }
+
+  mapboxgl.accessToken = token;
+  map = new mapboxgl.Map({
     container:'map',
     style: MAP_STYLE,
     center:[-98.5,39.8],
     zoom:3.5
   });
   map.addControl(new mapboxgl.NavigationControl(),'top-right');
-  await new Promise(res=>map.once('load',res));
-  status.textContent='Map ready.';
+  await new Promise(res => map.once('load', res));
+  status.textContent = 'Map ready.';
 
+  // Load lender list
   const dd=document.getElementById('lender');
-  const L=await fetch('/api/maps').then(r=>r.json()).catch(()=>({lenders:[]}));
+  const L = await fetch('/api/maps').then(r=>r.json()).catch(()=>({lenders:[]}));
   dd.innerHTML=(L.lenders||[]).map(n=>`<option>${n}</option>`).join('');
-  dd.addEventListener('change',loadCounts);
+  dd.addEventListener('change', loadCounts);
 
   await updateTileset();
   await loadCounts();
@@ -100,31 +99,42 @@ async function updateTileset(){
   const status=document.getElementById('status');
   if(!t){ status.textContent=`No tileset for ${currentYear}`; return; }
 
-  if(map.getSource(t.id)) return;
+  // Remove old layers
+  for(const yr in TILESETS){
+    const layer=TILESETS[yr];
+    ['-choropleth','-outline'].forEach(s=>{
+      if(map.getLayer(layer.id+s)) map.removeLayer(layer.id+s);
+    });
+    if(map.getSource(layer.id)) map.removeSource(layer.id);
+  }
 
-  map.addSource(t.id,{type:'vector',url:t.url,promoteId:'GEOID'});
+  // Add source
+  map.addSource(t.id, { type:'vector', url:t.url, promoteId:'GEOID' });
+
+  // Add layers
   map.addLayer({
-    id:t.id+'-backdrop',
-    type:'fill',
-    source:t.id,
-    'source-layer':t.layer,
-    paint:{'fill-color':'#cccccc','fill-opacity':0.15}
+    id: t.id+'-choropleth',
+    type: 'fill',
+    source: t.id,
+    'source-layer': t.layer,
+    paint: choroplethPaint()
   });
   map.addLayer({
-    id:t.id+'-choropleth',
-    type:'fill',
-    source:t.id,
-    'source-layer':t.layer,
-    paint:choroplethPaint()
+    id: t.id+'-outline',
+    type: 'line',
+    source: t.id,
+    'source-layer': t.layer,
+    paint:{ 'line-color':'#000', 'line-width':0.5, 'line-opacity':0.4 }
   });
-  map.addLayer({
-    id:t.id+'-outline',
-    type:'line',
-    source:t.id,
-    'source-layer':t.layer,
-    paint:{'line-color':'#000','line-width':0.5,'line-opacity':0.3}
+
+  map.on('click', t.id+'-choropleth', (e)=>{
+    if(!e.features.length) return;
+    const f=e.features[0];
+    const st=map.getFeatureState({source:t.id,'sourceLayer':t.layer,id:f.id});
+    alert(`GEOID: ${f.properties.GEOID}\nFeature ID: ${f.id}\nValue(state): ${JSON.stringify(st)}`);
   });
-  await waitForTiles(t.id);
+
+  status.textContent='Tileset loaded. Ready for data.';
 }
 
 async function loadCounts(){
@@ -138,32 +148,25 @@ async function loadCounts(){
   const data=await res.json();
   const rows=data.rows||[];
   const counts=new Map(rows.map(r=>[String(r.GEOID),r.count]));
-  status.textContent=`Loaded ${counts.size} tracts. Applying colors…`;
+  status.textContent=`Loaded ${counts.size} tracts. Coloring…`;
 
-  await waitForTiles(t.id);
-  // Reset feature states
+  // Reset
   for(const id of prevIds){
     map.setFeatureState({source:t.id,'sourceLayer':t.layer,id}, {value:null});
   }
   prevIds.clear();
 
   let applied=0;
-  for(const [geoid,value] of counts.entries()){
-    map.setFeatureState({source:t.id,'sourceLayer':t.layer,id:geoid},{value});
+  for(const [geoid,val] of counts.entries()){
+    map.setFeatureState({source:t.id,'sourceLayer':t.layer,id:geoid}, {value:val});
     prevIds.add(geoid);
     applied++;
   }
 
-  // 🔹 Force a map repaint after all updates
+  // Force repaint to reveal feature-state colors
   map.triggerRepaint();
-  status.textContent=`Colored ${applied} tracts. Click a tract to inspect.`;
 
-  // Click test
-  map.on('click',t.id+'-choropleth',(e)=>{
-    const f=e.features[0];
-    const st=map.getFeatureState({source:t.id,'sourceLayer':t.layer,id:f.id});
-    alert(`GEOID: ${f.properties.GEOID}\nValue(state): ${JSON.stringify(st)}`);
-  });
+  status.textContent=`Colored ${applied} tracts. Click a tract to inspect.`;
 }
 
 init();
