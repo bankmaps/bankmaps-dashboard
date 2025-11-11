@@ -3,41 +3,56 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BankMaps — Full US View</title>
+  <title>BankMaps — HMDA Choropleth (Correct Join)</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <style>
     * { margin: 0; padding: 0; }
     html, body { height: 100%; width: 100%; }
     #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-    #status {
-      position: absolute; top: 10px; left: 10px; background: #000; color: #fff;
-      padding: 10px; border-radius: 8px; font-family: sans-serif; font-size: 14px; z-index: 1000;
+    #controls {
+      position: absolute; top: 10px; left: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.95); padding: 12px; border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-family: Arial, sans-serif; font-size: 14px;
     }
+    select { margin: 5px; padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
+    label { display: block; margin-top: 8px; font-weight: bold; }
+    #status { margin-top: 10px; font-size: 13px; color: #155724; }
   </style>
 </head>
 <body>
-  <div id="status">Loading full US view…</div>
+  <div id="controls">
+    <label>Lender Name</label>
+    <select id="lenderSelect"><option>Loading lenders...</option></select>
+
+    <label>Data Year</label>
+    <select id="yearSelect"><option>Loading years...</option></select>
+
+    <div id="status">Loading filters...</div>
+  </div>
   <div id="map"></div>
 
   <script>
     mapboxgl.accessToken = "pk.eyJ1Ijoic3R1YXJ0bWFwcyIsImEiOiJjamNtOTRpaWkwMHFpMnFvMGNlaTBsMzBmIn0.fBYpWRazxS74AaFUWMUpiA";
     const styleURL = "mapbox://styles/mapbox/streets-v12";
-    const status = document.getElementById("status");
 
     const map = new mapboxgl.Map({
       container: "map",
       style: styleURL,
-      center: [-98.5, 39.8],  // Geographic center of contiguous US
-      zoom: 3.5,              // Full US fits perfectly
-      pitch: 0,
-      bearing: 0
+      center: [-98.5, 39.8],
+      zoom: 3.5
     });
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+    const NEON_PROXY = "https://neon-bankmaps-proxy.deno.dev/query";
+    const lenderSelect = document.getElementById("lenderSelect");
+    const yearSelect = document.getElementById("yearSelect");
+    const statusDiv = document.getElementById("status");
+
+    let currentData = {};  // { "GEOID": count }
+
     map.on("load", () => {
-      // Add census tracts — ALWAYS VISIBLE
       map.addSource("census-tracts", {
         type: "vector",
         url: "mapbox://stuartmaps.58y5r823"
@@ -48,27 +63,105 @@
         type: "fill",
         source: "census-tracts",
         "source-layer": "2024-1pvgy8",
-        paint: { "fill-color": "#088", "fill-opacity": 0.4 },
-        minzoom: 0
+        paint: {
+          "fill-color": "#f5f5dc",  // Beige default
+          "fill-opacity": 0.7
+        }
       });
 
-      map.addLayer({
-        id: "census-tracts-borders",
-        type: "line",
-        source: "census-tracts",
-        "source-layer": "2024-1pvgy8",
-        paint: { "line-color": "#000", "line-width": 0.5, "line-opacity": 0.6 },
-        minzoom: 6
-      });
-
-      status.textContent = "BankMaps — Full US View";
-      status.style.background = "#1e7e34";
+      loadFilters();
     });
 
-    map.on("error", (e) => {
-      status.textContent = "Error: " + (e.error?.message || "Failed");
-      status.style.background = "#dc3545";
-    });
+    async function loadFilters() {
+      try {
+        const lendersRes = await fetch(`${NEON_PROXY}?sql=SELECT DISTINCT lendername FROM hmda_test ORDER BY lendername`);
+        const lenders = await lendersRes.json();
+        lenderSelect.innerHTML = `<option value="">All Lenders</option>`;
+        lenders.rows.forEach(r => {
+          const opt = document.createElement("option");
+          opt.value = r.lendername; opt.textContent = r.lendername;
+          lenderSelect.appendChild(opt);
+        });
+
+        const yearsRes = await fetch(`${NEON_PROXY}?sql=SELECT DISTINCT datayear FROM hmda_test ORDER BY datayear DESC`);
+        const years = await yearsRes.json();
+        yearSelect.innerHTML = `<option value="">All Years</option>`;
+        years.rows.forEach(r => {
+          const opt = document.createElement("option");
+          opt.value = r.datayear; opt.textContent = r.datayear;
+          yearSelect.appendChild(opt);
+        });
+
+        statusDiv.textContent = "Filters ready. Select to update map.";
+        setupListeners();
+      } catch (e) {
+        statusDiv.textContent = "Error loading filters.";
+        console.error(e);
+      }
+    }
+
+    function setupListeners() {
+      lenderSelect.onchange = updateMap;
+      yearSelect.onchange = updateMap;
+      setTimeout(updateMap, 500);
+    }
+
+    async function updateMap() {
+      const lender = lenderSelect.value;
+      const year = yearSelect.value;
+
+      statusDiv.textContent = "Querying HMDA data...";
+
+      try {
+        let sql = `
+          SELECT 
+            stfid AS geoid,
+            COUNT(*) AS record_count
+          FROM hmda_test
+          WHERE stfid IS NOT NULL
+        `;
+        if (lender) sql += ` AND lendername = '${lender.replace(/'/g, "''")}'`;
+        if (year) sql += ` AND datayear = ${year}`;
+        sql += ` GROUP BY stfid`;
+
+        const res = await fetch(`${NEON_PROXY}?sql=${encodeURIComponent(sql)}`);
+        const data = await res.json();
+
+        currentData = {};
+        let maxCount = 0;
+        data.rows.forEach(r => {
+          const geoid = String(r.geoid).trim();
+          currentData[geoid] = r.record_count;
+          if (r.record_count > maxCount) maxCount = r.record_count;
+        });
+
+        // 4-step green scale
+        const stops = [
+          [0, "#f5f5dc"],           // Beige (null)
+          [1, "#d9f0a3"],           // Light green
+          [Math.floor(maxCount * 0.33) || 1, "#78c679"],
+          [Math.floor(maxCount * 0.66) || 1, "#41ab5d"],
+          [maxCount || 1, "#238443"] // Dark green
+        ];
+
+        map.setPaintProperty("census-tracts-fill", "fill-color", [
+          "case",
+          ["has", ["get", "GEOID"], ["literal", Object.keys(currentData)]],
+          [
+            "interpolate",
+            ["linear"],
+            ["coalesce", ["get", ["get", "GEOID"], ["literal", currentData]], 0],
+            ...stops.flat()
+          ],
+          "#f5f5dc"
+        ]);
+
+        statusDiv.textContent = `Map updated: ${Object.keys(currentData).length} tracts colored.`;
+      } catch (e) {
+        statusDiv.textContent = "Error updating map.";
+        console.error(e);
+      }
+    }
   </script>
 </body>
 </html>
