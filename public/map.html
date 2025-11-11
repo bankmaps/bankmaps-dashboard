@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>BankMaps — HMDA Choropleth (Correct Join)</title>
+  <title>BankMaps — HMDA Live</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <style>
@@ -15,7 +15,7 @@
       background: rgba(255,255,255,0.95); padding: 12px; border-radius: 8px;
       box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-family: Arial, sans-serif; font-size: 14px;
     }
-    select { margin: 5px; padding: 6px; border-radius: 4px; border: 1px solid #ccc; }
+    select { margin: 5px; padding: 6px; border-radius: 4px; border: 1px solid #ccc; width: 200px; }
     label { display: block; margin-top: 8px; font-weight: bold; }
     #status { margin-top: 10px; font-size: 13px; color: #155724; }
   </style>
@@ -23,12 +23,12 @@
 <body>
   <div id="controls">
     <label>Lender Name</label>
-    <select id="lenderSelect"><option>Loading lenders...</option></select>
+    <select id="lenderSelect"><option>Loading...</option></select>
 
     <label>Data Year</label>
-    <select id="yearSelect"><option>Loading years...</option></select>
+    <select id="yearSelect"><option>Loading...</option></select>
 
-    <div id="status">Loading filters...</div>
+    <div id="status">Connecting to Neon...</div>
   </div>
   <div id="map"></div>
 
@@ -45,12 +45,13 @@
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    const NEON_PROXY = "https://neon-bankmaps-proxy.deno.dev/query";
+    // LIVE PROXY — WORKING NOW
+    const PROXY_URL = "https://bankmaps-proxy.vercel.app/api/query";
     const lenderSelect = document.getElementById("lenderSelect");
     const yearSelect = document.getElementById("yearSelect");
     const statusDiv = document.getElementById("status");
 
-    let currentData = {};  // { "GEOID": count }
+    let currentData = {};
 
     map.on("load", () => {
       map.addSource("census-tracts", {
@@ -63,10 +64,7 @@
         type: "fill",
         source: "census-tracts",
         "source-layer": "2024-1pvgy8",
-        paint: {
-          "fill-color": "#f5f5dc",  // Beige default
-          "fill-opacity": 0.7
-        }
+        paint: { "fill-color": "#f5f5dc", "fill-opacity": 0.7 }
       });
 
       loadFilters();
@@ -74,8 +72,8 @@
 
     async function loadFilters() {
       try {
-        const lendersRes = await fetch(`${NEON_PROXY}?sql=SELECT DISTINCT lendername FROM hmda_test ORDER BY lendername`);
-        const lenders = await lendersRes.json();
+        statusDiv.textContent = "Loading lenders...";
+        const lenders = await queryDB("SELECT DISTINCT lendername FROM hmda_test ORDER BY lendername");
         lenderSelect.innerHTML = `<option value="">All Lenders</option>`;
         lenders.rows.forEach(r => {
           const opt = document.createElement("option");
@@ -83,8 +81,8 @@
           lenderSelect.appendChild(opt);
         });
 
-        const yearsRes = await fetch(`${NEON_PROXY}?sql=SELECT DISTINCT datayear FROM hmda_test ORDER BY datayear DESC`);
-        const years = await yearsRes.json();
+        statusDiv.textContent = "Loading years...";
+        const years = await queryDB("SELECT DISTINCT datayear FROM hmda_test ORDER BY datayear DESC");
         yearSelect.innerHTML = `<option value="">All Years</option>`;
         years.rows.forEach(r => {
           const opt = document.createElement("option");
@@ -92,76 +90,13 @@
           yearSelect.appendChild(opt);
         });
 
-        statusDiv.textContent = "Filters ready. Select to update map.";
+        statusDiv.textContent = "Filters ready!";
         setupListeners();
       } catch (e) {
-        statusDiv.textContent = "Error loading filters.";
+        statusDiv.textContent = "Failed to load filters.";
         console.error(e);
       }
     }
 
     function setupListeners() {
-      lenderSelect.onchange = updateMap;
-      yearSelect.onchange = updateMap;
-      setTimeout(updateMap, 500);
-    }
-
-    async function updateMap() {
-      const lender = lenderSelect.value;
-      const year = yearSelect.value;
-
-      statusDiv.textContent = "Querying HMDA data...";
-
-      try {
-        let sql = `
-          SELECT 
-            stfid AS geoid,
-            COUNT(*) AS record_count
-          FROM hmda_test
-          WHERE stfid IS NOT NULL
-        `;
-        if (lender) sql += ` AND lendername = '${lender.replace(/'/g, "''")}'`;
-        if (year) sql += ` AND datayear = ${year}`;
-        sql += ` GROUP BY stfid`;
-
-        const res = await fetch(`${NEON_PROXY}?sql=${encodeURIComponent(sql)}`);
-        const data = await res.json();
-
-        currentData = {};
-        let maxCount = 0;
-        data.rows.forEach(r => {
-          const geoid = String(r.geoid).trim();
-          currentData[geoid] = r.record_count;
-          if (r.record_count > maxCount) maxCount = r.record_count;
-        });
-
-        // 4-step green scale
-        const stops = [
-          [0, "#f5f5dc"],           // Beige (null)
-          [1, "#d9f0a3"],           // Light green
-          [Math.floor(maxCount * 0.33) || 1, "#78c679"],
-          [Math.floor(maxCount * 0.66) || 1, "#41ab5d"],
-          [maxCount || 1, "#238443"] // Dark green
-        ];
-
-        map.setPaintProperty("census-tracts-fill", "fill-color", [
-          "case",
-          ["has", ["get", "GEOID"], ["literal", Object.keys(currentData)]],
-          [
-            "interpolate",
-            ["linear"],
-            ["coalesce", ["get", ["get", "GEOID"], ["literal", currentData]], 0],
-            ...stops.flat()
-          ],
-          "#f5f5dc"
-        ]);
-
-        statusDiv.textContent = `Map updated: ${Object.keys(currentData).length} tracts colored.`;
-      } catch (e) {
-        statusDiv.textContent = "Error updating map.";
-        console.error(e);
-      }
-    }
-  </script>
-</body>
-</html>
+      lenderSelect
