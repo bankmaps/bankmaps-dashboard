@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Enhanced Map with Census Tracts</title>
+  <title>BankMaps — Medford Zoom</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <style>
@@ -14,96 +14,72 @@
       position: absolute; top: 10px; left: 10px; background: #000; color: #fff;
       padding: 10px; border-radius: 8px; font-family: sans-serif; font-size: 14px; z-index: 1000;
     }
-    #toggle {
-      position: absolute; top: 50px; left: 10px; z-index: 1000;
-      background: #007cbf; color: white; border: none; padding: 8px 12px;
-      border-radius: 4px; cursor: pointer; font-size: 14px;
-    }
-    #toggle:hover { background: #005a87; }
   </style>
 </head>
 <body>
-  <div id="status">Loading map…</div>
-  <button id="toggle">Show Census Tracts</button>
+  <div id="status">Loading BankMaps…</div>
   <div id="map"></div>
 
   <script>
     mapboxgl.accessToken = "pk.eyJ1Ijoic3R1YXJ0bWFwcyIsImEiOiJjamNtOTRpaWkwMHFpMnFvMGNlaTBsMzBmIn0.fBYpWRazxS74AaFUWMUpiA";
     const styleURL = "mapbox://styles/mapbox/streets-v12";
     const status = document.getElementById("status");
-    const toggleBtn = document.getElementById("toggle");
 
     const map = new mapboxgl.Map({
       container: "map",
       style: styleURL,
-      center: [-95, 38.5],
-      zoom: 6
+      center: [-95, 38.5],  // Full US view (your screenshot)
+      zoom: 4,
+      pitch: 0,
+      bearing: 0
     });
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    let tractsVisible = false;
-
     map.on("load", () => {
-      // Add your census tracts tileset
+      // Add census tracts — ALWAYS VISIBLE
       map.addSource("census-tracts", {
         type: "vector",
         url: "mapbox://stuartmaps.58y5r823"
       });
 
-      // Fill layer — FIXED: Correct source-layer
       map.addLayer({
         id: "census-tracts-fill",
         type: "fill",
         source: "census-tracts",
-        "source-layer": "2024-1pvgy8",  // ← YOUR EXACT LAYER NAME
-        paint: {
-          "fill-color": "#088",
-          "fill-opacity": 0.4
-        },
-        layout: { visibility: "none" },
+        "source-layer": "2024-1pvgy8",
+        paint: { "fill-color": "#088", "fill-opacity": 0.4 },
         minzoom: 4
       });
 
-      // Borders layer — FIXED
       map.addLayer({
         id: "census-tracts-borders",
         type: "line",
         source: "census-tracts",
         "source-layer": "2024-1pvgy8",
-        paint: {
-          "line-color": "#000",
-          "line-width": 0.5,
-          "line-opacity": 0.6
-        },
-        layout: { visibility: "none" },
+        paint: { "line-color": "#000", "line-width": 0.5, "line-opacity": 0.6 },
         minzoom: 8
       });
 
-      status.textContent = "Map Loaded! Toggle tracts below.";
+      status.textContent = "Zooming to Medford, MA…";
       status.style.background = "#1e7e34";
 
-      // Toggle button
-      toggleBtn.onclick = () => {
-        tractsVisible = !tractsVisible;
-        const vis = tractsVisible ? "visible" : "none";
-        map.setLayoutProperty("census-tracts-fill", "visibility", vis);
-        map.setLayoutProperty("census-tracts-borders", "visibility", vis);
-        toggleBtn.textContent = tractsVisible ? "Hide Census Tracts" : "Show Census Tracts";
-      };
+      // ZOOM TO MEDFORD, MA
+      map.easeTo({
+        center: [-71.1061, 42.4184],  // Medford, MA
+        zoom: 12,
+        duration: 3000,
+        easing: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(1 - t, 3) * 4
+      });
+
+      setTimeout(() => {
+        status.textContent = "BankMaps Ready — Medford View";
+      }, 3200);
     });
 
     map.on("error", (e) => {
       status.textContent = "Error: " + (e.error?.message || "Failed");
       status.style.background = "#dc3545";
-      console.error(e);
-    });
-
-    // Confirm tileset loaded
-    map.on("sourcedata", (e) => {
-      if (e.sourceId === "census-tracts" && e.isSourceLoaded) {
-        console.log("Census tracts loaded: 2024-1pvgy8");
-      }
     });
   </script>
 </body>
