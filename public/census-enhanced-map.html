@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Enhanced Mapbox Map with Census Tracts</title>
+  <title>Enhanced Map with Census Tracts</title>
   <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
   <style>
@@ -23,8 +23,8 @@
   </style>
 </head>
 <body>
-  <div id="status">Loading enhanced map…</div>
-  <button id="toggle">Toggle Census Tracts Layer</button>
+  <div id="status">Loading map…</div>
+  <button id="toggle">Show Census Tracts</button>
   <div id="map"></div>
 
   <script>
@@ -36,69 +36,73 @@
     const map = new mapboxgl.Map({
       container: "map",
       style: styleURL,
-      center: [-95, 38.5],  // USA center
-      zoom: 6               // Good starting zoom for tracts
+      center: [-95, 38.5],
+      zoom: 6
     });
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
+    let tractsVisible = false;
+
     map.on("load", () => {
-      // Add your census tracts source (vector tileset)
+      // Add your census tracts tileset
       map.addSource("census-tracts", {
         type: "vector",
-        url: "mapbox://stuartmaps.58y5r823"  // Your tileset ID
+        url: "mapbox://stuartmaps.58y5r823"
       });
 
-      // Add the layer ON TOP of the base style (polygons with transparency)
+      // Fill layer — FIXED: Correct source-layer
       map.addLayer({
         id: "census-tracts-fill",
         type: "fill",
         source: "census-tracts",
-        "source-layer": "tracts",  // Adjust if your layer name differs (e.g., "2024-1pvgy8")
+        "source-layer": "2024-1pvgy8",  // ← YOUR EXACT LAYER NAME
         paint: {
-          "fill-color": "#088",    // Base blue color (customize for choropleth)
-          "fill-opacity": 0.4      // Semi-transparent to see base map
+          "fill-color": "#088",
+          "fill-opacity": 0.4
         },
-        minzoom: 4  // Only show at reasonable zoom for tracts
+        layout: { visibility: "none" },
+        minzoom: 4
       });
 
-      // Optional: Add borders for clarity
+      // Borders layer — FIXED
       map.addLayer({
         id: "census-tracts-borders",
         type: "line",
         source: "census-tracts",
-        "source-layer": "tracts",
+        "source-layer": "2024-1pvgy8",
         paint: {
           "line-color": "#000",
           "line-width": 0.5,
           "line-opacity": 0.6
         },
-        minzoom: 8  // Finer detail at higher zoom
+        layout: { visibility: "none" },
+        minzoom: 8
       });
 
-      status.textContent = "Enhanced Map Loaded! Census tracts layer added (toggle below).";
+      status.textContent = "Map Loaded! Toggle tracts below.";
       status.style.background = "#1e7e34";
 
-      // Toggle button functionality
-      let visible = false;
+      // Toggle button
       toggleBtn.onclick = () => {
-        visible = !visible;
-        map.setLayoutProperty("census-tracts-fill", "visibility", visible ? "visible" : "none");
-        map.setLayoutProperty("census-tracts-borders", "visibility", visible ? "visible" : "none");
-        toggleBtn.textContent = visible ? "Hide Census Tracts" : "Show Census Tracts";
+        tractsVisible = !tractsVisible;
+        const vis = tractsVisible ? "visible" : "none";
+        map.setLayoutProperty("census-tracts-fill", "visibility", vis);
+        map.setLayoutProperty("census-tracts-borders", "visibility", vis);
+        toggleBtn.textContent = tractsVisible ? "Hide Census Tracts" : "Show Census Tracts";
       };
     });
 
     map.on("error", (e) => {
-      status.textContent = "Error: " + (e.error?.message || "Failed to load");
+      status.textContent = "Error: " + (e.error?.message || "Failed");
       status.style.background = "#dc3545";
       console.error(e);
     });
 
-    // Debug: Log if source loads
+    // Confirm tileset loaded
     map.on("sourcedata", (e) => {
       if (e.sourceId === "census-tracts" && e.isSourceLoaded) {
-        console.log("Census tracts source loaded successfully!");
+        console.log("Census tracts loaded: 2024-1pvgy8");
       }
     });
   </script>
