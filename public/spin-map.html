@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spin-In Map — G Edition</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <style>
+    * { margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow: hidden; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    #status {
+      position: absolute; top: 10px; left: 10px; background: #000; color: #fff;
+      padding: 10px; border-radius: 8px; font-family: sans-serif; font-size: 14px; z-index: 1000;
+    }
+    #toggle {
+      position: absolute; top: 50px; left: 10px; z-index: 1000;
+      background: #007cbf; color: white; border: none; padding: 8px 12px;
+      border-radius: 4px; cursor: pointer; font-size: 14px;
+    }
+    #toggle:hover { background: #005a87; }
+  </style>
+</head>
+<body>
+  <div id="status">Initializing…</div>
+  <button id="toggle">Toggle Census Tracts</button>
+  <div id="map"></div>
+
+  <script>
+    mapboxgl.accessToken = "pk.eyJ1Ijoic3R1YXJ0bWFwcyIsImEiOiJjamNtOTRpaWkwMHFpMnFvMGNlaTBsMzBmIn0.fBYpWRazxS74AaFUWMUpiA";
+    const styleURL = "mapbox://styles/mapbox/streets-v12";
+    const status = document.getElementById("status");
+    const toggleBtn = document.getElementById("toggle");
+
+    const map = new mapboxgl.Map({
+      container: "map",
+      style: styleURL,
+      center: [-95, 38.5],
+      zoom: 2,
+      pitch: 60,
+      bearing: -180,
+      interactive: false
+    });
+
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    map.on("load", () => {
+      // Add census tracts source
+      map.addSource("census-tracts", {
+        type: "vector",
+        url: "mapbox://stuartmaps.58y5r823"
+      });
+
+      map.addLayer({
+        id: "census-tracts-fill",
+        type: "fill",
+        source: "census-tracts",
+        "source-layer": "tracts",
+        paint: { "fill-color": "#088", "fill-opacity": 0.4 },
+        layout: { visibility: "none" }
+      });
+
+      map.addLayer({
+        id: "census-tracts-borders",
+        type: "line",
+        source: "census-tracts",
+        "source-layer": "tracts",
+        paint: { "line-color": "#000", "line-width": 0.5, "line-opacity": 0.6 },
+        layout: { visibility: "none" },
+        minzoom: 8
+      });
+
+      status.textContent = "Spinning into position…";
+      status.style.background = "#1e7e34";
+
+      // SPIN-IN ANIMATION
+      map.easeTo({
+        center: [-95, 38.5],
+        zoom: 6,
+        pitch: 0,
+        bearing: 0,
+        duration: 4000,
+        easing: (t) => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(1 - t, 3) * 4
+      });
+
+      setTimeout(() => {
+        map.interactive = true;
+        status.textContent = "Map Ready! Toggle tracts below.";
+        toggleBtn.onclick = () => {
+          const vis = map.getLayoutProperty("census-tracts-fill", "visibility") === "visible" ? "none" : "visible";
+          map.setLayoutProperty("census-tracts-fill", "visibility", vis);
+          map.setLayoutProperty("census-tracts-borders", "visibility", vis);
+          toggleBtn.textContent = vis === "visible" ? "Hide Tracts" : "Show Tracts";
+        };
+      }, 4200);
+    });
+
+    map.on("error", (e) => {
+      status.textContent = "Error: " + (e.error?.message || "Failed");
+      status.style.background = "#dc3545";
+    });
+  </script>
+</body>
+</html>
