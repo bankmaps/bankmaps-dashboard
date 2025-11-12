@@ -62,11 +62,12 @@
 
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
 
-    const PROXY_URL = "https://bankmaps-proxy.workers.stuartmaps.workers.dev";
+    // Replace with your actual Vercel project URL
+    const PROXY_URL = "https://your-project-name.vercel.app/api/bankmaps";
+
     const lenderSelect = document.getElementById("lenderSelect");
     const yearSelect = document.getElementById("yearSelect");
     const statusDiv = document.getElementById("status");
-
     let currentData = {};
 
     map.on("load", () => {
@@ -85,6 +86,16 @@
 
       loadFilters();
     });
+
+    async function queryDB(sql) {
+      const r = await fetch(PROXY_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sql })
+      });
+      if (!r.ok) throw new Error(await r.text());
+      return await r.json(); // expects { rows: [...] }
+    }
 
     async function loadFilters() {
       try {
@@ -120,16 +131,9 @@
       setTimeout(updateMap, 500);
     }
 
-    async function queryDB(sql) {
-      const res = await fetch(`${PROXY_URL}?sql=${encodeURIComponent(sql)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      return await res.json();
-    }
-
     async function updateMap() {
       const lender = lenderSelect.value;
       const year = yearSelect.value;
-
       statusDiv.textContent = "Updating...";
 
       try {
@@ -145,40 +149,36 @@
         sql += ` GROUP BY stfid`;
 
         const data = await queryDB(sql);
-
         currentData = {};
         let maxCount = 0;
+
         data.rows.forEach(r => {
           const geoid = String(r.geoid).trim();
-          currentData[geoid] = r.record_count;
-          if (r.record_count > maxCount) maxCount = r.record_count;
+          const count = Number(r.record_count) || 0;
+          currentData[geoid] = count;
+          if (count > maxCount) maxCount = count;
         });
 
-        const stops = [
-          [0, "#f5f5dc"],
-          [1, "#d9f0a3"],
-          [Math.floor(maxCount * 0.33) || 1, "#78c679"],
-          [Math.floor(maxCount * 0.66) || 1, "#41ab5d"],
-          [maxCount || 1, "#238443"]
-        ];
+        const colorExpr = ['match', ['get', 'GEOID']];
+        for (const [geoid, count] of Object.entries(currentData)) {
+          colorExpr.push(geoid, colorFor(count, maxCount));
+        }
+        colorExpr.push('#f5f5dc');
 
-        map.setPaintProperty("census-tracts-fill", "fill-color", [
-          "case",
-          ["has", ["get", "GEOID"], ["literal", Object.keys(currentData)]],
-          [
-            "interpolate",
-            ["linear"],
-            ["get", ["to-string", ["get", "GEOID"]], currentData],
-            ...stops.flat()
-          ],
-          "#f5f5dc"
-        ]);
-
+        map.setPaintProperty('census-tracts-fill', 'fill-color', colorExpr);
         statusDiv.textContent = `Updated: ${Object.keys(currentData).length} tracts`;
       } catch (e) {
         statusDiv.textContent = "Update failed.";
         console.error(e);
       }
+    }
+
+    function colorFor(v, max) {
+      if (!v || v <= 0) return "#f5f5dc";
+      if (v <= Math.max(1, Math.floor(max * 0.33))) return "#d9f0a3";
+      if (v <= Math.max(1, Math.floor(max * 0.66))) return "#78c679";
+      if (v < max) return "#41ab5d";
+      return "#238443";
     }
   </script>
 </body>
