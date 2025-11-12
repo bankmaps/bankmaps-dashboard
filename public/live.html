@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BankMaps — HMDA Live</title>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+  <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+  <style>
+    * { margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; }
+    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    #controls {
+      position: absolute; top: 10px; left: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.95); padding: 12px; border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-family: Arial, sans-serif; font-size: 14px;
+    }
+    select { margin: 5px; padding: 6px; border-radius: 4px; border: 1px solid #ccc; width: 200px; }
+    label { display: block; margin-top: 8px; font-weight: bold; }
+    #status { margin-top: 10px; font-size: 13px; color: #155724; }
+    .legend {
+      position: absolute; top: 10px; right: 10px; z-index: 1000;
+      background: rgba(255,255,255,0.95); padding: 10px; border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 12px;
+    }
+    .legend-item { margin: 4px 0; }
+    .legend-color { width: 20px; height: 15px; display: inline-block; margin-right: 5px; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <label>Lender Name</label>
+    <select id="lenderSelect"><option>Loading...</option></select>
+
+    <label>Data Year</label>
+    <select id="yearSelect"><option>Loading...</option></select>
+
+    <div id="status">Connecting to Neon...</div>
+  </div>
+
+  <div class="legend">
+    <div><strong>Loan Volume by Tract</strong></div>
+    <div class="legend-item"><span class="legend-color" style="background:#f5f5dc;"></span>No Data</div>
+    <div class="legend-item"><span class="legend-color" style="background:#d9f0a3;"></span>Low</div>
+    <div class="legend-item"><span class="legend-color" style="background:#78c679;"></span>Medium</div>
+    <div class="legend-item"><span class="legend-color" style="background:#41ab5d;"></span>High</div>
+    <div class="legend-item"><span class="legend-color" style="background:#238443;"></span>Very High</div>
+  </div>
+
+  <div id="map"></div>
+
+  <script>
+    mapboxgl.accessToken = "pk.eyJ1Ijoic3R1YXJ0bWFwcyIsImEiOiJjamNtOTRpaWkwMHFpMnFvMGNlaTBsMzBmIn0.fBYpWRazxS74AaFUWMUpiA";
+    const styleURL = "mapbox://styles/mapbox/streets-v12";
+
+    const map = new mapboxgl.Map({
+      container: "map",
+      style: styleURL,
+      center: [-98.5, 39.8],
+      zoom: 3.5
+    });
+
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    const PROXY_URL = "https://bankmaps-proxy.workers.stuartmaps.workers.dev";
+    const lenderSelect = document.getElementById("lenderSelect");
+    const yearSelect = document.getElementById("yearSelect");
+    const statusDiv = document.getElementById("status");
+
+    let currentData = {};
+
+    map.on("load", () => {
+      map.addSource("census-tracts", {
+        type: "vector",
+        url: "mapbox://stuartmaps.58y5r823"
+      });
+
+      map.addLayer({
+        id: "census-tracts-fill",
+        type: "fill",
+        source: "census-tracts",
+        "source-layer": "2024-1pvgy8",
+        paint: { "fill-color": "#f5f5dc", "fill-opacity": 0.7 }
+      });
+
+      loadFilters();
+    });
+
+    async function loadFilters() {
+      try {
+        statusDiv.textContent = "Loading lenders...";
+        const lenders = await queryDB("SELECT DISTINCT lendername FROM hmda_test ORDER BY lendername");
+        lenderSelect.innerHTML = `<option value="">All Lenders</option>`;
+        lenders.rows.forEach(r => {
+          const opt = document.createElement("option");
+          opt.value = r.lendername; opt.textContent = r.lendername;
+          lenderSelect.appendChild(opt);
+        });
+
+        statusDiv.textContent = "Loading years...";
+        const years = await queryDB("SELECT DISTINCT datayear FROM hmda_test ORDER BY datayear DESC");
+        yearSelect.innerHTML = `<option value="">All Years</option>`;
+        years.rows.forEach(r => {
+          const opt = document.createElement("option");
+          opt.value = r.datayear; opt.textContent = r.datayear;
+          yearSelect.appendChild(opt);
+        });
+
+        statusDiv.textContent = "Ready!";
+        setupListeners();
+      } catch (e) {
+        statusDiv.textContent = "Failed to load filters.";
+        console.error(e);
+      }
+    }
+
+    function setupListeners() {
+      lenderSelect.onchange = updateMap;
+      yearSelect.onchange = updateMap;
+      setTimeout(updateMap, 500);
+    }
+
+    async function queryDB(sql) {
+      const res = await fetch(`${PROXY_URL}?sql=${encodeURIComponent(sql)}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return await res.json();
+    }
+
+    async function updateMap() {
+      const lender = lenderSelect.value;
+      const year = yearSelect.value;
+
+      statusDiv.textContent = "Updating...";
+
+      try {
+        let sql = `
+          SELECT 
+            stfid AS geoid,
+            COUNT(*) AS record_count
+          FROM hmda_test
+          WHERE stfid IS NOT NULL
+        `;
+        if (lender) sql += ` AND lendername = '${lender.replace(/'/g, "''")}'`;
+        if (year) sql += ` AND datayear = ${year}`;
+        sql += ` GROUP BY stfid`;
+
+        const data = await queryDB(sql);
+
+        currentData = {};
+        let maxCount = 0;
+        data.rows.forEach(r => {
+          const geoid = String(r.geoid).trim();
+          currentData[geoid] = r.record_count;
+          if (r.record_count > maxCount) maxCount = r.record_count;
+        });
+
+        const stops = [
+          [0, "#f5f5dc"],
+          [1, "#d9f0a3"],
+          [Math.floor(maxCount * 0.33) || 1, "#78c679"],
+          [Math.floor(maxCount * 0.66) || 1, "#41ab5d"],
+          [maxCount || 1, "#238443"]
+        ];
+
+        map.setPaintProperty("census-tracts-fill", "fill-color", [
+          "case",
+          ["has", ["get", "GEOID"], ["literal", Object.keys(currentData)]],
+          [
+            "interpolate",
+            ["linear"],
+            ["get", ["to-string", ["get", "GEOID"]], currentData],
+            ...stops.flat()
+          ],
+          "#f5f5dc"
+        ]);
+
+        statusDiv.textContent = `Updated: ${Object.keys(currentData).length} tracts`;
+      } catch (e) {
+        statusDiv.textContent = "Update failed.";
+        console.error(e);
+      }
+    }
+  </script>
+</body>
+</html>
