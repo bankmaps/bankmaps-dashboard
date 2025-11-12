@@ -1,25 +1,17 @@
-// api/query.js
 import { Client } from '@neondatabase/serverless';
 
 export default async function handler(req, res) {
-  const { sql } = req.query;
+  const sql = req.query.sql;
+  if (!sql) return res.status(400).json({ error: 'Missing sql' });
 
-  if (!sql) {
-    return res.status(400).json({ error: 'Missing ?sql=' });
-  }
-
-  const client = new Client({
-    connectionString: 'postgresql://neondb_owner:npg_hx3XPzS7kEoU@ep-raspy-meadow-a4lclh7w-pooler.us-east-1.aws.neon.tech/neondb?sslmode=require'
-  });
-
+  const client = new Client(process.env.NEON_URL);
   try {
     await client.connect();
     const result = await client.query(sql);
     await client.end();
-
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.status(200).json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.json(result);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
   }
 }
