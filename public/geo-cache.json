@@ -1,3 +1,7 @@
 
-[{"statename" : "Rhode Island", "county" : "Providence                                 ", "record_count" : 23970, "percentile" : 20.00}, {"statename" : "Rhode Island", "county" : "Kent                                       ", "record_count" : 7955, "percentile" : 40.00}, {"statename" : "Rhode Island", "county" : "Washington                                 ", "record_count" : 5089, "percentile" : 60.00}, {"statename" : "Rhode Island", "county" : "Newport                                    ", "record_count" : 2961, "percentile" : 80.00}, {"statename" : "Rhode Island", "county" : "Bristol                                    ", "record_count" : 1893, "percentile" : 100.00}]
+ [{"statename" : "Rhode Island", "county" : "Providence", "statecountyid" : 44007}, 
+  {"statename" : "Rhode Island", "county" : "Kent", "statecountyid" : 44003}, 
+  {"statename" : "Rhode Island", "county" : "Washington", "statecountyid" : 44009}, 
+  {"statename" : "Rhode Island", "county" : "Newport", "statecountyid" : 44005}, 
+  {"statename" : "Rhode Island", "county" : "Bristol", "statecountyid" : 44001}]
 
