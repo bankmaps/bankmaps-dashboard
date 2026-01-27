@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "echo ok",
-    "start": "echo ok"
-  },
+  "build": "echo ok",
+  "start": "node server.js"
+}
   "dependencies": {
     "cookie": "^0.6.0",
     "pg": "^8.11.3",
