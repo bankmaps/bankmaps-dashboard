@@ -5,30 +5,82 @@
   <title>BankMaps – Activate AIServices</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {font-family:system-ui,sans-serif;background:#f6f8fb;margin:0;padding:24px}
-    .wrap {max-width:720px;margin:auto;background:#fff;padding:32px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.08)}
-    h1 {color:#0b3366;margin:0 0 16px}
-    label {display:block;font-weight:600;margin:20px 0 6px}
-    select,button {width:100%;padding:12px;border:1px solid #ccd5e0;border-radius:8px;font-size:16px}
-    button {background:#0b5fff;color:#fff;border:none;cursor:pointer;margin-top:24px}
-    button:disabled {opacity:0.5;cursor:not-allowed}
-    #output {margin-top:32px;padding:16px;background:#f0f4f8;border-radius:8px;white-space:pre;font-family:monospace;font-size:14px}
-    .note {color:#555;font-size:0.9rem}
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f6f8fb;
+      margin: 0;
+      padding: 24px;
+    }
+    .wrap {
+      max-width: 720px;
+      margin: auto;
+      background: white;
+      padding: 32px;
+      border-radius: 12px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
+    }
+    h1 {
+      color: #0b3366;
+      margin: 0 0 16px;
+    }
+    label {
+      display: block;
+      font-weight: 600;
+      margin: 20px 0 6px;
+    }
+    select, button {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ccd5e0;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      background: #0b5fff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      margin-top: 24px;
+    }
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #output {
+      margin-top: 32px;
+      padding: 16px;
+      background: #f0f4f8;
+      border-radius: 8px;
+      white-space: pre;
+      font-family: monospace;
+      font-size: 14px;
+    }
+    .note {
+      color: #555;
+      font-size: 0.9rem;
+      margin-bottom: 16px;
+    }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Activate AIServices</h1>
-    <p class="note">Select your geographies. Data from live Neon query.</p>
+    <p class="note">Select your geographies. Data from live Neon query via API.</p>
 
     <label>State</label>
-    <select id="state"><option value="">— Select state —</option></select>
+    <select id="state">
+      <option value="">— Select state —</option>
+    </select>
 
     <label>County</label>
-    <select id="county" disabled><option value="">— Select county —</option></select>
+    <select id="county" disabled>
+      <option value="">— Select county —</option>
+    </select>
 
     <label>Town (optional)</label>
-    <select id="town" disabled><option value="">— Select town —</option></select>
+    <select id="town" disabled>
+      <option value="">— Select town —</option>
+    </select>
 
     <button id="add">Add to User_JSON</button>
 
@@ -42,42 +94,54 @@
       .then(states => {
         const sel = document.getElementById('state');
         states.forEach(s => sel.innerHTML += `<option>${s}</option>`);
-      });
+      })
+      .catch(e => console.error('States load error:', e));
 
-    // County
+    // County on state change
     document.getElementById('state').onchange = e => {
-      const state = e.target.value;
+      const stateName = e.target.options[e.target.selectedIndex].text; // full name
       const countySel = document.getElementById('county');
-      countySel.disabled = !state;
+      countySel.disabled = !stateName;
       countySel.innerHTML = '<option value="">— Select county —</option>';
-      if (!state) return;
 
-      fetch(`/api/geographies?level=county&state=${encodeURIComponent(state)}`)
+      if (!stateName) return;
+
+      fetch(`/api/geographies?level=county&state=${encodeURIComponent(stateName)}`)
         .then(r => r.json())
-        .then(counties => counties.forEach(c => countySel.innerHTML += `<option>${c}</option>`));
+        .then(counties => {
+          counties.forEach(c => countySel.innerHTML += `<option>${c}</option>`);
+        })
+        .catch(e => console.error('Counties error:', e));
     };
 
-    // Town
+    // Town on county change
     document.getElementById('county').onchange = e => {
-      const state = document.getElementById('state').value;
-      const county = e.target.value;
+      const stateName = document.getElementById('state').options[document.getElementById('state').selectedIndex].text;
+      const countyName = e.target.options[e.target.selectedIndex].text;
       const townSel = document.getElementById('town');
-      townSel.disabled = !county;
+      townSel.disabled = !countyName;
       townSel.innerHTML = '<option value="">— Select town —</option>';
-      if (!county) return;
 
-      fetch(`/api/geographies?level=town&state=${encodeURIComponent(state)}&county=${encodeURIComponent(county)}`)
+      if (!countyName) return;
+
+      fetch(`/api/geographies?level=town&state=${encodeURIComponent(stateName)}&county=${encodeURIComponent(countyName)}`)
         .then(r => r.json())
-        .then(towns => towns.forEach(t => townSel.innerHTML += `<option>${t}</option>`));
+        .then(towns => {
+          towns.forEach(t => townSel.innerHTML += `<option>${t}</option>`);
+        })
+        .catch(e => console.error('Towns error:', e));
     };
 
-    // Add button
+    // Add selected geography
     document.getElementById('add').onclick = () => {
       const s = document.getElementById('state').value;
       const c = document.getElementById('county').value;
       const t = document.getElementById('town').value;
 
-      if (!s) return document.getElementById('output').textContent = 'Select at least a state.';
+      if (!s) {
+        document.getElementById('output').textContent = 'Select at least a state.';
+        return;
+      }
 
       const geo = { type: t ? 'town' : c ? 'county' : 'state' };
       if (s) geo.state = s;
@@ -85,7 +149,8 @@
       if (t) geo.town = t;
 
       document.getElementById('output').textContent = 
-        'Added to User_JSON.geographies:\n\n' + JSON.stringify(geo, null, 2);
+        'Added to User_JSON.geographies:\n\n' +
+        JSON.stringify(geo, null, 2);
     };
   </script>
 </body>
