@@ -14,7 +14,7 @@
     button:disabled {opacity:0.5;cursor:not-allowed}
     #output {margin-top:32px;padding:16px;background:#f0f4f8;border-radius:8px;white-space:pre;font-family:monospace;font-size:14px}
     .note {color:#555;font-size:0.9rem;margin-bottom:16px}
-    .error {color:#d32f2f;font-weight:bold}
+    .error {color:#d32f2f;font-weight:bold;margin-top:8px}
   </style>
 </head>
 <body>
@@ -71,9 +71,9 @@
 
       fetch(`/api/geographies?level=county&state=${encodeURIComponent(stateName)}`)
         .then(r => r.json())
-        .then(counties => {
-          if (counties.error) throw new Error(counties.error);
-          counties.forEach(c => {
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          data.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
             opt.textContent = c;
@@ -98,9 +98,9 @@
 
       fetch(`/api/geographies?level=town&state=${encodeURIComponent(stateName)}&county=${encodeURIComponent(countyName)}`)
         .then(r => r.json())
-        .then(towns => {
-          if (towns.error) throw new Error(towns.error);
-          towns.forEach(t => {
+        .then(data => {
+          if (data.error) throw new Error(data.error);
+          data.forEach(t => {
             const opt = document.createElement('option');
             opt.value = t;
             opt.textContent = t;
