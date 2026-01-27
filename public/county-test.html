@@ -8,6 +8,7 @@
     body {font-family:system-ui,sans-serif;background:#f6f8fb;margin:0;padding:40px}
     .wrap {max-width:600px;margin:auto;background:#fff;padding:32px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.1)}
     h1 {color:#0b3366;margin:0 0 20px}
+    label {display:block;font-weight:600;margin-bottom:8px}
     select {width:100%;padding:12px;border:1px solid #ccd5e0;border-radius:8px;font-size:16px}
     #output {margin-top:32px;padding:16px;background:#f0f4f8;border-radius:8px;white-space:pre;font-family:monospace;font-size:14px}
     .note {color:#555;font-size:0.9rem;margin-bottom:16px}
@@ -31,11 +32,15 @@
     fetch('/api/geographies?level=county')
       .then(r => r.json())
       .then(data => {
-        console.log('Raw response:', data);
+        console.log('Raw counties response:', data);
 
-        if (data.error) throw new Error(data.error);
+        if (data.error) {
+          throw new Error(data.error);
+        }
 
-        if (!Array.isArray(data)) throw new Error('Response is not an array');
+        if (!Array.isArray(data)) {
+          throw new Error('Response is not an array');
+        }
 
         const sel = document.getElementById('county');
         data.forEach(c => {
@@ -48,7 +53,7 @@
         document.getElementById('output').textContent = 'Counties loaded: ' + data.length + ' found';
       })
       .catch(e => {
-        console.error('Error:', e);
+        console.error('Counties load error:', e);
         document.getElementById('output').innerHTML = '<p class="error">Failed: ' + e.message + '</p>';
       });
 
