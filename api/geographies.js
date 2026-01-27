@@ -1,6 +1,6 @@
 const { neon } = require('@neondatabase/serverless');
 
-const sql = neon(process.env.DATABASE_URL);
+const sql = neon(process.env.DATABASE_URL || 'postgres://default:your-password@your-host.neon.tech/your-db?sslmode=require');
 
 module.exports = async (req, res) => {
   const { level, state, county } = req.query;
@@ -8,10 +8,6 @@ module.exports = async (req, res) => {
   if (!level || !['state', 'county', 'town'].includes(level)) {
     return res.status(400).json({ error: 'Invalid level. Use: state, county, or town' });
   }
-
-  // Sanitize params (remove special chars that might break binding)
-  const safeState = state ? String(state).replace(/[^a-zA-Z0-9\s\-,']/g, '') : null;
-  const safeCounty = county ? String(county).replace(/[^a-zA-Z0-9\s\-,']/g, '') : null;
 
   let query = '';
   let params = [];
@@ -24,22 +20,22 @@ module.exports = async (req, res) => {
       ORDER BY value;
     `;
   } else if (level === 'county') {
-    if (safeState) params = [safeState];
+    if (state) params = [state];
     query = `
       SELECT DISTINCT county AS value
       FROM census_us
-      WHERE ${safeState ? 'state = $1 AND' : ''}
+      WHERE ${state ? 'state = $1 AND' : ''}
         year = (SELECT MAX(year) FROM census_us)
       ORDER BY value;
     `;
   } else { // town
-    if (safeState) params = [safeState];
-    if (safeCounty) params.push(safeCounty);
+    if (state) params = [state];
+    if (county) params.push(county);
     query = `
       SELECT DISTINCT town AS value
       FROM census_us
-      WHERE ${safeState ? 'state = $1 AND' : ''}
-        ${safeCounty ? 'county = $2 AND' : ''}
+      WHERE ${state ? 'state = $1 AND' : ''}
+        ${county ? 'county = $2 AND' : ''}
         year = (SELECT MAX(year) FROM census_us)
       ORDER BY value;
     `;
@@ -48,8 +44,8 @@ module.exports = async (req, res) => {
   try {
     console.log('Executing query:', query, 'with params:', params);
     const result = await sql(query, ...params);
+    console.log('Result type:', typeof result, 'result:', result);
 
-    // Robust result handling
     let rows = [];
     if (result) {
       if (Array.isArray(result)) rows = result;
@@ -59,9 +55,9 @@ module.exports = async (req, res) => {
     }
 
     const values = rows.map(row => {
-      if (typeof row === 'object' && row !== null) return row.value || Object.values(row)[0] || '';
-      return row || '';
-    }).filter(v => v); // remove empty
+      if (typeof row === 'object' && row !== null) return row.value || row;
+      return row;
+    }).filter(v => v);
 
     res.json(values);
   } catch (err) {
