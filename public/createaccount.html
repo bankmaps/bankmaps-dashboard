@@ -14,6 +14,7 @@
     button:disabled {opacity:0.5;cursor:not-allowed}
     #output {margin-top:32px;padding:16px;background:#f0f4f8;border-radius:8px;white-space:pre;font-family:monospace;font-size:14px}
     .note {color:#555;font-size:0.9rem;margin-bottom:16px}
+    .error {color:#d32f2f;font-weight:bold}
   </style>
 </head>
 <body>
@@ -49,16 +50,19 @@
         const sel = document.getElementById('state');
         states.forEach(s => {
           const opt = document.createElement('option');
-          opt.value = s; // full name
+          opt.value = s;
           opt.textContent = s;
           sel.appendChild(opt);
         });
       })
-      .catch(e => console.error('States load error:', e));
+      .catch(e => {
+        console.error('States load error:', e);
+        document.getElementById('output').innerHTML += '<p class="error">States API failed: ' + e.message + '</p>';
+      });
 
     // County
     document.getElementById('state').onchange = e => {
-      const stateName = e.target.value; // full name
+      const stateName = e.target.value;
       const countySel = document.getElementById('county');
       countySel.disabled = !stateName;
       countySel.innerHTML = '<option value="">— Select county —</option>';
@@ -68,6 +72,7 @@
       fetch(`/api/geographies?level=county&state=${encodeURIComponent(stateName)}`)
         .then(r => r.json())
         .then(counties => {
+          if (counties.error) throw new Error(counties.error);
           counties.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
@@ -75,7 +80,10 @@
             countySel.appendChild(opt);
           });
         })
-        .catch(e => console.error('Counties error:', e));
+        .catch(e => {
+          console.error('Counties error:', e);
+          document.getElementById('output').innerHTML += '<p class="error">Counties API failed: ' + e.message + '</p>';
+        });
     };
 
     // Town
@@ -91,6 +99,7 @@
       fetch(`/api/geographies?level=town&state=${encodeURIComponent(stateName)}&county=${encodeURIComponent(countyName)}`)
         .then(r => r.json())
         .then(towns => {
+          if (towns.error) throw new Error(towns.error);
           towns.forEach(t => {
             const opt = document.createElement('option');
             opt.value = t;
@@ -98,7 +107,10 @@
             townSel.appendChild(opt);
           });
         })
-        .catch(e => console.error('Towns error:', e));
+        .catch(e => {
+          console.error('Towns error:', e);
+          document.getElementById('output').innerHTML += '<p class="error">Towns API failed: ' + e.message + '</p>';
+        });
     };
 
     // Add
