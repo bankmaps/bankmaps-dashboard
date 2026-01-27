@@ -43,9 +43,20 @@ module.exports = async (req, res) => {
 
   try {
     const result = await sql(query, ...params);
-    // Neon returns { rows: array, ... } - extract rows safely
-    const rows = result.rows || result || [];
-    const values = Array.isArray(rows) ? rows.map(row => row.value || row) : [];
+
+    // Safety: handle different result shapes from Neon driver
+    let rows = [];
+    if (result && typeof result === 'object') {
+      if (Array.isArray(result)) rows = result;
+      else if (result.rows && Array.isArray(result.rows)) rows = result.rows;
+      else if (result.values && Array.isArray(result.values)) rows = result.values;
+    }
+
+    const values = rows.map(row => {
+      if (typeof row === 'object' && row !== null) return row.value || row;
+      return row; // fallback
+    });
+
     res.json(values);
   } catch (err) {
     console.error('Full query error:', err);
