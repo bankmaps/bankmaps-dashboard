@@ -69,10 +69,15 @@
 
       if (!stateName) return;
 
-      fetch(`/api/geographies?level=county&state=${encodeURIComponent(stateName)}`)
+      const url = `/api/geographies?level=county&state=${encodeURIComponent(stateName)}`;
+      console.log('Fetching counties from:', url); // debug log
+
+      fetch(url)
         .then(r => r.json())
         .then(data => {
+          console.log('Counties raw response:', data); // debug log
           if (data.error) throw new Error(data.error);
+          if (!Array.isArray(data)) throw new Error('Counties response is not an array');
           data.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c;
@@ -96,10 +101,15 @@
 
       if (!countyName) return;
 
-      fetch(`/api/geographies?level=town&state=${encodeURIComponent(stateName)}&county=${encodeURIComponent(countyName)}`)
+      const url = `/api/geographies?level=town&state=${encodeURIComponent(stateName)}&county=${encodeURIComponent(countyName)}`;
+      console.log('Fetching towns from:', url);
+
+      fetch(url)
         .then(r => r.json())
         .then(data => {
+          console.log('Towns raw response:', data);
           if (data.error) throw new Error(data.error);
+          if (!Array.isArray(data)) throw new Error('Towns response is not an array');
           data.forEach(t => {
             const opt = document.createElement('option');
             opt.value = t;
