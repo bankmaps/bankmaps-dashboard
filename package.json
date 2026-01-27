@@ -1,0 +1,16 @@
+{
+  "name": "bankmaps",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "build": "echo ok",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cookie": "^0.6.0",
+    "pg": "^8.11.3",
+    "postmark": "^4.0.5",
+    "stripe": "^14.0.0",
+    "@neondatabase/serverless": "^0.9.0"
+  }
+}
