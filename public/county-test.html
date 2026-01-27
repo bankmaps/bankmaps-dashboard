@@ -1,109 +1,63 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>BankMaps – Activate AIServices (County Test)</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f6f8fb;
-      margin: 0;
-      padding: 40px;
-    }
-    .wrap {
-      max-width: 600px;
-      margin: auto;
-      background: white;
-      padding: 32px;
-      border-radius: 12px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.1);
-    }
-    h1 {
-      color: #0b3366;
-      margin: 0 0 20px;
-    }
-    label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    select {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ccd5e0;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    #output {
-      margin-top: 32px;
-      padding: 16px;
-      background: #f0f4f8;
-      border-radius: 8px;
-      white-space: pre;
-      font-family: monospace;
-      font-size: 14px;
-    }
-    .note {
-      color: #555;
-      font-size: 0.9rem;
-      margin-bottom: 16px;
-    }
-    .error {
-      color: #d32f2f;
-      font-weight: bold;
-      margin-top: 8px;
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>Test: County Dropdown Only</h1>
-    <p class="note">Loads counties from live Neon API (no state filter).</p>
+const express = require('express');
+const { neon } = require('@neondatabase/serverless');
 
-    <label>County</label>
-    <select id="county">
-      <option value="">— Select county —</option>
-    </select>
+const app = express();
+const port = process.env.PORT || 3000;
 
-    <div id="output">Nothing loaded yet.</div>
-  </div>
+app.use(express.static('public'));
 
-  <script>
-    // Load counties (no state param)
-    fetch('/api/geographies?level=county')
-      .then(r => r.json())
-      .then(data => {
-        console.log('Raw counties response:', data);
+const sql = neon(process.env.DATABASE_URL);
 
-        if (data.error) {
-          throw new Error(data.error);
-        }
+app.get('/api/geographies', async (req, res) => {
+  const { level, state, county } = req.query;
 
-        if (!Array.isArray(data)) {
-          throw new Error('Response is not an array');
-        }
+  if (!level || !['state', 'county', 'town'].includes(level)) {
+    return res.status(400).json({ error: 'Invalid level. Use: state, county, or town' });
+  }
 
-        const sel = document.getElementById('county');
-        data.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c;
-          opt.textContent = c;
-          sel.appendChild(opt);
-        });
+  let query = '';
+  let params = [];
 
-        document.getElementById('output').textContent = 'Counties loaded: ' + data.length + ' found';
-      })
-      .catch(e => {
-        console.error('Counties load error:', e);
-        document.getElementById('output').innerHTML = '<p class="error">Failed: ' + e.message + '</p>';
-      });
+  if (level === 'state') {
+    query = `
+      SELECT DISTINCT state AS value
+      FROM census_us
+      WHERE year = (SELECT MAX(year) FROM census_us)
+      ORDER BY value;
+    `;
+  } else if (level === 'county') {
+    // Removed 'state required' check - now returns ALL counties
+    if (state) params = [state];
+    query = `
+      SELECT DISTINCT county AS value
+      FROM census_us
+      WHERE ${state ? 'state = $1 AND' : ''}
+        year = (SELECT MAX(year) FROM census_us)
+      ORDER BY value;
+    `;
+  } else { // town
+    if (state) params = [state];
+    if (county) params.push(county);
+    query = `
+      SELECT DISTINCT town AS value
+      FROM census_us
+      WHERE ${state ? 'state = $1 AND' : ''}
+        ${county ? 'county = $2 AND' : ''}
+        year = (SELECT MAX(year) FROM census_us)
+      ORDER BY value;
+    `;
+  }
 
-    // Show selected county
-    document.getElementById('county').onchange = e => {
-      const county = e.target.value;
-      document.getElementById('output').textContent = county ? `Selected: ${county}` : 'Nothing selected yet.';
-    };
-  </script>
-</body>
-</html>
+  try {
+    const rows = await sql(query, ...params);
+    const values = rows.map(row => row.value);
+    res.json(values);
+  } catch (err) {
+    console.error('Query error:', err.message);
+    res.status(500).json({ error: 'Database query failed', details: err.message });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
