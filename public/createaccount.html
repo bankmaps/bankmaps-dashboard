@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>BankMaps – Activate AIServices (Geography)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f6f8fb; margin: 0; padding: 24px; }
+    .wrap { max-width: 600px; margin: auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    h1 { color: #0b3366; margin: 0 0 16px; }
+    label { display: block; font-weight: 600; margin: 16px 0 6px; }
+    select, button { width: 100%; padding: 10px; border: 1px solid #ccd5e0; border-radius: 8px; }
+    button { background: #0b5fff; color: white; border: none; cursor: pointer; margin-top: 16px; }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+    #output { margin-top: 32px; padding: 16px; background: #f0f4f8; border-radius: 8px; white-space: pre-wrap; font-family: monospace; }
+    .note { color: #555; font-size: 0.9rem; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Activate AIServices – Select Geography</h1>
+    <p class="note">Select from your census_us data. This builds the geographies part of User_JSON.</p>
+
+    <label>State</label>
+    <select id="state"><option value="">— Select state —</option></select>
+
+    <label>County</label>
+    <select id="county" disabled><option value="">— Select county —</option></select>
+
+    <label>Town (optional)</label>
+    <select id="town" disabled><option value="">— Select town —</option></select>
+
+    <button id="add">Add to User_JSON</button>
+
+    <div id="output">Nothing added yet.</div>
+  </div>
+
+  <script>
+    const geoUrl = '/public/geographies.json'; // change if your file is named differently or in a subfolder
+    let geoData = [];
+
+    // Load the file
+    fetch(geoUrl, { cache: 'no-store' })
+      .then(r => {
+        if (!r.ok) throw new Error(`Failed to load ${geoUrl}: ${r.status}`);
+        return r.json();
+      })
+      .then(data => {
+        geoData = data; // assume array of {state, county, town}
+        populateStates();
+      })
+      .catch(err => {
+        document.getElementById('output').textContent = 'Error: ' + err.message + '\nCheck console and make sure /public/geographies.json exists and is valid JSON.';
+        console.error(err);
+      });
+
+    function populateStates() {
+      const states = [...new Set(geoData.map(row => row.state))].sort();
+      const sel = document.getElementById('state');
+      states.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = s;
+        sel.appendChild(opt);
+      });
+    }
+
+    document.getElementById('state').addEventListener('change', e => {
+      const state = e.target.value;
+      const countySel = document.getElementById('county');
+      countySel.innerHTML = '<option value="">— Select county —</option>';
+      countySel.disabled = !state;
+
+      if (!state) return;
+
+      const counties = [...new Set(
+        geoData.filter(row => row.state === state).map(row => row.county)
+      )].sort();
+
+      counties.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c;
+        opt.textContent = c;
+        countySel.appendChild(opt);
+      });
+    });
+
+    document.getElementById('county').addEventListener('change', e => {
+      const state = document.getElementById('state').value;
+      const county = e.target.value;
+      const townSel = document.getElementById('town');
+      townSel.innerHTML = '<option value="">— Select town —</option>';
+      townSel.disabled = !county;
+
+      if (!county) return;
+
+      const towns = [...new Set(
+        geoData.filter(row => row.state === state && row.county === county).map(row => row.town)
+      )].sort();
+
+      towns.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t;
+        opt.textContent = t;
+        townSel.appendChild(opt);
+      });
+    });
+
+    // Add selected geography to output (like building User_JSON)
+    document.getElementById('add').addEventListener('click', () => {
+      const state = document.getElementById('state').value;
+      const county = document.getElementById('county').value;
+      const town = document.getElementById('town').value;
+
+      if (!state) {
+        document.getElementById('output').textContent = 'Select at least a state.';
+        return;
+      }
+
+      const geo = { type: town ? 'town' : county ? 'county' : 'state' };
+      if (state) geo.state = state;
+      if (county) geo.county = county;
+      if (town) geo.town = town;
+
+      document.getElementById('output').textContent =
+        `Added to User_JSON.geographies:\n\n` +
+        JSON.stringify(geo, null, 2) +
+        `\n\n(You can add multiple by repeating the selection.)`;
+    });
+  </script>
+</body>
+</html>
