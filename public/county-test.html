@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Test - County Dropdown Only</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    body {font-family:system-ui,sans-serif;background:#f6f8fb;margin:0;padding:40px}
+    .wrap {max-width:600px;margin:auto;background:#fff;padding:32px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.1)}
+    h1 {color:#0b3366;margin:0 0 20px}
+    select {width:100%;padding:12px;border:1px solid #ccd5e0;border-radius:8px;font-size:16px}
+    #output {margin-top:32px;padding:16px;background:#f0f4f8;border-radius:8px;white-space:pre;font-family:monospace;font-size:14px}
+    .note {color:#555;font-size:0.9rem;margin-bottom:16px}
+    .error {color:#d32f2f;font-weight:bold;margin-top:8px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Test: County Dropdown Only</h1>
+    <p class="note">Loads counties for Massachusetts from live Neon API.</p>
+
+    <label>County (Massachusetts)</label>
+    <select id="county">
+      <option value="">— Select county —</option>
+    </select>
+
+    <div id="output">Nothing selected yet.</div>
+  </div>
+
+  <script>
+    // Hardcoded state for this test (change if needed)
+    const testState = 'Massachusetts';
+
+    // Load counties
+    fetch(`/api/geographies?level=county&state=${encodeURIComponent(testState)}`)
+      .then(r => r.json())
+      .then(data => {
+        console.log('Raw counties response:', data); // debug in console
+
+        if (data.error) {
+          throw new Error(data.error);
+        }
+
+        if (!Array.isArray(data)) {
+          throw new Error('Response is not an array');
+        }
+
+        const sel = document.getElementById('county');
+        data.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c;
+          opt.textContent = c;
+          sel.appendChild(opt);
+        });
+
+        document.getElementById('output').textContent = 'Counties loaded: ' + data.length + ' found';
+      })
+      .catch(e => {
+        console.error('Counties load error:', e);
+        document.getElementById('output').innerHTML = '<p class="error">Failed: ' + e.message + '</p>';
+      });
+
+    // Show selected county
+    document.getElementById('county').onchange = e => {
+      const county = e.target.value;
+      document.getElementById('output').textContent = 
+        county ? `Selected county: ${county}` : 'Nothing selected yet.';
+    };
+  </script>
+</body>
+</html>
