@@ -65,7 +65,7 @@
 <body>
   <div class="wrap">
     <h1>Activate AIServices</h1>
-    <p class="note">Select your geographies. Data from live Neon query via API.</p>
+    <p class="note">Select geographies from live Neon data via API.</p>
 
     <label>State</label>
     <select id="state">
@@ -93,13 +93,18 @@
       .then(r => r.json())
       .then(states => {
         const sel = document.getElementById('state');
-        states.forEach(s => sel.innerHTML += `<option>${s}</option>`);
+        states.forEach(s => {
+          const opt = document.createElement('option');
+          opt.value = s; // full name as value
+          opt.textContent = s;
+          sel.appendChild(opt);
+        });
       })
       .catch(e => console.error('States load error:', e));
 
     // County on state change
     document.getElementById('state').onchange = e => {
-      const stateName = e.target.options[e.target.selectedIndex].text; // full name
+      const stateName = e.target.value; // full name
       const countySel = document.getElementById('county');
       countySel.disabled = !stateName;
       countySel.innerHTML = '<option value="">— Select county —</option>';
@@ -109,15 +114,20 @@
       fetch(`/api/geographies?level=county&state=${encodeURIComponent(stateName)}`)
         .then(r => r.json())
         .then(counties => {
-          counties.forEach(c => countySel.innerHTML += `<option>${c}</option>`);
+          counties.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c;
+            opt.textContent = c;
+            countySel.appendChild(opt);
+          });
         })
         .catch(e => console.error('Counties error:', e));
     };
 
     // Town on county change
     document.getElementById('county').onchange = e => {
-      const stateName = document.getElementById('state').options[document.getElementById('state').selectedIndex].text;
-      const countyName = e.target.options[e.target.selectedIndex].text;
+      const stateName = document.getElementById('state').value;
+      const countyName = e.target.value;
       const townSel = document.getElementById('town');
       townSel.disabled = !countyName;
       townSel.innerHTML = '<option value="">— Select town —</option>';
@@ -127,7 +137,12 @@
       fetch(`/api/geographies?level=town&state=${encodeURIComponent(stateName)}&county=${encodeURIComponent(countyName)}`)
         .then(r => r.json())
         .then(towns => {
-          towns.forEach(t => townSel.innerHTML += `<option>${t}</option>`);
+          towns.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            townSel.appendChild(opt);
+          });
         })
         .catch(e => console.error('Towns error:', e));
     };
