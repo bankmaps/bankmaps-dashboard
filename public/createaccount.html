@@ -5,61 +5,15 @@
   <title>BankMaps – Activate AIServices</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f6f8fb;
-      margin: 0;
-      padding: 24px;
-    }
-    .wrap {
-      max-width: 720px;
-      margin: auto;
-      background: white;
-      padding: 32px;
-      border-radius: 12px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.08);
-    }
-    h1 {
-      color: #0b3366;
-      margin: 0 0 16px;
-    }
-    label {
-      display: block;
-      font-weight: 600;
-      margin: 20px 0 6px;
-    }
-    select, button {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid #ccd5e0;
-      border-radius: 8px;
-      font-size: 16px;
-    }
-    button {
-      background: #0b5fff;
-      color: white;
-      border: none;
-      cursor: pointer;
-      margin-top: 24px;
-    }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    #output {
-      margin-top: 32px;
-      padding: 16px;
-      background: #f0f4f8;
-      border-radius: 8px;
-      white-space: pre;
-      font-family: monospace;
-      font-size: 14px;
-    }
-    .note {
-      color: #555;
-      font-size: 0.9rem;
-      margin-bottom: 16px;
-    }
+    body {font-family:system-ui,sans-serif;background:#f6f8fb;margin:0;padding:24px}
+    .wrap {max-width:720px;margin:auto;background:#fff;padding:32px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,0.08)}
+    h1 {color:#0b3366;margin:0 0 16px}
+    label {display:block;font-weight:600;margin:20px 0 6px}
+    select,button {width:100%;padding:12px;border:1px solid #ccd5e0;border-radius:8px;font-size:16px}
+    button {background:#0b5fff;color:#fff;border:none;cursor:pointer;margin-top:24px}
+    button:disabled {opacity:0.5;cursor:not-allowed}
+    #output {margin-top:32px;padding:16px;background:#f0f4f8;border-radius:8px;white-space:pre;font-family:monospace;font-size:14px}
+    .note {color:#555;font-size:0.9rem;margin-bottom:16px}
   </style>
 </head>
 <body>
@@ -95,14 +49,14 @@
         const sel = document.getElementById('state');
         states.forEach(s => {
           const opt = document.createElement('option');
-          opt.value = s; // full name as value
+          opt.value = s; // full name
           opt.textContent = s;
           sel.appendChild(opt);
         });
       })
       .catch(e => console.error('States load error:', e));
 
-    // County on state change
+    // County
     document.getElementById('state').onchange = e => {
       const stateName = e.target.value; // full name
       const countySel = document.getElementById('county');
@@ -124,7 +78,7 @@
         .catch(e => console.error('Counties error:', e));
     };
 
-    // Town on county change
+    // Town
     document.getElementById('county').onchange = e => {
       const stateName = document.getElementById('state').value;
       const countyName = e.target.value;
@@ -147,7 +101,7 @@
         .catch(e => console.error('Towns error:', e));
     };
 
-    // Add selected geography
+    // Add
     document.getElementById('add').onclick = () => {
       const s = document.getElementById('state').value;
       const c = document.getElementById('county').value;
