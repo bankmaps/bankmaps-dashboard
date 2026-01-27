@@ -48,23 +48,16 @@ app.get('/api/geographies', async (req, res) => {
   }
 
   try {
-    console.log('Executing query:', query, 'with params:', params); // debug
-    const rows = await sql(query, ...params);
-    console.log('Query rows type:', typeof rows, 'length:', rows ? rows.length : 'no rows'); // debug
-
-    // Safety check - if rows is not array-like, return empty
-    if (!rows || !Array.isArray(rows) && !rows.length) {
-      return res.json([]);
-    }
-
-    const values = rows.map(row => row.value || row); // fallback if no 'value' key
+    const result = await sql(query, ...params);
+    const rows = result.rows || []; // Ensure rows is array
+    const values = rows.map(row => row.value);
     res.json(values);
   } catch (err) {
-    console.error('Query error details:', err); // log full error
+    console.error('Query error:', err.message);
     res.status(500).json({ 
       error: 'Database query failed', 
       details: err.message,
-      stack: err.stack ? err.stack.split('\n').slice(0, 5) : 'no stack' // first 5 lines
+      stack: err.stack ? err.stack.split('\n').slice(0, 5) : 'no stack'
     });
   }
 });
