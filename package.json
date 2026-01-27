@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "echo ok",
-    "start": "node server.js"
+    "start": "node api/server.js"
   },
   "dependencies": {
     "cookie": "^0.6.0",
