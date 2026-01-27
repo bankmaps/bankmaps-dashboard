@@ -2,27 +2,32 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>BankMaps – Activate AIServices (Geography)</title>
+  <title>BankMaps – Activate AIServices</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     body { font-family: system-ui, sans-serif; background: #f6f8fb; margin: 0; padding: 24px; }
-    .wrap { max-width: 600px; margin: auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .wrap { max-width: 720px; margin: auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); }
     h1 { color: #0b3366; margin: 0 0 16px; }
     label { display: block; font-weight: 600; margin: 16px 0 6px; }
     select, button { width: 100%; padding: 10px; border: 1px solid #ccd5e0; border-radius: 8px; }
     button { background: #0b5fff; color: white; border: none; cursor: pointer; margin-top: 16px; }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
-    #output { margin-top: 32px; padding: 16px; background: #f0f4f8; border-radius: 8px; white-space: pre-wrap; font-family: monospace; }
-    .note { color: #555; font-size: 0.9rem; margin-top: 8px; }
+    #output { margin-top: 32px; padding: 16px; background: #f0f4f8; border-radius: 8px; white-space: pre; font-family: monospace; }
+    .note { color: #555; font-size: 0.9rem; margin-bottom: 16px; }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <h1>Activate AIServices – Select Geography</h1>
-    <p class="note">Select from your census_us data. This builds the geographies part of User_JSON.</p>
+    <h1>Activate AIServices</h1>
+    <p class="note">Select your lender and geographies to build User_JSON. Data from live Neon query.</p>
+
+    <label>Lender</label>
+    <select id="lender">
+      <option value="">— Select lender —</option>
+    </select>
 
     <label>State</label>
-    <select id="state"><option value="">— Select state —</option></select>
+    <select id="state" disabled><option value="">— Select state —</option></select>
 
     <label>County</label>
     <select id="county" disabled><option value="">— Select county —</option></select>
@@ -30,103 +35,94 @@
     <label>Town (optional)</label>
     <select id="town" disabled><option value="">— Select town —</option></select>
 
-    <button id="add">Add to User_JSON</button>
+    <button id="add" disabled>Add to User_JSON</button>
 
     <div id="output">Nothing added yet.</div>
   </div>
 
   <script>
-    const geoUrl = '/public/geographies.json'; // change if your file is named differently or in a subfolder
-    let geoData = [];
-
-    // Load the file
-    fetch(geoUrl, { cache: 'no-store' })
-      .then(r => {
-        if (!r.ok) throw new Error(`Failed to load ${geoUrl}: ${r.status}`);
-        return r.json();
+    // Load lenders (your existing file)
+    fetch('/public/loan_volume_cache.json')
+      .then(r => r.json())
+      .then(lenders => {
+        const sel = document.getElementById('lender');
+        lenders.forEach(l => {
+          const opt = document.createElement('option');
+          opt.value = l.lenderid || l.lender_id || l.lei;
+          opt.textContent = l.lendername || l.lender_name || opt.value;
+          sel.appendChild(opt);
+        });
       })
-      .then(data => {
-        geoData = data; // assume array of {state, county, town}
-        populateStates();
+      .catch(e => console.error('Lenders load error', e));
+
+    // Enable lender selection
+    document.getElementById('lender').onchange = e => {
+      document.getElementById('state').disabled = false;
+      document.getElementById('add').disabled = false;
+    };
+
+    // Load states
+    fetch('/api/geographies?level=state')
+      .then(r => r.json())
+      .then(states => {
+        const sel = document.getElementById('state');
+        states.forEach(s => sel.innerHTML += `<option>${s}</option>`);
       })
-      .catch(err => {
-        document.getElementById('output').textContent = 'Error: ' + err.message + '\nCheck console and make sure /public/geographies.json exists and is valid JSON.';
-        console.error(err);
-      });
+      .catch(e => console.error('States error', e));
 
-    function populateStates() {
-      const states = [...new Set(geoData.map(row => row.state))].sort();
-      const sel = document.getElementById('state');
-      states.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s;
-        opt.textContent = s;
-        sel.appendChild(opt);
-      });
-    }
-
-    document.getElementById('state').addEventListener('change', e => {
+    // County on state change
+    document.getElementById('state').onchange = e => {
       const state = e.target.value;
       const countySel = document.getElementById('county');
-      countySel.innerHTML = '<option value="">— Select county —</option>';
       countySel.disabled = !state;
+      countySel.innerHTML = '<option value="">— Select county —</option>';
 
       if (!state) return;
 
-      const counties = [...new Set(
-        geoData.filter(row => row.state === state).map(row => row.county)
-      )].sort();
+      fetch(`/api/geographies?level=county&state=${encodeURIComponent(state)}`)
+        .then(r => r.json())
+        .then(counties => {
+          counties.forEach(c => countySel.innerHTML += `<option>${c}</option>`);
+        });
+    };
 
-      counties.forEach(c => {
-        const opt = document.createElement('option');
-        opt.value = c;
-        opt.textContent = c;
-        countySel.appendChild(opt);
-      });
-    });
-
-    document.getElementById('county').addEventListener('change', e => {
+    // Town on county change
+    document.getElementById('county').onchange = e => {
       const state = document.getElementById('state').value;
       const county = e.target.value;
       const townSel = document.getElementById('town');
-      townSel.innerHTML = '<option value="">— Select town —</option>';
       townSel.disabled = !county;
+      townSel.innerHTML = '<option value="">— Select town —</option>';
 
       if (!county) return;
 
-      const towns = [...new Set(
-        geoData.filter(row => row.state === state && row.county === county).map(row => row.town)
-      )].sort();
+      fetch(`/api/geographies?level=town&state=${encodeURIComponent(state)}&county=${encodeURIComponent(county)}`)
+        .then(r => r.json())
+        .then(towns => {
+          towns.forEach(t => townSel.innerHTML += `<option>${t}</option>`);
+        });
+    };
 
-      towns.forEach(t => {
-        const opt = document.createElement('option');
-        opt.value = t;
-        opt.textContent = t;
-        townSel.appendChild(opt);
-      });
-    });
+    // Add selected geography
+    document.getElementById('add').onclick = () => {
+      const s = document.getElementById('state').value;
+      const c = document.getElementById('county').value;
+      const t = document.getElementById('town').value;
 
-    // Add selected geography to output (like building User_JSON)
-    document.getElementById('add').addEventListener('click', () => {
-      const state = document.getElementById('state').value;
-      const county = document.getElementById('county').value;
-      const town = document.getElementById('town').value;
-
-      if (!state) {
+      if (!s) {
         document.getElementById('output').textContent = 'Select at least a state.';
         return;
       }
 
-      const geo = { type: town ? 'town' : county ? 'county' : 'state' };
-      if (state) geo.state = state;
-      if (county) geo.county = county;
-      if (town) geo.town = town;
+      const geo = { type: t ? 'town' : c ? 'county' : 'state' };
+      if (s) geo.state = s;
+      if (c) geo.county = c;
+      if (t) geo.town = t;
 
-      document.getElementById('output').textContent =
-        `Added to User_JSON.geographies:\n\n` +
-        JSON.stringify(geo, null, 2) +
-        `\n\n(You can add multiple by repeating the selection.)`;
-    });
+      document.getElementById('output').textContent = 
+        'Added to User_JSON.geographies:\n\n' +
+        JSON.stringify(geo, null, 2);
+    };
   </script>
 </body>
 </html>
