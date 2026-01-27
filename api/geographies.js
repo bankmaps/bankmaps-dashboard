@@ -1,14 +1,8 @@
-const express = require('express');
 const { neon } = require('@neondatabase/serverless');
-
-const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(express.static('public'));
 
 const sql = neon(process.env.DATABASE_URL);
 
-app.get('/api/geographies', async (req, res) => {
+module.exports = async (req, res) => {
   const { level, state, county } = req.query;
 
   if (!level || !['state', 'county', 'town'].includes(level)) {
@@ -49,19 +43,16 @@ app.get('/api/geographies', async (req, res) => {
 
   try {
     const result = await sql(query, ...params);
-    const rows = result.rows || []; // Ensure rows is array
-    const values = rows.map(row => row.value);
+    // Neon returns { rows: array, ... } - extract rows safely
+    const rows = result.rows || result || [];
+    const values = Array.isArray(rows) ? rows.map(row => row.value || row) : [];
     res.json(values);
   } catch (err) {
-    console.error('Query error:', err.message);
+    console.error('Full query error:', err);
     res.status(500).json({ 
       error: 'Database query failed', 
       details: err.message,
       stack: err.stack ? err.stack.split('\n').slice(0, 5) : 'no stack'
     });
   }
-});
-
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+};
