@@ -1,8 +1,14 @@
+const express = require('express');
 const { neon } = require('@neondatabase/serverless');
+
+const app = express();
+const port = process.env.PORT || 3000;
+
+app.use(express.static('public'));
 
 const sql = neon(process.env.DATABASE_URL);
 
-module.exports = async (req, res) => {
+app.get('/api/geographies', async (req, res) => {
   const { level, state, county } = req.query;
 
   if (!level || !['state', 'county', 'town'].includes(level)) {
@@ -20,33 +26,49 @@ module.exports = async (req, res) => {
       ORDER BY value;
     `;
   } else if (level === 'county') {
-    if (!state) return res.status(400).json({ error: 'state required for county' });
-    params = [state];
+    if (state) params = [state];
     query = `
       SELECT DISTINCT county AS value
       FROM census_us
-      WHERE state = $1
-        AND year = (SELECT MAX(year) FROM census_us)
+      WHERE ${state ? 'state = $1 AND' : ''}
+        year = (SELECT MAX(year) FROM census_us)
       ORDER BY value;
     `;
   } else { // town
-    if (!state || !county) return res.status(400).json({ error: 'state and county required for town' });
-    params = [state, county];
+    if (state) params = [state];
+    if (county) params.push(county);
     query = `
       SELECT DISTINCT town AS value
       FROM census_us
-      WHERE state = $1
-        AND county = $2
-        AND year = (SELECT MAX(year) FROM census_us)
+      WHERE ${state ? 'state = $1 AND' : ''}
+        ${county ? 'county = $2 AND' : ''}
+        year = (SELECT MAX(year) FROM census_us)
       ORDER BY value;
     `;
   }
 
   try {
+    console.log('Executing query:', query, 'with params:', params); // debug
     const rows = await sql(query, ...params);
-    res.json(rows.map(row => row.value));
+    console.log('Query rows type:', typeof rows, 'length:', rows ? rows.length : 'no rows'); // debug
+
+    // Safety check - if rows is not array-like, return empty
+    if (!rows || !Array.isArray(rows) && !rows.length) {
+      return res.json([]);
+    }
+
+    const values = rows.map(row => row.value || row); // fallback if no 'value' key
+    res.json(values);
   } catch (err) {
-    console.error('Query error:', err.message);
-    res.status(500).json({ error: 'Database query failed', details: err.message });
+    console.error('Query error details:', err); // log full error
+    res.status(500).json({ 
+      error: 'Database query failed', 
+      details: err.message,
+      stack: err.stack ? err.stack.split('\n').slice(0, 5) : 'no stack' // first 5 lines
+    });
   }
-};
+});
+
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
+});
