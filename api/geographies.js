@@ -1,4 +1,4 @@
-import { query } from '@/lib/db'; // updated import
+const { query } = require('../lib/db');
 
 export default async (req, res) => {
   const { level, state, county } = req.query;
