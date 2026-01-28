@@ -1,19 +1,17 @@
-const { neon } = require('@neondatabase/serverless');
+import { query } from '@/lib/db'; // updated import
 
-const sql = neon(process.env.DATABASE_URL || 'postgres://default:your-password@your-host.neon.tech/your-db?sslmode=require');
-
-module.exports = async (req, res) => {
+export default async (req, res) => {
   const { level, state, county } = req.query;
 
   if (!level || !['state', 'county', 'town'].includes(level)) {
     return res.status(400).json({ error: 'Invalid level. Use: state, county, or town' });
   }
 
-  let query = '';
-  let params = [];
+  let sqlQuery = '';
+  let params: any[] = [];
 
   if (level === 'state') {
-    query = `
+    sqlQuery = `
       SELECT DISTINCT state AS value
       FROM census_us
       WHERE year = (SELECT MAX(year) FROM census_us)
@@ -21,7 +19,7 @@ module.exports = async (req, res) => {
     `;
   } else if (level === 'county') {
     if (state) params = [state];
-    query = `
+    sqlQuery = `
       SELECT DISTINCT county AS value
       FROM census_us
       WHERE ${state ? 'state = $1 AND' : ''}
@@ -29,9 +27,9 @@ module.exports = async (req, res) => {
       ORDER BY value;
     `;
   } else { // town
-    if (state) params = [state];
+    if (state) params.push(state);
     if (county) params.push(county);
-    query = `
+    sqlQuery = `
       SELECT DISTINCT town AS value
       FROM census_us
       WHERE ${state ? 'state = $1 AND' : ''}
@@ -42,25 +40,16 @@ module.exports = async (req, res) => {
   }
 
   try {
-    console.log('Executing query:', query, 'with params:', params);
-    const result = await sql(query, ...params);
-    console.log('Result type:', typeof result, 'result:', result);
+    console.log('Executing query:', sqlQuery, 'with params:', params);
+    const result = await query(sqlQuery, params); // <-- use pg helper
+    const rows = result.rows; // always an array
 
-    let rows = [];
-    if (result) {
-      if (Array.isArray(result)) rows = result;
-      else if (result.rows && Array.isArray(result.rows)) rows = result.rows;
-      else if (result.values && Array.isArray(result.values)) rows = result.values;
-      else if (result.length !== undefined) rows = Array.from(result);
-    }
-
-    const values = rows.map(row => {
-      if (typeof row === 'object' && row !== null) return row.value || row;
-      return row;
-    }).filter(v => v);
+    const values = rows
+      .map(row => row.value)
+      .filter(v => v !== null && v !== undefined);
 
     res.json(values);
-  } catch (err) {
+  } catch (err: any) {
     console.error('Full query error:', err);
     res.status(500).json({ 
       error: 'Database query failed', 
