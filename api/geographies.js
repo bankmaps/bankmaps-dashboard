@@ -1,6 +1,6 @@
 const { query } = require('../lib/db');
 
-export default async (req, res) => {
+module.exports = async (req, res) => {
   const { level, state, county } = req.query;
 
   if (!level || !['state', 'county', 'town'].includes(level)) {
