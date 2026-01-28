@@ -8,7 +8,7 @@ module.exports = async (req, res) => {
   }
 
   let sqlQuery = '';
-  let params: any[] = [];
+  let params = []; // no TypeScript syntax here
 
   if (level === 'state') {
     sqlQuery = `
@@ -18,7 +18,9 @@ module.exports = async (req, res) => {
       ORDER BY value;
     `;
   } else if (level === 'county') {
-    if (state) params = [state];
+    if (state) {
+      params.push(state);
+    }
     sqlQuery = `
       SELECT DISTINCT county AS value
       FROM census_us
@@ -41,15 +43,15 @@ module.exports = async (req, res) => {
 
   try {
     console.log('Executing query:', sqlQuery, 'with params:', params);
-    const result = await query(sqlQuery, params); // <-- use pg helper
-    const rows = result.rows; // always an array
+    const result = await query(sqlQuery, params); // pg helper
+    const rows = result.rows || [];
 
     const values = rows
       .map(row => row.value)
       .filter(v => v !== null && v !== undefined);
 
     res.json(values);
-  } catch (err: any) {
+  } catch (err) {
     console.error('Full query error:', err);
     res.status(500).json({ 
       error: 'Database query failed', 
