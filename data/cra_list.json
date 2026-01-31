@@ -1,0 +1,694 @@
+{
+  "table": "cra_disc",
+  "most_recent_year": "2024",
+  "record_count": 98,
+  "generated_at": "2026-01-31T11:10:29.805402",
+  "data": [
+    {
+      "year": "2024",
+      "lender": "1ST SOURCE BANK",
+      "lender_id": "20000991340",
+      "regulator": "Fed",
+      "lender_state": "IN"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN BANK, N.A.",
+      "lender_id": "10000015820",
+      "regulator": "OCC",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN EXPRESS NATIONAL BANK",
+      "lender_id": "10000025151",
+      "regulator": "OCC",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN NATIONAL BANK",
+      "lender_id": "10000015435",
+      "regulator": "OCC",
+      "lender_state": "NE"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERIS BANK",
+      "lender_id": "30000020504",
+      "regulator": "FDIC",
+      "lender_state": "GA"
+    },
+    {
+      "year": "2024",
+      "lender": "AVIDIA BANK",
+      "lender_id": "30000090215",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BANGOR SAVINGS BANK",
+      "lender_id": "30000018408",
+      "regulator": "FDIC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "BANK OF AMERICA NA",
+      "lender_id": "10000013044",
+      "regulator": "OCC",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "BANKPROV",
+      "lender_id": "30000090141",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BANTERRA BANK",
+      "lender_id": "30000017514",
+      "regulator": "FDIC",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "BARCLAYS BANK DELAWARE",
+      "lender_id": "30000057203",
+      "regulator": "FDIC",
+      "lender_state": "DE"
+    },
+    {
+      "year": "2024",
+      "lender": "BERKSHIRE BANK",
+      "lender_id": "30000023621",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BMO HARRIS BANK NA",
+      "lender_id": "10000014583",
+      "regulator": "OCC",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "BROOKLINE BANK",
+      "lender_id": "20000782306",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CADENCE BANK",
+      "lender_id": "20000606046",
+      "regulator": "Fed",
+      "lender_state": "MS"
+    },
+    {
+      "year": "2024",
+      "lender": "CAMBRIDGE SAVINGS BANK",
+      "lender_id": "30000017870",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CAMBRIDGE TRUST COMPANY",
+      "lender_id": "30000008152",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CAPITAL ONE, N.A.",
+      "lender_id": "10000013688",
+      "regulator": "OCC",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "CELTIC BANK CORPORATION",
+      "lender_id": "30000057056",
+      "regulator": "FDIC",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "CHARLES SCHWAB BANK, SSB",
+      "lender_id": "20003150447",
+      "regulator": "Fed",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "CHARLES SCHWAB PREMIER BANK, S",
+      "lender_id": "20001893049",
+      "regulator": "Fed",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "CIBC BANK USA",
+      "lender_id": "20001842065",
+      "regulator": "Fed",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "CITIBANK, N.A.",
+      "lender_id": "10000001461",
+      "regulator": "OCC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "CITIZENS BANK, NA",
+      "lender_id": "10000024571",
+      "regulator": "OCC",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "COASTAL COMMUNITY BANK",
+      "lender_id": "20002562164",
+      "regulator": "Fed",
+      "lender_state": "WA"
+    },
+    {
+      "year": "2024",
+      "lender": "COLONY BANK",
+      "lender_id": "30000022257",
+      "regulator": "FDIC",
+      "lender_state": "GA"
+    },
+    {
+      "year": "2024",
+      "lender": "COMERICA BANK",
+      "lender_id": "20000060143",
+      "regulator": "Fed",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "COUNTRY BANK FOR SAVINGS",
+      "lender_id": "30000023992",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CROSS RIVER",
+      "lender_id": "30000058410",
+      "regulator": "FDIC",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "CROSSFIRST BANK",
+      "lender_id": "30000058648",
+      "regulator": "FDIC",
+      "lender_state": "KS"
+    },
+    {
+      "year": "2024",
+      "lender": "CUSTOMERS BANK",
+      "lender_id": "20002354985",
+      "regulator": "Fed",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "EAST CAMBRIDGE SAVINGS BANK",
+      "lender_id": "20000738303",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "EASTERN BANK",
+      "lender_id": "30000032773",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ENTERPRISE BANK & TRUST",
+      "lender_id": "30000027237",
+      "regulator": "FDIC",
+      "lender_state": "MO"
+    },
+    {
+      "year": "2024",
+      "lender": "ENTERPRISE BANK AND TRUST COMP",
+      "lender_id": "30000027408",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "FIFTH THIRD BANK, N A",
+      "lender_id": "10000025190",
+      "regulator": "OCC",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST CITIZENS BANK AND TRUST",
+      "lender_id": "30000011063",
+      "regulator": "FDIC",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST CITIZENS COMMUNITY BANK",
+      "lender_id": "20000978118",
+      "regulator": "Fed",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST COMMONWEALTH BANK",
+      "lender_id": "30000007468",
+      "regulator": "FDIC",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST FINANCIAL BANK",
+      "lender_id": "20000165628",
+      "regulator": "Fed",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST INTERNET BANK OF INDIANA",
+      "lender_id": "30000034607",
+      "regulator": "FDIC",
+      "lender_state": "IN"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST NATIONAL BANK",
+      "lender_id": "10000000446",
+      "regulator": "OCC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST NATIONAL BANK OF OMAHA",
+      "lender_id": "10000000209",
+      "regulator": "OCC",
+      "lender_state": "NE"
+    },
+    {
+      "year": "2024",
+      "lender": "FLAGSTAR BANK NA",
+      "lender_id": "10000025282",
+      "regulator": "OCC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "GOLDMAN SACHS BANK USA",
+      "lender_id": "20002182786",
+      "regulator": "Fed",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "GREEN DOT BANK",
+      "lender_id": "20000243375",
+      "regulator": "Fed",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "HANOVER COMMUNITY BANK",
+      "lender_id": "30000058675",
+      "regulator": "FDIC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "HARBORONE BANK",
+      "lender_id": "30000059070",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "HOMETRUST BANK",
+      "lender_id": "20000212577",
+      "regulator": "Fed",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "HSBC BANK USA, NA",
+      "lender_id": "10000024522",
+      "regulator": "OCC",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "INSTITUTION FOR SAVINGS",
+      "lender_id": "30000090250",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "JOHN DEERE FINANCIAL, F.S.B.",
+      "lender_id": "10000715685",
+      "regulator": "OCC",
+      "lender_state": "WI"
+    },
+    {
+      "year": "2024",
+      "lender": "JPMORGAN CHASE BANK, NA",
+      "lender_id": "10000000008",
+      "regulator": "OCC",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "KENNEBUNK SAVINGS",
+      "lender_id": "30000013063",
+      "regulator": "FDIC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "KEYBANK NATIONAL ASSOCIATION",
+      "lender_id": "10000014761",
+      "regulator": "OCC",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "LAKE FOREST BANK & TRUST CO.NA",
+      "lender_id": "10000025149",
+      "regulator": "OCC",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "LIBERTY BANK",
+      "lender_id": "30000017943",
+      "regulator": "FDIC",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "LIVE OAK BANKING COMPANY",
+      "lender_id": "30000058665",
+      "regulator": "FDIC",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "LOWELL FIVE CENT SAVINGS BANK",
+      "lender_id": "30000090227",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "M & T BANK",
+      "lender_id": "20000501105",
+      "regulator": "Fed",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "MACHIAS SAVINGS BANK",
+      "lender_id": "30000019531",
+      "regulator": "FDIC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "MIDDLESEX SAVINGS BANK",
+      "lender_id": "30000090183",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NBT BANK NA",
+      "lender_id": "10000001354",
+      "regulator": "OCC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "NEEDHAM BANK",
+      "lender_id": "20000339773",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTH SHORE BANK",
+      "lender_id": "20000161273",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHEAST BANK",
+      "lender_id": "30000019690",
+      "regulator": "FDIC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHERN BANK & TRUST CO.",
+      "lender_id": "30000018266",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHWEST BANK",
+      "lender_id": "30000028178",
+      "regulator": "FDIC",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "OPTUM BANK",
+      "lender_id": "30000057408",
+      "regulator": "FDIC",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "PATHWARD N.A.",
+      "lender_id": "10000025195",
+      "regulator": "OCC",
+      "lender_state": "SD"
+    },
+    {
+      "year": "2024",
+      "lender": "PINNACLE FINANCIAL PARTNERS",
+      "lender_id": "30000035583",
+      "regulator": "FDIC",
+      "lender_state": "TN"
+    },
+    {
+      "year": "2024",
+      "lender": "PNC BANK N.A.",
+      "lender_id": "10000001316",
+      "regulator": "OCC",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "PRIMIS BANK",
+      "lender_id": "20003325759",
+      "regulator": "Fed",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "REGIONS BANK",
+      "lender_id": "20000233031",
+      "regulator": "Fed",
+      "lender_state": "AL"
+    },
+    {
+      "year": "2024",
+      "lender": "REPUBLIC BANK & TRUST",
+      "lender_id": "30000023627",
+      "regulator": "FDIC",
+      "lender_state": "KY"
+    },
+    {
+      "year": "2024",
+      "lender": "ROCKLAND TRUST BANK",
+      "lender_id": "30000009712",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "SALEM FIVE CENTS SAVINGS BANK",
+      "lender_id": "30000023296",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "SANTANDER BANK N.A.",
+      "lender_id": "10000025022",
+      "regulator": "OCC",
+      "lender_state": "DE"
+    },
+    {
+      "year": "2024",
+      "lender": "SEACOAST NATIONAL BANK",
+      "lender_id": "10000014838",
+      "regulator": "OCC",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "SIGNATURE BANK",
+      "lender_id": "30000058264",
+      "regulator": "FDIC",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "STEARNS BANK N.A.",
+      "lender_id": "10000015576",
+      "regulator": "OCC",
+      "lender_state": "MN"
+    },
+    {
+      "year": "2024",
+      "lender": "SYNCHRONY BANK",
+      "lender_id": "10000715044",
+      "regulator": "OCC",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "TD BANK NA",
+      "lender_id": "10000024096",
+      "regulator": "OCC",
+      "lender_state": "DE"
+    },
+    {
+      "year": "2024",
+      "lender": "THE CAMDEN NATIONAL BANK",
+      "lender_id": "10000002311",
+      "regulator": "OCC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "THE HUNTINGTON NATIONAL BANK",
+      "lender_id": "10000007745",
+      "regulator": "OCC",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "THE NORTHERN TRUST CO",
+      "lender_id": "20000210434",
+      "regulator": "Fed",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "TRUIST BANK",
+      "lender_id": "30000009846",
+      "regulator": "FDIC",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "US BANK NA",
+      "lender_id": "10000000024",
+      "regulator": "OCC",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "VALLEY NATIONAL BANK",
+      "lender_id": "10000015790",
+      "regulator": "OCC",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "WASHINGTON TC OF WESTERLY",
+      "lender_id": "30000023623",
+      "regulator": "FDIC",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "WEBBANK",
+      "lender_id": "30000034404",
+      "regulator": "FDIC",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "WEBSTER BANK, N.A.",
+      "lender_id": "10000024469",
+      "regulator": "OCC",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "WELLS FARGO BANK NA",
+      "lender_id": "10000000001",
+      "regulator": "OCC",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "WESTERN ALLIANCE BANK",
+      "lender_id": "20003138146",
+      "regulator": "Fed",
+      "lender_state": "AZ"
+    },
+    {
+      "year": "2024",
+      "lender": "WESTERN STATE BANK",
+      "lender_id": "30000009123",
+      "regulator": "FDIC",
+      "lender_state": "ND"
+    },
+    {
+      "year": "2024",
+      "lender": "WESTFIELD BANK",
+      "lender_id": "10000717968",
+      "regulator": "OCC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WEX BANK",
+      "lender_id": "30000034697",
+      "regulator": "FDIC",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "WSFS BANK",
+      "lender_id": "10000707938",
+      "regulator": "OCC",
+      "lender_state": "DE"
+    }
+  ]
+}

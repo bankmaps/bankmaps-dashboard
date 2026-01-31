@@ -1,0 +1,3060 @@
+{
+  "table": "hmda_us",
+  "most_recent_year": "2024",
+  "record_count": 436,
+  "generated_at": "2026-01-31T11:10:29.676125",
+  "data": [
+    {
+      "year": "2024",
+      "lender": "1ST NATIONAL BANK",
+      "lender_id": "254900Q9V3DYHBRTUH61",
+      "regulator": "OCC",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "A&D MORTGAGE LLC",
+      "lender_id": "2549005SIVTHG14U2905",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "ABL RPC RESIDENTIAL CREDIT ACQUISITION LLC",
+      "lender_id": "254900BBWJ82FQDQ6823",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "ADVANCIAL FEDERAL CREDIT UNION",
+      "lender_id": "549300I1HK1BBZLKOB84",
+      "regulator": "NCUA",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "ADVISORS MORTGAGE GROUP, LLC",
+      "lender_id": "254900F9ZTVTX763V835",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "AFFINITY FEDERAL CREDIT UNION",
+      "lender_id": "5493004UNRG4PWDF2K60",
+      "regulator": "NCUA",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "AFL-CIO ECU",
+      "lender_id": "5493008LTXJSUQBJKO24",
+      "regulator": "NCUA",
+      "lender_state": "DC"
+    },
+    {
+      "year": "2024",
+      "lender": "ALIGN CREDIT UNION",
+      "lender_id": "549300XYJEJCSZHWWM52",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ALL IN CREDIT UNION",
+      "lender_id": "549300J4330IBZ0BBI43",
+      "regulator": "NCUA",
+      "lender_state": "AL"
+    },
+    {
+      "year": "2024",
+      "lender": "ALL ONE CREDIT UNION",
+      "lender_id": "5493008H38W2EPJ8ZQ43",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ALLIANT CREDIT UNION",
+      "lender_id": "549300T94GSH3C4U5M59",
+      "regulator": "NCUA",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "ALLIED MORTGAGE GROUP, INC",
+      "lender_id": "549300RYWXR8TL5LIK35",
+      "regulator": "HUD",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "ALLY BANK",
+      "lender_id": "549300C04BJ0G297NC13",
+      "regulator": "CFPB",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERANT BANK, N.A.",
+      "lender_id": "UPMVBH3EU3LS6P1KR697",
+      "regulator": "OCC",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERANT MORTGAGE LLC",
+      "lender_id": "5493008PQSMR41Y70C36",
+      "regulator": "OCC",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN AIRLINES FEDERAL CRED",
+      "lender_id": "5493004RLLKTQS8K7U51",
+      "regulator": "NCUA",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN EAGLE FCU",
+      "lender_id": "549300TYBI78RNWPFB28",
+      "regulator": "NCUA",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN FINANCIAL NETWORK, INC.",
+      "lender_id": "5493008NWHQT1R22C024",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN FINANCIAL RESOURCES LLC",
+      "lender_id": "5493002B2WMHY23GFK92",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN FINANCING CORPORATION",
+      "lender_id": "549300ALNLUNS3Y53T24",
+      "regulator": "HUD",
+      "lender_state": "CO"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN HERITAGE LENDING, LLC",
+      "lender_id": "549300ZPSJZO10ZAX556",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN INTERNET MORTGAGE, INC.",
+      "lender_id": "549300BOXNV8VLRBDT24",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN NEIGHBORHOOD MORTGAGE ACCEPTANCE COMPANY",
+      "lender_id": "549300F8C5JA44WNMI75",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERICAN PACIFIC MORTGAGE CORPORATION",
+      "lender_id": "549300KIOYNU323LVJ37",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERIHOME MORTGAGE COMPANY, LLC",
+      "lender_id": "254900HA4DQWAE0W3342",
+      "regulator": "CFPB",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERIS BANK",
+      "lender_id": "IUGPUX5LWRZ3B6KIZ697",
+      "regulator": "FDIC",
+      "lender_state": "GA"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERISAVE MORTGAGE COMPANY",
+      "lender_id": "549300YIQ7S7Z8PIHE53",
+      "regulator": "HUD",
+      "lender_state": "GA"
+    },
+    {
+      "year": "2024",
+      "lender": "AMERITRUST MORTGAGE CORPORATION",
+      "lender_id": "549300A5HHOL2ED18C72",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "AMWEST FUNDING CORP",
+      "lender_id": "549300O6Z0I6KYMESL47",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "ARC HOME LLC",
+      "lender_id": "54930048P8RWCQHQM310",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "ARDENT FEDERAL CREDIT UNION",
+      "lender_id": "254900ZELVKWROFNEC29",
+      "regulator": "NCUA",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "ARK-LA-TEX FINANCIAL SERVICES LLC",
+      "lender_id": "5493001GDRY0EL7VG372",
+      "regulator": "HUD",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "ARMED FORCES BANK, N.A.",
+      "lender_id": "5493007CLWQN2S6IZK91",
+      "regulator": "OCC",
+      "lender_state": "KS"
+    },
+    {
+      "year": "2024",
+      "lender": "ARVEST BANK",
+      "lender_id": "COINQMNIM6RBU631DD85",
+      "regulator": "CFPB",
+      "lender_state": "OK"
+    },
+    {
+      "year": "2024",
+      "lender": "ATHOL SAVINGS BANK",
+      "lender_id": "549300BN61BPY0L0H441",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "AVIDIA BANK",
+      "lender_id": "549300SZBQMYMAL3OM08",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "AXOS BANK",
+      "lender_id": "2549009X2AG1P20YAJ63",
+      "regulator": "OCC",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "BANGOR SAVINGS BANK",
+      "lender_id": "549300JEBULFT3BSU682",
+      "regulator": "FDIC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "BANK OF AMERICA NA",
+      "lender_id": "B4TYDEB6GKMZO031MB27",
+      "regulator": "CFPB",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "BANK OF CANTON",
+      "lender_id": "549300J8Y8IPQFMMIT88",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BANK OF ENGLAND",
+      "lender_id": "549300GY4NTTEM7WWB64",
+      "regulator": "FDIC",
+      "lender_state": "AR"
+    },
+    {
+      "year": "2024",
+      "lender": "BANK OF HOPE",
+      "lender_id": "549300F570XAWYN8Z237",
+      "regulator": "CFPB",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "BANK OF NEW HAMPSHIRE",
+      "lender_id": "254900PJVECT3YD6KY88",
+      "regulator": "FDIC",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "BANK RHODE ISLAND",
+      "lender_id": "562V2SM4I80MJO5HYB83",
+      "regulator": "Fed",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "BANKESB",
+      "lender_id": "549300N38Q5YKSSV1106",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BANKGLOUCESTER",
+      "lender_id": "549300GS4TO8CL1SR344",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BAR HARBOR BANK & TRUST",
+      "lender_id": "549300VR3QTN4GZYUR03",
+      "regulator": "FDIC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "BARRINGTON BANK & TRUST COMPANY, N.A.",
+      "lender_id": "C398JSK21YCXWM603F55",
+      "regulator": "OCC",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "BAXTER CREDIT UNION",
+      "lender_id": "549300S8SHBRCI7UU819",
+      "regulator": "NCUA",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "BAY EQUITY LLC",
+      "lender_id": "549300PL8ER6H23P0Z91",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "BAY STATE SAVINGS BANK",
+      "lender_id": "549300V8UCJTLZZT4M32",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BAYCOAST BANK",
+      "lender_id": "549300OTLWFQPOOSC346",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BAYCOAST MORTGAGE COMPANY, LLC",
+      "lender_id": "549300SYR11CYON0JE74",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BEELINE LOANS, INC.",
+      "lender_id": "984500F03B9034CQB904",
+      "regulator": "HUD",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "BELLWETHER COMMUNITY CREDIT UNION",
+      "lender_id": "549300XKIMAP8O4OS123",
+      "regulator": "NCUA",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "BERKSHIRE BANK",
+      "lender_id": "549300LR1ZETOWYE9Z89",
+      "regulator": "FDIC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "BETHPAGE FEDERAL CREDIT UNION",
+      "lender_id": "549300KTR1JGH3K6LU06",
+      "regulator": "CFPB",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "BETTER MORTGAGE CORPORATION",
+      "lender_id": "549300XY701IELCE5Q08",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "BMO HARRIS BANK NA",
+      "lender_id": "3Y4U8VZURTYWI1W2K376",
+      "regulator": "CFPB",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "BNY MELLON, N.A.",
+      "lender_id": "4EP6JBYBTPTQ47LZOB67",
+      "regulator": "CFPB",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BPL MORTGAGE, LLC",
+      "lender_id": "5493005PD34O8ZT7QT17",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "BRISTOL COUNTY SAVINGS BANK",
+      "lender_id": "549300ENXD6MBH06E085",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BROOKLINE BANK",
+      "lender_id": "549300TR6MWKSIOP3B72",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "BUILDER FINANCE INC",
+      "lender_id": "549300FKEPZ2QELUY416",
+      "regulator": "FDIC",
+      "lender_state": "SD"
+    },
+    {
+      "year": "2024",
+      "lender": "CAKE MORTGAGE CORP.",
+      "lender_id": "5493000EUC3MM52PJV85",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "CALCON MUTUAL MORTGAGE LLC",
+      "lender_id": "549300NFPC3Y4W3Y7R87",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "CAMBRIDGE SAVINGS BANK",
+      "lender_id": "549300FHGNOLF14HHS09",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CAMBRIDGE TRUST COMPANY",
+      "lender_id": "549300Q8HL7EWEE0HW14",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CANOPY MORTGAGE, LLC",
+      "lender_id": "549300ZWNETGFXTBBY03",
+      "regulator": "HUD",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "CANTON COOPERATIVE BANK",
+      "lender_id": "254900PWTPCOI9QU5G90",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CAPE ANN SAVINGS BANK",
+      "lender_id": "549300XSCD2USU6CQ848",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CAPE COD FIVE CENTS SAVINGS BANK",
+      "lender_id": "5493007XQ02VMXYJYJ21",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CAPITAL BANK, N.A.",
+      "lender_id": "54930044OSTKOJMHF287",
+      "regulator": "OCC",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "CARDINAL FINANCIAL COMPANY, LI",
+      "lender_id": "549300VORTI31GZTJL53",
+      "regulator": "HUD",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "CARRINGTON MORTGAGE SERVICES L",
+      "lender_id": "549300R9S3MVDV4MGF56",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "CATHAY BANK",
+      "lender_id": "FT6J43S06X6CLJ0R0B48",
+      "regulator": "CFPB",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "CAZLE MORTGAGE, INC.",
+      "lender_id": "254900SUZ313OILKVD67",
+      "regulator": "HUD",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "CBNA YEAR TO DATE",
+      "lender_id": "DRMSV1Q0EKMEXLAU1P80",
+      "regulator": "CFPB",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "CCG FUND 1 LLC",
+      "lender_id": "549300HRKD2IJSOPRA57",
+      "regulator": "HUD",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CENTRAL ONE FEDERAL CREDIT UNION",
+      "lender_id": "549300MUTFJQGRZJH019",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CHAMPIONS FUNDING, LLC",
+      "lender_id": "984500U2F9A83N391A91",
+      "regulator": "HUD",
+      "lender_state": "AZ"
+    },
+    {
+      "year": "2024",
+      "lender": "CHARLES RIVER BANK",
+      "lender_id": "254900639EOJ1QZC2567",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CHARLES SCHWAB BANK, SSB",
+      "lender_id": "549300INFJ8TYNZ1G568",
+      "regulator": "CFPB",
+      "lender_state": "CO"
+    },
+    {
+      "year": "2024",
+      "lender": "CHEVRON FEDERAL CREDIT UNION",
+      "lender_id": "549300VVH8HHFMWL8536",
+      "regulator": "NCUA",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "CHURCHILL FUNDING I LLC",
+      "lender_id": "2549009BJ1OZ4H7KTG46",
+      "regulator": "HUD",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "CHURCHILL MORTGAGE CORPORATION",
+      "lender_id": "549300BLL6VL7AXWYP56",
+      "regulator": "HUD",
+      "lender_state": "TN"
+    },
+    {
+      "year": "2024",
+      "lender": "CITADEL SERVICING CORPORATION",
+      "lender_id": "254900E6AIE4Z8YQM970",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "CITIBANK, NA",
+      "lender_id": "E57ODZWZ7FF32TWEFA76",
+      "regulator": "CFPB",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "CITY OF BOSTON CREDIT UNION",
+      "lender_id": "254900PH44D8BB632E53",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CLEAREDGE LENDING LLC",
+      "lender_id": "549300HRLROF7PLJ6735",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "CLEARVIEW FEDERAL CREDIT UNION",
+      "lender_id": "549300BHPLBG0CXKTL06",
+      "regulator": "NCUA",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "CLICK N' CLOSE, INC.",
+      "lender_id": "54930049L5WINET09Q97",
+      "regulator": "HUD",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "CLINTON SAVINGS BANK",
+      "lender_id": "5493008ZGR745OCU3U41",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CMG MORTGAGE INC",
+      "lender_id": "549300GKFNPRWNS0GF29",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "COASTAL1 CREDIT UNION",
+      "lender_id": "549300UK3Z5PC7V71K69",
+      "regulator": "NCUA",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "COLORADO FEDERAL SAVINGS BANK",
+      "lender_id": "PINLJ7T7GLTF48NFP863",
+      "regulator": "OCC",
+      "lender_state": "CO"
+    },
+    {
+      "year": "2024",
+      "lender": "COMMUNITY CREDIT UNION OF LYNN",
+      "lender_id": "549300R1DB8186CV7Z17",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CONNEXUS CREDIT UNION",
+      "lender_id": "2549007AU24FVDMNUB40",
+      "regulator": "NCUA",
+      "lender_state": "WI"
+    },
+    {
+      "year": "2024",
+      "lender": "CONSUMER REAL ESTATE FINANCE CO / SOCIETY MORTGAGE",
+      "lender_id": "549300PJ2WT35S77Q208",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "CONTOUR MORTGAGE CORPORATION",
+      "lender_id": "549300LLKEKXL2RM1F61",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "CONVENTUS LENDING LLC",
+      "lender_id": "98450087981AP406JG03",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "CORNERSTONE BANK",
+      "lender_id": "5493005DJAOTPGS83Z81",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CORNERSTONE FIRST MORTGAGE",
+      "lender_id": "2549001SI0EMFPT39035",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "COUNTRY BANK FOR SAVINGS",
+      "lender_id": "5493005NN76XZ2NOFH19",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "CREDIT UNION MORTGAGE ASSOCIAT",
+      "lender_id": "549300DNWSJUNAWUM003",
+      "regulator": "HUD",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "CROSSCOUNTRY MORTGAGE, LLC",
+      "lender_id": "549300VZVN841I2ILS84",
+      "regulator": "HUD",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "DAS ACQUISITION COMPANY, LLC",
+      "lender_id": "549300ZZME37MXI1EF14",
+      "regulator": "HUD",
+      "lender_state": "MO"
+    },
+    {
+      "year": "2024",
+      "lender": "DEAN COOPERATIVE BANK",
+      "lender_id": "549300DASRDHPPEK5V15",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "DEDHAM INSTITUTION FOR SAVINGS",
+      "lender_id": "549300RS5LTZ0JDZYI59",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "DEEPHAVEN MORTGAGE LLC",
+      "lender_id": "549300Y5Y88FQLI7VE83",
+      "regulator": "CFPB",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "DELTA COMMUNITY CREDIT UNION",
+      "lender_id": "549300Y4BSP3BSFW7J29",
+      "regulator": "NCUA",
+      "lender_state": "GA"
+    },
+    {
+      "year": "2024",
+      "lender": "DIGITAL FEDERAL CREDIT UNION",
+      "lender_id": "549300JPGMCMBEJEK584",
+      "regulator": "CFPB",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "DIRECT FEDERAL CREDIT UNION",
+      "lender_id": "5493008Q2ZM3OTLTQH25",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "DISCOVER BANK",
+      "lender_id": "X05BVSK68TQ7YTOSNR22",
+      "regulator": "CFPB",
+      "lender_state": "DE"
+    },
+    {
+      "year": "2024",
+      "lender": "DOLLAR BANK, FSB",
+      "lender_id": "549300MSU5WVAU4ZN645",
+      "regulator": "OCC",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "DREW MORTGAGE ASSOCIATES, INC",
+      "lender_id": "549300GTJL0LGX444G33",
+      "regulator": "HUD",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "EAGLE BANK",
+      "lender_id": "5493000GDQJIBPCUBG13",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "EAST CAMBRIDGE SAVINGS BANK",
+      "lender_id": "2549006A34A1F1ZGTT81",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "EAST WEST BANK",
+      "lender_id": "F28JOQ8OBWCFUYM0UX93",
+      "regulator": "CFPB",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "EASTERN BANK",
+      "lender_id": "X8V2II80XTQHRH7NCB19",
+      "regulator": "CFPB",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "EASTRISE FEDERAL CREDIT UNION",
+      "lender_id": "549300TLGCPJTEG3WN76",
+      "regulator": "NCUA",
+      "lender_state": "VT"
+    },
+    {
+      "year": "2024",
+      "lender": "EASY STREET CAPITAL LLC",
+      "lender_id": "254900DRSIZBQXDCJ875",
+      "regulator": "HUD",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "EMBRACE HOME LOANS, INC.",
+      "lender_id": "213800QUAI2VH5YM6310",
+      "regulator": "HUD",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "EMM LOANS LLC",
+      "lender_id": "549300EMNDEK4BA8WB53",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "EMPORIUM TPO LLC",
+      "lender_id": "984500F6E6940CCB6A60",
+      "regulator": "CFPB",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "ENERGY CREDIT UNION",
+      "lender_id": "254900X2A1JXHHUB4J39",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ENTERPRISE BANK AND TRUST COMPANY",
+      "lender_id": "5493008ZK5SW6NTWB533",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ENVOY MORTGAGE, LTD",
+      "lender_id": "549300J6N77Q8OHYNF23",
+      "regulator": "HUD",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "EQUITY PRIME MORTGAGE LLC",
+      "lender_id": "549300K4ZLGS7SRDTL86",
+      "regulator": "HUD",
+      "lender_state": "GA"
+    },
+    {
+      "year": "2024",
+      "lender": "EQUITY RESOURCES INC",
+      "lender_id": "549300G2LV8W3C1G3762",
+      "regulator": "HUD",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "EVERETT CO-OPERATIVE BANK",
+      "lender_id": "549300C2GTHMQQJ5CS20",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "EVERETT FINANCIAL, INC.",
+      "lender_id": "549300XWUSRVVOHPRY47",
+      "regulator": "HUD",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "EVOLVE BANK & TRUST",
+      "lender_id": "549300IRXW9RSZM2B951",
+      "regulator": "Fed",
+      "lender_state": "TN"
+    },
+    {
+      "year": "2024",
+      "lender": "FAIRWAY INDEPENDENT MORT CORP",
+      "lender_id": "549300MGPZBLQDIL7538",
+      "regulator": "HUD",
+      "lender_state": "WI"
+    },
+    {
+      "year": "2024",
+      "lender": "FALL RIVER FIVE CENTS SAVINGS",
+      "lender_id": "549300Q61S3IBOJITT02",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "FARMERS BANK & TRUST",
+      "lender_id": "549300LLESTPOVRG3X73",
+      "regulator": "FDIC",
+      "lender_state": "KS"
+    },
+    {
+      "year": "2024",
+      "lender": "FBC MORTGAGE, LLC",
+      "lender_id": "5493005JPZ3LXXMB0S24",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "FIDELITY CO-OPERATIVE BANK",
+      "lender_id": "5493004LN4GS7BNXIO13",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "FIDELITY LENDING SOLUTIONS INC",
+      "lender_id": "549300SBA6BX8HZZF585",
+      "regulator": "CFPB",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "FIFTH THIRD BANK, NATIONAL ASSOCIATION",
+      "lender_id": "QFROUN1UWUYU0DVIWD51",
+      "regulator": "OCC",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "FIGURE LENDING LLC",
+      "lender_id": "254900UL88QFG0E40516",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "FINANCE OF AMERICA REVERSE LLC",
+      "lender_id": "549300S5YL3OH0IVCS62",
+      "regulator": "HUD",
+      "lender_state": "OK"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST AMERICAN BANK",
+      "lender_id": "XC7Z0BA39TU7L1AKOJ12",
+      "regulator": "FDIC",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST BANK",
+      "lender_id": "549300DT7WZ1SOTNFJ62",
+      "regulator": "Fed",
+      "lender_state": "MO"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST CENTRAL SAVINGS BANK",
+      "lender_id": "549300F1COXL6UBFCP55",
+      "regulator": "FDIC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST CIITIZENS BANK AND TRUST",
+      "lender_id": "L9VVX1KT5TFTKS0MLF66",
+      "regulator": "CFPB",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST COLONY MORTGAGE CORPORATION",
+      "lender_id": "5493003V40VGM7YDFM54",
+      "regulator": "HUD",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST COMMUNITY MORTGAGE",
+      "lender_id": "549300R0SXC1JU7ZU290",
+      "regulator": "FDIC",
+      "lender_state": "TN"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST FEDERAL BANK",
+      "lender_id": "Q708HHR4LD2B7XIZNO92",
+      "regulator": "OCC",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST FEDERAL BANK OF KANSAS CITY",
+      "lender_id": "549300W5A6PQ1VJG3497",
+      "regulator": "FDIC",
+      "lender_state": "KS"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST FLORIDA CREDIT UNION",
+      "lender_id": "549300EYKSNFOZRIBC29",
+      "regulator": "NCUA",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST HOME MORTGAGE",
+      "lender_id": "549300GPO6DWUZR4UY30",
+      "regulator": "HUD",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST NATIONAL BANK OF AMERICA",
+      "lender_id": "254900WTZC5SSKIN2M11",
+      "regulator": "OCC",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST SEACOAST BANK",
+      "lender_id": "549300QHFDNFAMLATM94",
+      "regulator": "OCC",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST TECHNOLOGY CREDIT UNION",
+      "lender_id": "549300Q02LGIN9AXKP98",
+      "regulator": "NCUA",
+      "lender_state": "OR"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRST WESTERN FEDERAL SAVINGS BANK",
+      "lender_id": "549300N1R0R39PYT7O68",
+      "regulator": "OCC",
+      "lender_state": "SD"
+    },
+    {
+      "year": "2024",
+      "lender": "FIRSTBANK",
+      "lender_id": "549300OBO7DOF2KOP535",
+      "regulator": "FDIC",
+      "lender_state": "TN"
+    },
+    {
+      "year": "2024",
+      "lender": "FLAGSTAR BANK NA",
+      "lender_id": "SS1TRMSN6BRNMOREEV51",
+      "regulator": "CFPB",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "FLORIDA CAPITAL BANK, N.A",
+      "lender_id": "549300ZIXM1VUXPG4D03",
+      "regulator": "OCC",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "FLUSHING BANK",
+      "lender_id": "549300QVXT6121Q7E798",
+      "regulator": "FDIC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "FRANKLIN MINT FEDERAL CREDIT UNION",
+      "lender_id": "5493001CM06UK2XY3I18",
+      "regulator": "NCUA",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "FREEDOM MORTGAGE CORPORATION",
+      "lender_id": "549300LYRWPSYPK6S325",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "FUNDLOANS CAPITAL",
+      "lender_id": "549300A68YW07V5R5G22",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "GENERAL ELECTRIC EMPLOYEES FEDERAL CREDIT UNION",
+      "lender_id": "549300H68PK1CZUVUQ73",
+      "regulator": "NCUA",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "GENERAL MORTGAGE CAPITAL CORPORATION",
+      "lender_id": "254900VELJPWWT51WN03",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "GEORGIA'S OWN CREDIT UNION",
+      "lender_id": "54930025XJJO3T0M1A92",
+      "regulator": "NCUA",
+      "lender_state": "GA"
+    },
+    {
+      "year": "2024",
+      "lender": "GFA FEDERAL CREDIT UNION",
+      "lender_id": "549300MYAXFDGEI4NZ65",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "GO MORTGAGE, LLC",
+      "lender_id": "25490018IFQOT83Q7H49",
+      "regulator": "HUD",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "GOLDMAN SACHS BANK USA",
+      "lender_id": "KD3XUN7C6T14HNAYLU02",
+      "regulator": "CFPB",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "GOODLEAP, LLC",
+      "lender_id": "549300YN94MOAVYW0F52",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "GRAND BANK FOR SAVINGS, FSB",
+      "lender_id": "549300DM6DAOPSF8HL78",
+      "regulator": "OCC",
+      "lender_state": "MS"
+    },
+    {
+      "year": "2024",
+      "lender": "GRANITE STATE CREDIT UNION",
+      "lender_id": "254900O6ESF124P8HR04",
+      "regulator": "NCUA",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "GREENBOX LOANS INC",
+      "lender_id": "549300TMY3OACQC9U777",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "GREENWOOD CREDIT UNION",
+      "lender_id": "549300JD1162QW84ZO34",
+      "regulator": "NCUA",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "GREYLOCK FEDERAL CREDIT UNION",
+      "lender_id": "549300XLRD9QLLJRCB89",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "GUARANTEED RATE AFFINITY, LLC",
+      "lender_id": "54930001NSTOD85LT125",
+      "regulator": "HUD",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "GUARANTEED RATE, INC.",
+      "lender_id": "549300U3721PJGQZYY68",
+      "regulator": "HUD",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "GUIDANCE RESIDENTIAL, LLC",
+      "lender_id": "549300RD5IG88VPO6P22",
+      "regulator": "HUD",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "GUILD MORTGAGE COMPANY",
+      "lender_id": "549300AQ3T62GXDU7D76",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "HANSCOM FEDERAL CREDIT UNION",
+      "lender_id": "5493003B2LEGQHDWRN55",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "HARBORONE BANK",
+      "lender_id": "549300E0KRXI8PZWAO17",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "HARBORONE MORTGAGE, LLC",
+      "lender_id": "549300DAUXQ2DCY4H838",
+      "regulator": "FDIC",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "HARVARD FEDERAL CREDIT UNION",
+      "lender_id": "549300XTSMAC5DOX6447",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "HAVERHILL BANK",
+      "lender_id": "549300T92XVMWQW75772",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "HINGHAM INSTITUTION FOR SAVINGS",
+      "lender_id": "2549009GDCGUR2T6KU55",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "HOME MORTGAGE ALLIANCE CORP (HMAC)",
+      "lender_id": "254900LTD432L5CHIZ48",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "HOMEBRIDGE FINANCIAL SERVICES, INC",
+      "lender_id": "5493001WHVQBGRSWEU75",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "HOMEFIELD CREDIT UNION",
+      "lender_id": "5493003FTQTUEICOS793",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "HOMESPIRE MORTGAGE CORPORATION",
+      "lender_id": "549300MFY0P4D234OB91",
+      "regulator": "HUD",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "HOMESTEAD FUNDING CORP.",
+      "lender_id": "549300T3F9S1MKFKHC53",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "HOMETOWN EQUITY MORTGAGE, LLC",
+      "lender_id": "549300RA3E0BUFO7YZ21",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "HOMEXPRESS MORTGAGE CORP.",
+      "lender_id": "549300R77W0P105C3S50",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "HSBC BANK USA, NA",
+      "lender_id": "1IE8VN30JCEQV1H4R804",
+      "regulator": "CFPB",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "HUDSON VALLEY CREDIT UNION",
+      "lender_id": "54930085BPQMVH9JFX69",
+      "regulator": "NCUA",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "HUNTINGTON NATIONAL BANK",
+      "lender_id": "2WHM8VNJH63UN14OL754",
+      "regulator": "CFPB",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "IC FEDERAL CREDIT UNION",
+      "lender_id": "5493007ISPBRCRINID86",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ICE LENDER HOLDINGS LLC",
+      "lender_id": "254900VE4XTOQUE8NZ77",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "INSTITUTION FOR SAVINGS",
+      "lender_id": "5493001QVY14BXG42N39",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ITHINK FINANCIAL CREDIT UNION",
+      "lender_id": "5493003BXKRGHQHRJV38",
+      "regulator": "NCUA",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "IXONIA BANK",
+      "lender_id": "549300T9P3WXNMXX0I34",
+      "regulator": "FDIC",
+      "lender_state": "WI"
+    },
+    {
+      "year": "2024",
+      "lender": "JEANNE D'ARC CREDIT UNION",
+      "lender_id": "549300KGE82WIZC87Y08",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "JMAC LENDING, INC.",
+      "lender_id": "5493009B17HXCVXTD608",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "JPMORGAN CHASE BANK, NA",
+      "lender_id": "7H6GLXDRUGQFU57RNE97",
+      "regulator": "CFPB",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "KEYBANK NATIONAL ASSOCIATION",
+      "lender_id": "HUX2X73FUCYHUVH1BK78",
+      "regulator": "CFPB",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "KEYSTONE FUNDING, INC",
+      "lender_id": "5493002GI63WHHUTUD85",
+      "regulator": "HUD",
+      "lender_state": "DE"
+    },
+    {
+      "year": "2024",
+      "lender": "KIAVI FUNDING, INC.",
+      "lender_id": "5493006VAGP3GQ8FJT49",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "LADERA LENDING, INC.",
+      "lender_id": "5493000H6DFDDJRORG89",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "LAFAYETTE FEDERAL CREDIT UNION",
+      "lender_id": "549300SY0ZRUCS4CSY07",
+      "regulator": "NCUA",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "LAKEVIEW LOAN SERVICING, LLC",
+      "lender_id": "549300NOCASXPA34X033",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "LAND HOME FINANCIAL SERVICES,",
+      "lender_id": "5493006RIR31ORKYB608",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "LEADER BANK NA",
+      "lender_id": "549300FK3AFCFVAPH234",
+      "regulator": "OCC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "LEADERONE FINANCIAL CORP.",
+      "lender_id": "5493000NYUJT9UC6G261",
+      "regulator": "HUD",
+      "lender_state": "KS"
+    },
+    {
+      "year": "2024",
+      "lender": "LENDINGONE LLC",
+      "lender_id": "54930091JQKCU3Z6IP44",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "LENDSURE MORTGAGE CORP.",
+      "lender_id": "549300UR5AOWTJJ7KZ64",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "LIBERTY BAY CREDIT UNION",
+      "lender_id": "5493007Y306QGNH6J842",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "LIBERTY HOME MORTGAGE CORP",
+      "lender_id": "549300B2JJHSM77T5Y41",
+      "regulator": "HUD",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "LIGHTHOUSE FEDERAL CREDIT UNION",
+      "lender_id": "54930070JV4STJJ0XS74",
+      "regulator": "NCUA",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "LOAN FUNDER LLC",
+      "lender_id": "254900RUCO27MVGTO768",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "LOANDEPOT.COM, LLC",
+      "lender_id": "549300AG64NHILB7ZP05",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "LOANUNITED.COM, LLC",
+      "lender_id": "549300PL267CW8182203",
+      "regulator": "HUD",
+      "lender_state": "GA"
+    },
+    {
+      "year": "2024",
+      "lender": "LOGAN FINANCE CORPORATION",
+      "lender_id": "2549002VH9C0PKB8K153",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "LONGBRIDGE FINANCIAL, LLC",
+      "lender_id": "549300MHH03ICJYEPE85",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "LOWELL FIVE CENT SAVINGS BANK",
+      "lender_id": "254900F213LCBO4VGA06",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "LOWER, LLC",
+      "lender_id": "549300RN01LBYR8ZVX74",
+      "regulator": "HUD",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "LUMENT REAL ESTATE CAPITAL LLC",
+      "lender_id": "549300JGMQJ4R419LR70",
+      "regulator": "HUD",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "LUMINATE HOME LOANS, INC.",
+      "lender_id": "549300AENO88GEUWCZ39",
+      "regulator": "HUD",
+      "lender_state": "MN"
+    },
+    {
+      "year": "2024",
+      "lender": "LUXURY MORTGAGE CORP.",
+      "lender_id": "254900V6GCDMRQZ34D96",
+      "regulator": "HUD",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "M&T BANK",
+      "lender_id": "WWB2V0FCW3A0EE3ZJN75",
+      "regulator": "CFPB",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "MAGNOLIA BANK",
+      "lender_id": "549300REENMLD2RN3W58",
+      "regulator": "FDIC",
+      "lender_state": "KY"
+    },
+    {
+      "year": "2024",
+      "lender": "MAIN STREET BANK",
+      "lender_id": "549300CPZ5G5IZWT7878",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MARBLEHEAD BANK",
+      "lender_id": "5493007C2UVB2OGY1G25",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MASS BAY CREDIT UNION",
+      "lender_id": "5493003VEEM09F16U659",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MASSMUTUAL FCU",
+      "lender_id": "549300217ZPIHWEYT887",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MECHANICS COOPERATIVE BANK",
+      "lender_id": "549300BOX0L2YKKXKO38",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MEMBER ADVANTAGE MORTGAGE",
+      "lender_id": "5493007L3DI2JM8OHN91",
+      "regulator": "HUD",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "MEMBERS MORTGAGE COMPANY INC",
+      "lender_id": "5493005HTCBH4TWCVM82",
+      "regulator": "HUD",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MEMBERS PLUS CREDIT UNION",
+      "lender_id": "254900VYWY829DG3Z473",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MERCHANTS BANK OF INDIANA",
+      "lender_id": "549300WRDGBHKR1BXL98",
+      "regulator": "FDIC",
+      "lender_state": "IN"
+    },
+    {
+      "year": "2024",
+      "lender": "MEREDITH VILLAGE SAVINGS BANK",
+      "lender_id": "549300EWO1QALFC6LE98",
+      "regulator": "FDIC",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "MERRIMACK VALLEY CREDIT UNION",
+      "lender_id": "549300L4PTYXDMX1GS50",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "METHUEN CO-OPERATIVE BANK",
+      "lender_id": "2549007JFUKTY2NW6090",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "METRO CREDIT UNION",
+      "lender_id": "549300F6OBLSYWXXKH16",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "METROWEST COMMUNITY FEDERAL CREDIT UNION",
+      "lender_id": "254900HWPC2WEGN8NF25",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MID-ISLAND MORTGAGE CORP.",
+      "lender_id": "549300NZ2IPWRMLAYZ30",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "MIDDLESEX FEDERAL SAVINGS",
+      "lender_id": "549300JPG4IUQOVV5C90",
+      "regulator": "OCC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MIDDLESEX SAVINGS BANK",
+      "lender_id": "VMDPCBOQ43W3PZTYZL93",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MIDFIRST BANK",
+      "lender_id": "337KMNHEWWWR6B7Q7W10",
+      "regulator": "CFPB",
+      "lender_state": "OK"
+    },
+    {
+      "year": "2024",
+      "lender": "MILEND, INC.",
+      "lender_id": "549300Q10M1VXBG2H889",
+      "regulator": "HUD",
+      "lender_state": "GA"
+    },
+    {
+      "year": "2024",
+      "lender": "MILLBURY NATIONAL BANK",
+      "lender_id": "549300R4DYQY768S1R28",
+      "regulator": "OCC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MISSION LOANS, LLC",
+      "lender_id": "549300XCVBRR56D08F03",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "MIT FEDERAL CREDIT UNION",
+      "lender_id": "549300P1347BFCBHJV60",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MLD MORTGAGE, INC.DBA THE MONEY STORE",
+      "lender_id": "549300AG10BX85DF5S49",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "MORGAN STANLEY PRIVATE BANK NA",
+      "lender_id": "549300GS0W0TEUQS8571",
+      "regulator": "CFPB",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "MORTGAGE EQUITY PARTNERS LLC",
+      "lender_id": "549300GE8KIGZVQV1223",
+      "regulator": "HUD",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MORTGAGE RESEARCH CENTER",
+      "lender_id": "549300DD5QQUHO6PCH70",
+      "regulator": "HUD",
+      "lender_state": "MO"
+    },
+    {
+      "year": "2024",
+      "lender": "MOUNTAINONE BANK",
+      "lender_id": "5493002578XYSRFY2C51",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MOVEMENT MORTGAGE, LLC",
+      "lender_id": "549300DD4R4SYK5RAQ92",
+      "regulator": "HUD",
+      "lender_state": "SC"
+    },
+    {
+      "year": "2024",
+      "lender": "MSA MORTGAGE, LLC",
+      "lender_id": "549300CHBB3GN7JFXU86",
+      "regulator": "HUD",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "MUTUAL OF OMAHA MORTGAGE",
+      "lender_id": "549300OPCWU6E72WUT29",
+      "regulator": "HUD",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "MUTUALONE BANK",
+      "lender_id": "549300L1RVMMHUVKTQ94",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NATIONAL GRAND BANK",
+      "lender_id": "549300LUOV7WW4BLH779",
+      "regulator": "OCC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NATIONS DIRECT MORTGAGE, LLC",
+      "lender_id": "549300QKL5FUBZ8LSF50",
+      "regulator": "HUD",
+      "lender_state": "NV"
+    },
+    {
+      "year": "2024",
+      "lender": "NATIONS LENDING CORPORATION",
+      "lender_id": "254900WEP08K7U7S3A80",
+      "regulator": "HUD",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "NATIONS RELIABLE LENDING, LLC",
+      "lender_id": "549300JKR164SLNO6Y85",
+      "regulator": "HUD",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "NATIONSTAR MORTGAGE",
+      "lender_id": "549300LBCBNR1OT00651",
+      "regulator": "HUD",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "NAVEO CREDIT UNION",
+      "lender_id": "549300S9FKL431GGXZ11",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NAVIGANT CREDIT UNION",
+      "lender_id": "549300YIBRM1ZYA6GT07",
+      "regulator": "NCUA",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "NAVY FEDERAL CREDIT UNION",
+      "lender_id": "5493003GQDUH26DNNH17",
+      "regulator": "CFPB",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "NBKC BANK",
+      "lender_id": "213800XR2TCBQJSF1X93",
+      "regulator": "FDIC",
+      "lender_state": "MO"
+    },
+    {
+      "year": "2024",
+      "lender": "NBT BANK NA",
+      "lender_id": "5493009BOQDC6PCFR785",
+      "regulator": "OCC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "NEEDHAM BANK",
+      "lender_id": "5493000NZZZU3GFIYL71",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NESC FEDERAL CREDIT UNION",
+      "lender_id": "549300P4KO88PZ6HZH66",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NEW AMERICAN FUNDING, LLC.",
+      "lender_id": "549300E2UX99HKDBR481",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "NEW FED MORTGAGE CORP.",
+      "lender_id": "549300TB3TMP4RV5T078",
+      "regulator": "HUD",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NEWBURYPORT FIVE CENTS SAVINGS BANK",
+      "lender_id": "549300JXG84BHZE66C26",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NEWREZ LLC",
+      "lender_id": "549300FNXYY540N23N64",
+      "regulator": "HUD",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "NEXBANK",
+      "lender_id": "549300NWBS6MQJX15N44",
+      "regulator": "FDIC",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "NEXERA HOLDING LLC",
+      "lender_id": "549300EKFFG3BU8DNX74",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "NFM, INC",
+      "lender_id": "549300MCIFZSDHUT8X63",
+      "regulator": "HUD",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTH AMERICAN SAVINGS BANK",
+      "lender_id": "549300K6K2IS7FRS7S09",
+      "regulator": "OCC",
+      "lender_state": "MO"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTH EASTON SAVINGS BANK",
+      "lender_id": "54930048J00QUF04FP72",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTH SHORE BANK",
+      "lender_id": "549300B3J2ZHX7QFH171",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHCOUNTRY FEDERAL CREDIT UNION",
+      "lender_id": "549300T2FOBK6WY4B349",
+      "regulator": "NCUA",
+      "lender_state": "VT"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHEAST COMMUNITY BANK",
+      "lender_id": "984500I870D8FFWCE112",
+      "regulator": "FDIC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHEAST HOME LOAN, LLC",
+      "lender_id": "549300DQMFK1KT7KEB48",
+      "regulator": "FDIC",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHERN BANK & TRUST COMPANY",
+      "lender_id": "549300EE39SNC5DXTC46",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHERN HOME LOANS, LLC",
+      "lender_id": "549300M44OPBJUICB315",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHPOINT MORTGAGE, INC.",
+      "lender_id": "549300JI0UWY4QIWDV89",
+      "regulator": "HUD",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHPOINTE BANK",
+      "lender_id": "549300UXY7OP0IC38293",
+      "regulator": "FDIC",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "NORTHWEST FEDERAL CREDIT UNION",
+      "lender_id": "549300OSZK2W0WJYS771",
+      "regulator": "NCUA",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "NORWICH COMMERCIAL GROUP INC",
+      "lender_id": "549300T5QSL6MC8M4D04",
+      "regulator": "HUD",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "NQM FUNDING, LLC",
+      "lender_id": "2549004Z576VEJBK3N72",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "OAKTREE FUNDING CORP",
+      "lender_id": "549300KX4S1573HISS22",
+      "regulator": "HUD",
+      "lender_state": "AZ"
+    },
+    {
+      "year": "2024",
+      "lender": "OCEANFIRST BANK, N.A.",
+      "lender_id": "5493002N5168AC238149",
+      "regulator": "OCC",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "OCMBC, INC.",
+      "lender_id": "549300J7I82PNDVU8H22",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "ONELOCAL BANK",
+      "lender_id": "54930034MXV88NNFY879",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ONY GLO, INC.",
+      "lender_id": "549300R4F5COFJE0DN81",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "ORIGINPOINT, LLC",
+      "lender_id": "549300G4ESSS6M0MEG51",
+      "regulator": "HUD",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "PARAMOUNT BANK",
+      "lender_id": "549300KW3HYVC06WS898",
+      "regulator": "FDIC",
+      "lender_state": "MO"
+    },
+    {
+      "year": "2024",
+      "lender": "PARAMOUNT RESIDENTIAL MORTGAGE",
+      "lender_id": "254900ZFWS2106HWPH46",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "PARTNERS BANK OF NEW ENGLAND",
+      "lender_id": "549300DK2AEMKCO4JZ92",
+      "regulator": "FDIC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "PENNYMAC LOAN SERVICES LLC",
+      "lender_id": "RVDPPPGHCGZ40J4VQ731",
+      "regulator": "CFPB",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "PENTAGON FEDERAL CREDIT UNIOIN",
+      "lender_id": "549300FX7K8PTEQUU487",
+      "regulator": "CFPB",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "PENTUCKET BANK",
+      "lender_id": "54930061YDWSR567KC82",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "PEOPLESBANK",
+      "lender_id": "549300IYKILIU506KA05",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "PFN LENDING GROUP, INC.",
+      "lender_id": "54930091CYUK2SDZ6D37",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "PGIM REAL ESTATE AGENCY FINANCE, LLC",
+      "lender_id": "549300DH8EI64ITBY388",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "PHH MORTGAGE CORPORATION",
+      "lender_id": "PAOOWF3GUFM46FBSP561",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "PLAINS COMMERCE BANK",
+      "lender_id": "549300KJ8PAJ7E52HG32",
+      "regulator": "FDIC",
+      "lender_state": "SD"
+    },
+    {
+      "year": "2024",
+      "lender": "PLANET HOME LENDING, LLC",
+      "lender_id": "54930021WPEXNHYZUL09",
+      "regulator": "HUD",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "PLAZA HOME MORTGAGE, INC",
+      "lender_id": "549300JYXTZDSPJEPI44",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "PNC BANK N.A.",
+      "lender_id": "AD6GFRVSDT01YPT1CS68",
+      "regulator": "CFPB",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "POLARIS HOME FUNDING CORP.",
+      "lender_id": "54930063578UDYE3JR69",
+      "regulator": "HUD",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "PRESIDENTIAL BANK, FSB",
+      "lender_id": "54930078TNN7GKZ7NU89",
+      "regulator": "OCC",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "PRIMARY RESIDENTIAL MORTGAGE, INC.",
+      "lender_id": "54930052M48FOD3CWA54",
+      "regulator": "HUD",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "PRIMELENDING",
+      "lender_id": "549300121SF0K2LN2804",
+      "regulator": "Fed",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "PROSPERITY HOME MORTGAGE, LLC",
+      "lender_id": "5493005PKOSG7MYX0B34",
+      "regulator": "HUD",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "PROVIDENT FUNDING ASSOCIATES",
+      "lender_id": "54930043BMDE130FJ617",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "PROVINCE MORTGAGE ASSOCIATES, INC.",
+      "lender_id": "5493008XQDQ2YZPQKX53",
+      "regulator": "HUD",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "PRYSMA LENDING GROUP LLC",
+      "lender_id": "549300FW5QWKDV0UY394",
+      "regulator": "HUD",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "QUINCY CREDIT UNION",
+      "lender_id": "5493006T76QKSBS2MS95",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "QUONTIC BANK",
+      "lender_id": "2549004XJQQPBYQSMT39",
+      "regulator": "OCC",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "QUORUM FEDERAL CREDIT UNION",
+      "lender_id": "549300Q50XCC0473FG63",
+      "regulator": "NCUA",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "RADIUS FINANCIAL GROUP INC",
+      "lender_id": "549300GCEUZLVML1J263",
+      "regulator": "HUD",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "RAYMOND JAMES BANK",
+      "lender_id": "ZXMJHJK466PBZTM5F379",
+      "regulator": "CFPB",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "RBC BANK (GEORGIA), N.A.",
+      "lender_id": "5493001JT9MT3Z3Y3M39",
+      "regulator": "CFPB",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "READING COOPERATIVE BANK",
+      "lender_id": "549300BNF48S5Z88UL34",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "REDWOOD RESIDENTIAL ACQUISITION CORP",
+      "lender_id": "549300F6Y1YO2YXN6135",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "RELIANCE FIRST CAPITAL, LLC",
+      "lender_id": "549300YW2UBCMDRMBT48",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "RELIANT HOME FUNDING, INC",
+      "lender_id": "2549001NJY765EZWDI06",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "REPUBLIC STATE MORTGAGE CO.",
+      "lender_id": "254900LKAJBFGO0IIP75",
+      "regulator": "HUD",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "RF RENOVO MANAGEMENT COMPANY, LLC",
+      "lender_id": "254900O2K17TNH5CL873",
+      "regulator": "CFPB",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "RHODE ISLAND CREDIT UNION",
+      "lender_id": "5493001B4TX233UP4J06",
+      "regulator": "NCUA",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "RIVERWORKS CREDIT UNION",
+      "lender_id": "54930067K4Z4NIZ4W068",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ROCKET MORTGAGE",
+      "lender_id": "549300FGXN1K3HLB1R50",
+      "regulator": "HUD",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "ROCKLAND FEDERAL CREDIT UNION",
+      "lender_id": "5493000FSTFO9AWR2J40",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ROCKLAND TRUST BANK",
+      "lender_id": "TKT6FH38184ZYBTPKS77",
+      "regulator": "CFPB",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ROSS MORTGAGE COMPANY, INC",
+      "lender_id": "254900PRB9DTJAHMMZ45",
+      "regulator": "HUD",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "RPE HOME, INC",
+      "lender_id": "254900DSZI6CJXJL6Z14",
+      "regulator": "CFPB",
+      "lender_state": "CO"
+    },
+    {
+      "year": "2024",
+      "lender": "SAGE HOME LOANS CORPORATION",
+      "lender_id": "549300LROQOOQU77WS20",
+      "regulator": "HUD",
+      "lender_state": "SC"
+    },
+    {
+      "year": "2024",
+      "lender": "SALEM CO-OPERATIVE BANK",
+      "lender_id": "549300O2WI1UYPLRU579",
+      "regulator": "FDIC",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "SALEM FIVE CENTS SAVINGS BANK",
+      "lender_id": "5493006NTCY0P06JR884",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "SALEM FIVE MORTGAGE COMPANY LLC",
+      "lender_id": "549300H8H31LPYGJEW50",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "SAVERS COOPERATIVE BANK",
+      "lender_id": "549300EQ09ZL8XSYZM84",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "SECURED INVESTMENT CORP",
+      "lender_id": "2549003K48UGTWEK6O31",
+      "regulator": "HUD",
+      "lender_state": "ID"
+    },
+    {
+      "year": "2024",
+      "lender": "SELF-HELP CREDIT UNION",
+      "lender_id": "549300W2VOHO3742H053",
+      "regulator": "NCUA",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "SEMPER HOME LOANS, INC",
+      "lender_id": "549300KT5OWPGQKWUN86",
+      "regulator": "HUD",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "SERVBANK",
+      "lender_id": "549300XRF9LCZ3RX3Q39",
+      "regulator": "FDIC",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "SERVICE FEDERAL CREDIT UNION",
+      "lender_id": "254900P7WLDQD9IUL038",
+      "regulator": "NCUA",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "SHARON & CRESCENT UNITED CREDIT UNION",
+      "lender_id": "549300E2EE7WCBVR5I65",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "SHOREHAM BANK",
+      "lender_id": "549300LLQD0X2OTG0Y27",
+      "regulator": "OCC",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "SIERRA PACIFIC MORTGAGE CO. INC",
+      "lender_id": "254900TTZ395IC926125",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "SIGNATURE FEDERAL CREDIT UNION",
+      "lender_id": "549300SQKZC6HESYGO25",
+      "regulator": "NCUA",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "SILVER HILL FUNDING",
+      "lender_id": "549300038578ZJ284Y20",
+      "regulator": "HUD",
+      "lender_state": "FL"
+    },
+    {
+      "year": "2024",
+      "lender": "SIRVA MORTGAGE, INC.",
+      "lender_id": "549300KQHWNSVCE2MY88",
+      "regulator": "HUD",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "SOFI BANK, NATIONAL ASSOCIATION",
+      "lender_id": "54930054ET8KM4O1D485",
+      "regulator": "OCC",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "SOUTH SHORE BANK",
+      "lender_id": "5493009TVPZT8PYBF879",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "SOUTHEAST FINANCIAL CREDIT UNION",
+      "lender_id": "549300TWLXP5O4IHG211",
+      "regulator": "NCUA",
+      "lender_state": "TN"
+    },
+    {
+      "year": "2024",
+      "lender": "SPRING EQ, LLC",
+      "lender_id": "549300PIL8LFAQ04XC20",
+      "regulator": "HUD",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "ST JEAN'S CREDIT UNION",
+      "lender_id": "549300UWBYWOAZYM9C07",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ST MARY'S CREDIT UNION",
+      "lender_id": "549300Y7VXZSDR0D6I81",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ST. ANNE'S CREDIT UNION OF FAL",
+      "lender_id": "254900G03BZB89LOWZ28",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "ST. MARY'S BANK CU",
+      "lender_id": "549300YKOCNDPE0N7X40",
+      "regulator": "NCUA",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "STATE BANK OF THE LAKES, N.A.",
+      "lender_id": "549300KX2KT8MOAS5Q71",
+      "regulator": "OCC",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "STATE DEPARTMENET FEDERAL CREDIT UNION",
+      "lender_id": "254900EZRN0CBEP77K34",
+      "regulator": "NCUA",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "STG MORTGAGE INC",
+      "lender_id": "5493000349C5XXDRQX28",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "STONEHAMBANK - A CO-OPERATIVE",
+      "lender_id": "549300M2W1M6WRAK9S59",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "SUCCESS MORTGAGE PARTNERS, INC",
+      "lender_id": "549300VMX06UV1F7NS76",
+      "regulator": "HUD",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "SUMMIT FUNDING.INC",
+      "lender_id": "5493008VVXQIDO1EZ460",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "SUN WEST MORTGAGE COMPANY, INC",
+      "lender_id": "549300SK2GVCQXPD4S58",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "SYNERGY ONE LENDING, INC.",
+      "lender_id": "2549004FXPNKCLIN8250",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "T2 FINANCIAL LLC",
+      "lender_id": "549300GTVXJ2PGXNLM73",
+      "regulator": "HUD",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "TD BANK",
+      "lender_id": "03D0JEWFDFUS0SEEKG89",
+      "regulator": "CFPB",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "TEACHERS FEDERAL CREDIT UNION",
+      "lender_id": "549300R8VPSFM828B312",
+      "regulator": "NCUA",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "TEMPLE VIEW CAPITAL FUNDING LP",
+      "lender_id": "549300RYTR2RVL4SFJ90",
+      "regulator": "HUD",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "TEXANA BANK, NA",
+      "lender_id": "549300RM1IZYGQDSNL85",
+      "regulator": "OCC",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "THE CAMDEN NATIONAL BANK",
+      "lender_id": "549300VMVKSQE1B7DD43",
+      "regulator": "OCC",
+      "lender_state": "ME"
+    },
+    {
+      "year": "2024",
+      "lender": "THE FEDERAL SAVINGS BANK",
+      "lender_id": "549300BX448ALT10FI43",
+      "regulator": "OCC",
+      "lender_state": "IL"
+    },
+    {
+      "year": "2024",
+      "lender": "THE PEOPLE'S CREDIT UNION",
+      "lender_id": "254900OVHD0ZZK65EQ86",
+      "regulator": "NCUA",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "THE SAVINGS BANK",
+      "lender_id": "5493006Q43B8FBFUVL12",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "THE UNION BANK CO",
+      "lender_id": "254900BDGU9FU91PQA51",
+      "regulator": "FDIC",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "THE WASHINGTON TRUST COMPANY, OF WESTERLY",
+      "lender_id": "549300HKYBSATM44Q425",
+      "regulator": "FDIC",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "THIRD FEDERAL SAVINGS AND LOAN",
+      "lender_id": "5493008CPTDVOS570626",
+      "regulator": "CFPB",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "TJC MORTGAGE INC",
+      "lender_id": "54930021DZJ9CEN11D61",
+      "regulator": "HUD",
+      "lender_state": "AL"
+    },
+    {
+      "year": "2024",
+      "lender": "TOGETHER CREDIT UNION",
+      "lender_id": "549300YDBNK66R6ZES34",
+      "regulator": "NCUA",
+      "lender_state": "MO"
+    },
+    {
+      "year": "2024",
+      "lender": "TOLL BROTHERS MORTGAGE COMPANY",
+      "lender_id": "5493009BD405QQTMXO12",
+      "regulator": "HUD",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "TOP FLITE FINANCIAL, INC.",
+      "lender_id": "54930030Z1JWTP3SVD16",
+      "regulator": "HUD",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "TOTAL MORTGAGE SERVICES, LLC",
+      "lender_id": "549300VJQJVZKJBDWS17",
+      "regulator": "HUD",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "TOWER FEDERAL CREDIT UNION",
+      "lender_id": "54930080168VA6Z8UX21",
+      "regulator": "NCUA",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "TREMONT CREDIT UNION",
+      "lender_id": "549300SH2PPMV71O6830",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "TRIANGLE CREDIT UNION",
+      "lender_id": "549300MUCZWG8XJCW607",
+      "regulator": "NCUA",
+      "lender_state": "NH"
+    },
+    {
+      "year": "2024",
+      "lender": "TRUHOME SOLUTIONS, LLC",
+      "lender_id": "5493002YXAOJOQPEGS38",
+      "regulator": "HUD",
+      "lender_state": "KS"
+    },
+    {
+      "year": "2024",
+      "lender": "TRUIST BANK",
+      "lender_id": "JJKC32MCHWDI71265Z06",
+      "regulator": "CFPB",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "UBS BANK USA",
+      "lender_id": "549300GWD9H4FQ2VR805",
+      "regulator": "CFPB",
+      "lender_state": "UT"
+    },
+    {
+      "year": "2024",
+      "lender": "UIF CORPORATION",
+      "lender_id": "549300BXWU32AYWT1A56",
+      "regulator": "FDIC",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "UMASSFIVE COLLEGE FEDERAL CREDIT UNION",
+      "lender_id": "549300S0KDQNIC08M074",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "UNIBANK FOR SAVINGS",
+      "lender_id": "549300SIZ5KBISEZE503",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "UNION HOME MORTGAGE CORP.",
+      "lender_id": "549300RPOGWJRH63HS39",
+      "regulator": "HUD",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "UNITED FEDERAL CREDIT UNION",
+      "lender_id": "549300PKEQ3Q9S0IXW76",
+      "regulator": "NCUA",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "UNITED NATIONS FEDERAL CU",
+      "lender_id": "549300HCNXMTNGIMAR91",
+      "regulator": "NCUA",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "UNITED WHOLESALE MORTGAGE",
+      "lender_id": "549300HW662MN1WU8550",
+      "regulator": "HUD",
+      "lender_state": "MI"
+    },
+    {
+      "year": "2024",
+      "lender": "UNMB HOME LOANS INC.",
+      "lender_id": "549300TCY9QY8BRDQJ12",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "US BANK, N.A.",
+      "lender_id": "6BYL5QZYBDK8S7L73M02",
+      "regulator": "CFPB",
+      "lender_state": "OH"
+    },
+    {
+      "year": "2024",
+      "lender": "US MORTGAGE CORPORATION",
+      "lender_id": "54930039IUN6515TBG78",
+      "regulator": "HUD",
+      "lender_state": "NY"
+    },
+    {
+      "year": "2024",
+      "lender": "USAA BANK",
+      "lender_id": "C5654JQHZUHN0772B561",
+      "regulator": "CFPB",
+      "lender_state": "TX"
+    },
+    {
+      "year": "2024",
+      "lender": "USALLIANCE FEDERAL CREDIT UNION",
+      "lender_id": "254900NZOY3XB2DNSZ34",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "VALLEY NATIONAL BANK",
+      "lender_id": "KI0VI4JRMCIJ329YTN75",
+      "regulator": "CFPB",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "VALLEY WEST CORPORATION",
+      "lender_id": "254900HO9WPE4LTLQU96",
+      "regulator": "HUD",
+      "lender_state": "NV"
+    },
+    {
+      "year": "2024",
+      "lender": "VELLUM MORTGAGE, INC.",
+      "lender_id": "549300IPUHFA5O769M51",
+      "regulator": "HUD",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "VELOCITY COMMERCIAL CAPITAL LLC",
+      "lender_id": "549300TA4MQM8WN2XG31",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "VERIDIAN CREDIT UNION",
+      "lender_id": "549300KER3YVZ3U5RK57",
+      "regulator": "NCUA",
+      "lender_state": "IA"
+    },
+    {
+      "year": "2024",
+      "lender": "VICTORIAN FINANCE, LLC",
+      "lender_id": "549300Y7G2MW6V1OR474",
+      "regulator": "HUD",
+      "lender_state": "PA"
+    },
+    {
+      "year": "2024",
+      "lender": "VILLAGE CAPITAL & INVESTMENT",
+      "lender_id": "549300VCMRO4ST680C11",
+      "regulator": "HUD",
+      "lender_state": "NV"
+    },
+    {
+      "year": "2024",
+      "lender": "WAKEFIELD CO-OPERATIVE BANK",
+      "lender_id": "549300YEQNQT8LV5N068",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WALKER & DUNLOP, LLC",
+      "lender_id": "254900YA1AQXNM8QVZ06",
+      "regulator": "HUD",
+      "lender_state": "MD"
+    },
+    {
+      "year": "2024",
+      "lender": "WASHINGTON SAVINGS BANK",
+      "lender_id": "254900ZT04J7Z9KHMJ73",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WASHINGTON TRUST MORTGAGE COMPANY LLC",
+      "lender_id": "549300L0OVX5O63S8C68",
+      "regulator": "FDIC",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "WATERMARK CAPITAL, INC.",
+      "lender_id": "2549005Q4HZ55QX7YC64",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    },
+    {
+      "year": "2024",
+      "lender": "WATERSTONE MORTGAGE CORPORATION",
+      "lender_id": "549300GRGZDEH4ZGQS06",
+      "regulator": "FDIC",
+      "lender_state": "WI"
+    },
+    {
+      "year": "2024",
+      "lender": "WATERTOWN SAVINGS BANK",
+      "lender_id": "5493009IWRQ5BJEI4M92",
+      "regulator": "Fed",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WEBSTER BANK, N.A.",
+      "lender_id": "WV0OVGBTLUP1XIUJE722",
+      "regulator": "CFPB",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "WEBSTER FIRST FEDERAL CREDIT UNION",
+      "lender_id": "549300LI67PLCC1Z3P80",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WEBSTER FIVE CENTS SAVINGS BANK",
+      "lender_id": "549300YOEBGKPKU43Q28",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WEICHERT FINANCIAL SERVICES",
+      "lender_id": "549300EFCZM6KD6B8K69",
+      "regulator": "HUD",
+      "lender_state": "NJ"
+    },
+    {
+      "year": "2024",
+      "lender": "WELLS FARGO BANK NA",
+      "lender_id": "KB1H1DSPRFMYMCUFXT09",
+      "regulator": "CFPB",
+      "lender_state": "NC"
+    },
+    {
+      "year": "2024",
+      "lender": "WESTERLY COMMUNITY CREDIT UNION",
+      "lender_id": "549300BUIG4G67S5O712",
+      "regulator": "NCUA",
+      "lender_state": "RI"
+    },
+    {
+      "year": "2024",
+      "lender": "WESTFIELD BANK",
+      "lender_id": "549300KV83NH6PNL5E48",
+      "regulator": "OCC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WILLIAM RAVEIS MORTGAGE, LLC",
+      "lender_id": "5493009OLY1HC3F0SB77",
+      "regulator": "HUD",
+      "lender_state": "CT"
+    },
+    {
+      "year": "2024",
+      "lender": "WINCHESTER CO-OPERATIVE BANK",
+      "lender_id": "549300E4I5AJ7XJ4DL31",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WINCHESTER SAVINGS BANK",
+      "lender_id": "549300B1DHIVKN5DEJ29",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WINTER HILL BANK",
+      "lender_id": "254900YEG6LSF1BFA422",
+      "regulator": "OCC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WORKERS FEDERAL CREDIT UNION",
+      "lender_id": "254900MSO8KVQ05D2J27",
+      "regulator": "NCUA",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WRENTHAM COOPERATIVE BANK",
+      "lender_id": "549300B4RK7F18UZ4X46",
+      "regulator": "FDIC",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
+      "lender": "WRIGHT PATMAN CONGRESSIONAL FCU",
+      "lender_id": "549300TTPRGSP8DGY569",
+      "regulator": "NCUA",
+      "lender_state": "VA"
+    },
+    {
+      "year": "2024",
+      "lender": "WSFS BANK",
+      "lender_id": "5493005DKMV1IHIM8E20",
+      "regulator": "CFPB",
+      "lender_state": "DE"
+    },
+    {
+      "year": "2024",
+      "lender": "ZILLOW HOME LOANS, LLC",
+      "lender_id": "549300370QILXLFUWD20",
+      "regulator": "HUD",
+      "lender_state": "CA"
+    }
+  ]
+}
