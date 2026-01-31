@@ -1,5 +1,5 @@
 'use client';
-
+// Force fresh deploy - Jan 31 2026
 import { useState } from 'react';
 
 export default function ChatPage() {
