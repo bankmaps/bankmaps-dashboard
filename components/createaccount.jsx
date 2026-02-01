@@ -1,40 +1,19 @@
 // components/CreateAccount.jsx
 
-'use client';  // ← important if this has interactive state (dropdowns)
+'use client';  // Required for interactive state in App Router
 
-import { useState, useMemo } from 'react';
-import lendersData from '../data/lenders.json';       // adjust path if needed
-import geoData from '../data/geography.json';
+import { useState } from 'react';
+import lendersData from '../data/hmda_list.json';     // from components/ → up one level to root data/
+import geoData from '../data/geographies.json';
 
 export default function CreateAccount() {
-  const [selectedLender, setSelectedLender] = useState('');
-  const [selectedState, setSelectedState] = useState('');
-  const [selectedCounty, setSelectedCounty] = useState('');
-  const [selectedTown, setSelectedTown] = useState('');
-
-  // Quick test: log data counts
-  console.log('Lenders loaded:', lendersData?.length || 0);
-  console.log('Geo rows loaded:', geoData?.length || 0);
+  console.log('Lenders count:', lendersData?.length || 'failed to load');
+  console.log('Geography rows:', geoData?.length || 'failed to load');
 
   return (
-    <div className="p-6 max-w-md mx-auto">
-      <h1 className="text-2xl font-bold mb-4">Create Account</h1>
-      <form className="space-y-4">
-        {/* Lender dropdown placeholder */}
-        <select value={selectedLender} onChange={e => setSelectedLender(e.target.value)}>
-          <option value="">Select Lender</option>
-          {/* We'll fill this next */}
-        </select>
-
-        {/* State, County, Town placeholders */}
-        <select value={selectedState} onChange={e => setSelectedState(e.target.value)}>
-          <option value="">Select State</option>
-        </select>
-
-        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
-          Submit
-        </button>
-      </form>
+    <div style={{ padding: '2rem', maxWidth: '500px', margin: '0 auto' }}>
+      <h1>Create Account (Test)</h1>
+      <p>Check browser console for data load counts.</p>
     </div>
   );
 }
