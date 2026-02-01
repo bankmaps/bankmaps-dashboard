@@ -2,33 +2,30 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
-// ... rest of your imports
+import { useState, useMemo, useEffect } from 'react';
 
-export const dynamic = 'force-dynamic';
-
-// ... rest of the component
-
-useEffect(() => {
-  fetch('/data/hmda_list.json')
-    .then(res => res.json())
-    .then(json => setLendersData(json.data || []))
-    .catch(err => console.error('Lenders load failed:', err));
-
-  fetch('/data/geographies.json')
-    .then(res => res.json())
-    .then(json => setGeoData(json.data || []))
-    .catch(err => console.error('Geo load failed:', err));
-}, []);
-
-// Skip static prerendering / force SSR for this page (prevents build-time crash)
 export const dynamic = 'force-dynamic';
 
 export default function Page() {
+  const [lendersData, setLendersData] = useState([]);
+  const [geoData, setGeoData] = useState([]);
+
   const [selectedLender, setSelectedLender] = useState('');
   const [selectedState, setSelectedState] = useState('');
   const [selectedCounty, setSelectedCounty] = useState('');
   const [selectedTown, setSelectedTown] = useState('');
+
+  useEffect(() => {
+    fetch('/data/hmda_list.json')
+      .then(res => res.json())
+      .then(json => setLendersData(json.data || []))
+      .catch(err => console.error('Lenders load failed:', err));
+
+    fetch('/data/geographies.json')
+      .then(res => res.json())
+      .then(json => setGeoData(json.data || []))
+      .catch(err => console.error('Geo load failed:', err));
+  }, []);
 
   // Safety: ensure data is arrays before processing
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
@@ -42,8 +39,7 @@ export default function Page() {
   const counties = useMemo(() => {
     if (!selectedState) return [];
     const filtered = safeGeo.filter(item => item.state === selectedState);
-    const countiesSet = new Set(filtered.map(item => item.county));
-    return Array.from(countiesSet).sort();
+    return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedState, safeGeo]);
 
   const towns = useMemo(() => {
@@ -51,8 +47,7 @@ export default function Page() {
     const filtered = safeGeo.filter(
       item => item.state === selectedState && item.county === selectedCounty
     );
-    const townsSet = new Set(filtered.map(item => item.town));
-    return Array.from(townsSet).sort();
+    return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedState, selectedCounty, safeGeo]);
 
   const handleSubmit = (e) => {
@@ -69,8 +64,16 @@ export default function Page() {
     <div style={{ padding: '40px', maxWidth: '600px', margin: '0 auto' }}>
       <h1>Create Account</h1>
 
-      {!safeLenders.length && <p style={{ color: 'red' }}>Warning: No lenders loaded from hmda_list.json</p>}
-      {!safeGeo.length && <p style={{ color: 'red' }}>Warning: No geography data loaded from geographies.json</p>}
+      {!safeLenders.length && (
+        <p style={{ color: 'red' }}>
+          Warning: No lenders loaded from hmda_list.json
+        </p>
+      )}
+      {!safeGeo.length && (
+        <p style={{ color: 'red' }}>
+          Warning: No geography data loaded from geographies.json
+        </p>
+      )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
         <label>Lender</label>
