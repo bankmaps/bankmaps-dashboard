@@ -55,7 +55,7 @@ export default function ChatPage() {
         </p>
       </div>
 
-      {/* Messages */}
+      {/* Messages - scrollable */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
@@ -99,7 +99,7 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Large fixed input */}
+      {/* Fixed large input */}
       <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-lg">
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col gap-3">
