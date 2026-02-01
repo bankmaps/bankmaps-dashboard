@@ -1,4 +1,3 @@
-// app/create-account/page.jsx
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
@@ -53,8 +52,30 @@ export default function Page() {
   }, [selectedStates, selectedCounties, safeGeo]);
 
   const stateOptions = uniqueStates.map(s => ({ value: s, label: s }));
-  const countyOptions = counties.map(c => ({ value: c, label: c }));
-  const townOptions = towns.map(t => ({ value: t, label: t }));
+
+  const countyOptions = useMemo(() => {
+    return counties.map(c => {
+      // Find the state(s) for this county (in case multi-state selection)
+      const statesForCounty = Array.from(
+        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.state))
+      ).sort().join(', ');
+      return {
+        value: c,
+        label: `${statesForCounty} - ${c}`
+      };
+    });
+  }, [counties, selectedStates, safeGeo]);
+
+  const townOptions = useMemo(() => {
+    return towns.map(t => {
+      const countyForTown = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county))?.county || '';
+      const stateForTown = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county))?.state || '';
+      return {
+        value: t,
+        label: `${stateForTown} - ${countyForTown} - ${t}`
+      };
+    });
+  }, [towns, selectedStates, selectedCounties, safeGeo]);
 
   const allCountiesOption = { value: ALL_COUNTIES, label: '=== All Counties ===' };
   const allTownsOption = { value: ALL_TOWNS, label: '=== All Towns ===' };
@@ -182,7 +203,7 @@ export default function Page() {
         </button>
       </form>
 
-      {/* Optional debug preview */}
+      {/* Optional debug */}
       <pre style={{ marginTop: '40px', background: '#f8f9fa', padding: '16px', borderRadius: '6px' }}>
         {JSON.stringify(
           {
