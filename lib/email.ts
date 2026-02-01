@@ -1,22 +1,14 @@
-import { ServerClient } from 'postmark';
+// lib/email.ts
+// Postmark removed - no email sending
 
 export const runtime = 'nodejs';
 
-const client = new ServerClient(process.env.POSTMARK_SERVER_TOKEN!);
-
 export async function sendAdminPurchaseNotice(subject: string, html: string) {
-  const from = process.env.POSTMARK_FROM!;
-  const to = process.env.POSTMARK_TO_ADMIN || from;
-  const stream = process.env.POSTMARK_STREAM || 'outbound';
+  console.log('EMAIL WOULD BE SENT (Postmark removed):');
+  console.log('Subject:', subject);
+  console.log('HTML body:', html.substring(0, 200) + '...'); // truncate for logs
+  console.log('To: admin (disabled)');
 
-  const res = await client.sendEmail({
-    From: from,
-    To: to,
-    Subject: subject,
-    HtmlBody: html,
-    MessageStream: stream,
-  });
-
-  console.log('Postmark response:', res);
-  return res;
+  // Return dummy success for compatibility
+  return { MessageID: 'dummy-id', ErrorCode: 0, Message: 'Email disabled - logged only' };
 }
