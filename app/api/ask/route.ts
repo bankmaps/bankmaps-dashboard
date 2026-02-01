@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     // Generate answer with Groq
     const answerRes = await groq.chat.completions.create({
-      model: 'llama-3.1-8b-instant',
+      model: 'gemma-7b-it',
       temperature: 0.3,
       max_tokens: 500,
       messages: [
