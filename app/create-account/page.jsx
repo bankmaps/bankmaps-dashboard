@@ -1,7 +1,4 @@
-// app/create-account/page.jsx
-
 'use client';
-
 import { useState, useMemo, useEffect } from 'react';
 
 export const dynamic = 'force-dynamic';
@@ -10,10 +7,10 @@ export default function Page() {
   const [lendersData, setLendersData] = useState([]);
   const [geoData, setGeoData] = useState([]);
 
-  const [selectedLender, setSelectedLender] = useState('');
-  const [selectedState, setSelectedState] = useState('');
-  const [selectedCounty, setSelectedCounty] = useState('');
-  const [selectedTown, setSelectedTown] = useState('');
+  const [selectedLender, setSelectedLender] = useState(''); // still single for lender
+  const [selectedStates, setSelectedStates] = useState([]); // now array for multi
+  const [selectedCounties, setSelectedCounties] = useState([]); // array
+  const [selectedTowns, setSelectedTowns] = useState([]); // array
 
   useEffect(() => {
     fetch('/data/hmda_list.json')
@@ -27,37 +24,42 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Safety: ensure data is arrays before processing
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
+  // Unique states (unchanged)
   const uniqueStates = useMemo(() => {
     const statesSet = new Set(safeGeo.map(item => item.state));
     return Array.from(statesSet).sort();
   }, [safeGeo]);
 
+  // Counties filtered by selected states (multi-state support)
   const counties = useMemo(() => {
-    if (!selectedState) return [];
-    const filtered = safeGeo.filter(item => item.state === selectedState);
+    if (selectedStates.length === 0) return [];
+    const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
     return Array.from(new Set(filtered.map(item => item.county))).sort();
-  }, [selectedState, safeGeo]);
+  }, [selectedStates, safeGeo]);
 
+  // Towns filtered by selected states + selected counties
   const towns = useMemo(() => {
-    if (!selectedState || !selectedCounty) return [];
+    if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
-      item => item.state === selectedState && item.county === selectedCounty
+      item =>
+        selectedStates.includes(item.state) &&
+        selectedCounties.includes(item.county)
     );
     return Array.from(new Set(filtered.map(item => item.town))).sort();
-  }, [selectedState, selectedCounty, safeGeo]);
+  }, [selectedStates, selectedCounties, safeGeo]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     console.log({
       lender: selectedLender,
-      state: selectedState,
-      county: selectedCounty,
-      town: selectedTown
+      states: selectedStates,
+      counties: selectedCounties,
+      towns: selectedTowns
     });
+    // You can send this to your backend/API here
   };
 
   return (
@@ -65,14 +67,10 @@ export default function Page() {
       <h1>Create Account</h1>
 
       {!safeLenders.length && (
-        <p style={{ color: 'red' }}>
-          Warning: No lenders loaded from hmda_list.json
-        </p>
+        <p style={{ color: 'red' }}>Warning: No lenders loaded from hmda_list.json</p>
       )}
       {!safeGeo.length && (
-        <p style={{ color: 'red' }}>
-          Warning: No geography data loaded from geographies.json
-        </p>
+        <p style={{ color: 'red' }}>Warning: No geography data loaded from geographies.json</p>
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -86,48 +84,65 @@ export default function Page() {
           ))}
         </select>
 
-        <label>State</label>
+        <label>State(s) - hold Ctrl/Cmd to select multiple</label>
         <select
-          value={selectedState}
+          multiple
+          value={selectedStates}
           onChange={e => {
-            setSelectedState(e.target.value);
-            setSelectedCounty('');
-            setSelectedTown('');
+            const options = [...e.target.options];
+            const selected = options.filter(o => o.selected).map(o => o.value);
+            setSelectedStates(selected);
+            setSelectedCounties([]); // reset downstream
+            setSelectedTowns([]);
           }}
           required
+          style={{ height: '150px' }} // make taller for multi-select
         >
-          <option value="">-- Select State --</option>
           {uniqueStates.map(s => (
-            <option key={s} value={s}>{s}</option>
+            <option key={s} value={s}>
+              {s}
+            </option>
           ))}
         </select>
 
-        <label>County</label>
+        <label>County(ies) - hold Ctrl/Cmd to select multiple</label>
         <select
-          value={selectedCounty}
+          multiple
+          value={selectedCounties}
           onChange={e => {
-            setSelectedCounty(e.target.value);
-            setSelectedTown('');
+            const options = [...e.target.options];
+            const selected = options.filter(o => o.selected).map(o => o.value);
+            setSelectedCounties(selected);
+            setSelectedTowns([]);
           }}
-          disabled={!selectedState}
+          disabled={selectedStates.length === 0}
           required
+          style={{ height: '150px' }}
         >
-          <option value="">-- Select County --</option>
           {counties.map(c => (
-            <option key={c} value={c}>{c}</option>
+            <option key={c} value={c}>
+              {c}
+            </option>
           ))}
         </select>
 
-        <label>Town</label>
+        <label>Town(s) - hold Ctrl/Cmd to select multiple</label>
         <select
-          value={selectedTown}
-          onChange={e => setSelectedTown(e.target.value)}
-          disabled={!selectedCounty}
+          multiple
+          value={selectedTowns}
+          onChange={e => {
+            const options = [...e.target.options];
+            const selected = options.filter(o => o.selected).map(o => o.value);
+            setSelectedTowns(selected);
+          }}
+          disabled={selectedCounties.length === 0}
           required
+          style={{ height: '150px' }}
         >
-          <option value="">-- Select Town --</option>
           {towns.map(t => (
-            <option key={t} value={t}>{t}</option>
+            <option key={t} value={t}>
+              {t}
+            </option>
           ))}
         </select>
 
