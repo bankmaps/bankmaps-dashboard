@@ -2,6 +2,13 @@
 
 'use client';
 
+import { useState, useMemo } from 'react';
+// ... rest of your imports
+
+export const dynamic = 'force-dynamic';
+
+// ... rest of the component
+
 useEffect(() => {
   fetch('/data/hmda_list.json')
     .then(res => res.json())
