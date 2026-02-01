@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "api": "node api/server.js"
-  },
+      },
   "dependencies": {
     "cookie": "^0.6.0",
     "pg": "^8.11.3",
