@@ -3,8 +3,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import lendersData from '../../data/hmda_list.json';
-import geoData from '../../data/geographies.json';
+import lendersData from '@data/hmda_list.json';
+import geoData from '@data/geographies.json';
 
 // Skip static prerendering / force SSR for this page (prevents build-time crash)
 export const dynamic = 'force-dynamic';
