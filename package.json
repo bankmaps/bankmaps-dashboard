@@ -13,7 +13,7 @@
     "pg": "^8.11.3",
     "postmark": "^4.0.5",
     "stripe": "^14.0.0",
-    "@neondatabase/serverless": "^0.9.0",
+    "@neondatabase/serverless": "latest",
     "express": "^4.19.2",
     "next": "latest",
     "react": "latest",
