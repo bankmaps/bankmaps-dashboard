@@ -49,9 +49,9 @@ export default function ChatPage() {
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
       <div className="bg-gradient-to-r from-indigo-600 to-blue-700 text-white p-5 shadow-md">
-        <h1 className="text-2xl md:text-3xl font-bold text-center">Chat with Your Documents</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-center">Talk to Your Documents</h1>
         <p className="text-center text-indigo-100 mt-1 text-sm md:text-base">
-          Ask anything about your uploaded files...
+          Ask anything about your wife's underwear...
         </p>
       </div>
 
