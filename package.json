@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "build": "echo ok",
-    "start": "node api/server.js"
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "api": "node api/server.js"
   },
   "dependencies": {
     "cookie": "^0.6.0",
@@ -12,6 +14,9 @@
     "postmark": "^4.0.5",
     "stripe": "^14.0.0",
     "@neondatabase/serverless": "^0.9.0",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "next": "latest",              // ← add this line if missing
+    "react": "latest",             // ← add if missing
+    "react-dom": "latest"          // ← add if missing
   }
 }
