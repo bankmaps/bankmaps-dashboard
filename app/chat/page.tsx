@@ -14,14 +14,13 @@ export default function ChatPage() {
 
   useEffect(() => {
     scrollToBottom()
-  }, [messages])
+  }, [messages, loading])
 
   const handleAsk = async () => {
     if (!question.trim()) return
 
-    // Add user message immediately
-    setMessages(prev => [...prev, { role: 'user', content: question }])
-    const userQuestion = question
+    const userMsg = question.trim()
+    setMessages(prev => [...prev, { role: 'user', content: userMsg }])
     setQuestion('')
     setLoading(true)
 
@@ -29,7 +28,7 @@ export default function ChatPage() {
       const res = await fetch('/api/ask', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ question: userQuestion })
+        body: JSON.stringify({ question: userMsg })
       })
 
       const data = await res.json()
@@ -47,28 +46,31 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gradient-to-br from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header */}
-      <div className="bg-gradient-to-r from-indigo-600 to-blue-600 p-6 text-white shadow-md">
-        <h1 className="text-3xl font-bold text-center">Chat with Your Documents</h1>
-        <p className="mt-2 text-center text-indigo-100">Ask anything about your uploaded files...</p>
+      <div className="bg-gradient-to-r from-indigo-600 to-blue-700 text-white p-5 shadow-md">
+        <h1 className="text-2xl md:text-3xl font-bold text-center">Chat with Your Documents</h1>
+        <p className="text-center text-indigo-100 mt-1 text-sm md:text-base">
+          Ask anything about your uploaded files...
+        </p>
       </div>
 
-      {/* Messages area */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 space-y-4 md:space-y-6">
         {messages.length === 0 && (
-          <div className="text-center text-gray-500 dark:text-gray-400 py-20 text-lg italic">
-            Ask a question to get started...
+          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
+            <p className="text-xl font-medium">No messages yet</p>
+            <p className="mt-2">Ask a question to get started</p>
           </div>
         )}
 
-        {messages.map((msg, index) => (
+        {messages.map((msg, i) => (
           <div
-            key={index}
+            key={i}
             className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
           >
             <div
-              className={`max-w-[80%] p-5 rounded-2xl shadow-md ${
+              className={`max-w-[85%] md:max-w-[75%] p-4 rounded-2xl shadow-md ${
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white rounded-br-none'
                   : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none border border-gray-200 dark:border-gray-700'
@@ -83,8 +85,13 @@ export default function ChatPage() {
 
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
-              <span className="text-gray-500 dark:text-gray-400 animate-pulse">Thinking...</span>
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
+              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                <span className="animate-pulse">Thinking</span>
+                <span className="animate-pulse">.</span>
+                <span className="animate-pulse">.</span>
+                <span className="animate-pulse">.</span>
+              </div>
             </div>
           </div>
         )}
@@ -92,7 +99,7 @@ export default function ChatPage() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Fixed large input area */}
+      {/* Large fixed input */}
       <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-lg">
         <div className="max-w-4xl mx-auto">
           <div className="flex flex-col gap-3">
@@ -102,7 +109,7 @@ export default function ChatPage() {
               placeholder="Ask anything about your documents..."
               rows={3}
               className="w-full p-5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 resize-none shadow-sm"
-              style={{ minHeight: '120px' }}
+              style={{ minHeight: '140px' }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
                   e.preventDefault()
@@ -115,7 +122,7 @@ export default function ChatPage() {
               <button
                 onClick={handleAsk}
                 disabled={loading || !question.trim()}
-                className="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 text-lg"
+                className="px-10 py-4 bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 text-white font-semibold rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 text-lg"
               >
                 {loading ? 'Processing...' : 'Ask'}
               </button>
