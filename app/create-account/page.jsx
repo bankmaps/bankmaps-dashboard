@@ -37,50 +37,69 @@ export default function Page() {
     return Array.from(statesSet).sort();
   }, [safeGeo]);
 
+  // Counties: sorted by ST then County
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
     const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
-    return Array.from(new Set(filtered.map(item => item.county))).sort();
+
+    // Group by ST, collect counties, sort
+    const grouped = {};
+    filtered.forEach(item => {
+      const st = item.st || item.state;  // prefer st if present
+      if (!grouped[st]) grouped[st] = new Set();
+      grouped[st].add(item.county);
+    });
+
+    // Sort STs, then counties within each
+    const sorted = [];
+    Object.keys(grouped).sort().forEach(st => {
+      Array.from(grouped[st]).sort().forEach(county => {
+        sorted.push({ st, county });
+      });
+    });
+
+    return sorted;
   }, [selectedStates, safeGeo]);
 
+  // Towns: sorted by ST then Town
   const towns = useMemo(() => {
     if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
       item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
     );
-    return Array.from(new Set(filtered.map(item => item.town))).sort();
+
+    const grouped = {};
+    filtered.forEach(item => {
+      const st = item.st || item.state;
+      if (!grouped[st]) grouped[st] = new Set();
+      grouped[st].add(item.town);
+    });
+
+    const sorted = [];
+    Object.keys(grouped).sort().forEach(st => {
+      Array.from(grouped[st]).sort().forEach(town => {
+        sorted.push({ st, town });
+      });
+    });
+
+    return sorted;
   }, [selectedStates, selectedCounties, safeGeo]);
 
   const stateOptions = uniqueStates.map(s => ({ value: s, label: s }));
 
   const countyOptions = useMemo(() => {
-    return counties.map(c => {
-      // Prefer 'st' if available, fallback to 'state'
-      const stList = Array.from(
-        new Set(
-          safeGeo
-            .filter(item => item.county === c && selectedStates.includes(item.state))
-            .map(item => item.st || item.state)
-        )
-      ).sort().join(', ');
-      return {
-        value: c,
-        label: `${stList} - ${c}`
-      };
-    });
-  }, [counties, selectedStates, safeGeo]);
+    return counties.map(({ st, county }) => ({
+      value: county,
+      label: `${st} - ${county}`
+    }));
+  }, [counties]);
 
   const townOptions = useMemo(() => {
-    return towns.map(t => {
-      const townInfo = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county));
-      const st = townInfo?.st || townInfo?.state || '';
-      const county = townInfo?.county || '';
-      return {
-        value: t,
-        label: `${st} - ${county} - ${t}`
-      };
-    });
-  }, [towns, selectedStates, selectedCounties, safeGeo]);
+    return towns.map(({ st, town }) => ({
+      value: town,
+      label: `${st} - ${town}`
+    }));
+  }, [towns]);
 
   const allCountiesOption = { value: ALL_COUNTIES, label: '=== All Counties ===' };
   const allTownsOption = { value: ALL_TOWNS, label: '=== All Towns ===' };
@@ -93,7 +112,6 @@ export default function Page() {
       counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
       towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
     });
-    // TODO: send to backend/API
   };
 
   return (
@@ -155,7 +173,7 @@ export default function Page() {
             onChange={opts => {
               const vals = opts ? opts.map(o => o.value) : [];
               if (vals.includes(ALL_COUNTIES)) {
-                setSelectedCounties(counties.length > 0 ? [ALL_COUNTIES, ...counties] : []);
+                setSelectedCounties(counties.length > 0 ? [ALL_COUNTIES, ...counties.map(c => c.county)] : []);
               } else {
                 setSelectedCounties(vals);
               }
@@ -180,7 +198,7 @@ export default function Page() {
             onChange={opts => {
               const vals = opts ? opts.map(o => o.value) : [];
               if (vals.includes(ALL_TOWNS)) {
-                setSelectedTowns(towns.length > 0 ? [ALL_TOWNS, ...towns] : []);
+                setSelectedTowns(towns.length > 0 ? [ALL_TOWNS, ...towns.map(t => t.town)] : []);
               } else {
                 setSelectedTowns(vals);
               }
@@ -208,7 +226,6 @@ export default function Page() {
         </button>
       </form>
 
-      {/* Debug */}
       <pre style={{ marginTop: '40px', background: '#f8f9fa', padding: '16px', borderRadius: '6px' }}>
         {JSON.stringify(
           {
