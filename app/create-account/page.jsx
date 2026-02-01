@@ -40,19 +40,7 @@ export default function Page() {
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
     const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
-    // Group by state, then sort states, then counties within each state
-    const grouped = {};
-    filtered.forEach(item => {
-      if (!grouped[item.state]) grouped[item.state] = new Set();
-      grouped[item.state].add(item.county);
-    });
-    const sortedCounties = [];
-    Object.keys(grouped).sort().forEach(st => {
-      Array.from(grouped[st]).sort().forEach(c => {
-        sortedCounties.push({ st, county: c });
-      });
-    });
-    return sortedCounties;
+    return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedStates, safeGeo]);
 
   const towns = useMemo(() => {
@@ -60,36 +48,39 @@ export default function Page() {
     const filtered = safeGeo.filter(
       item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
     );
-    // Group by state then town, sort states then towns
-    const grouped = {};
-    filtered.forEach(item => {
-      if (!grouped[item.state]) grouped[item.state] = new Set();
-      grouped[item.state].add(item.town);
-    });
-    const sortedTowns = [];
-    Object.keys(grouped).sort().forEach(st => {
-      Array.from(grouped[st]).sort().forEach(t => {
-        sortedTowns.push({ st, town: t });
-      });
-    });
-    return sortedTowns;
+    return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedStates, selectedCounties, safeGeo]);
 
   const stateOptions = uniqueStates.map(s => ({ value: s, label: s }));
 
   const countyOptions = useMemo(() => {
-    return counties.map(({ st, county }) => ({
-      value: county,
-      label: `${st} - ${county}`
-    }));
-  }, [counties]);
+    return counties.map(c => {
+      // Prefer 'st' if available, fallback to 'state'
+      const stList = Array.from(
+        new Set(
+          safeGeo
+            .filter(item => item.county === c && selectedStates.includes(item.state))
+            .map(item => item.st || item.state)
+        )
+      ).sort().join(', ');
+      return {
+        value: c,
+        label: `${stList} - ${c}`
+      };
+    });
+  }, [counties, selectedStates, safeGeo]);
 
   const townOptions = useMemo(() => {
-    return towns.map(({ st, town }) => ({
-      value: town,
-      label: `${st} - ${town}`
-    }));
-  }, [towns]);
+    return towns.map(t => {
+      const townInfo = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county));
+      const st = townInfo?.st || townInfo?.state || '';
+      const county = townInfo?.county || '';
+      return {
+        value: t,
+        label: `${st} - ${county} - ${t}`
+      };
+    });
+  }, [towns, selectedStates, selectedCounties, safeGeo]);
 
   const allCountiesOption = { value: ALL_COUNTIES, label: '=== All Counties ===' };
   const allTownsOption = { value: ALL_TOWNS, label: '=== All Towns ===' };
@@ -164,7 +155,7 @@ export default function Page() {
             onChange={opts => {
               const vals = opts ? opts.map(o => o.value) : [];
               if (vals.includes(ALL_COUNTIES)) {
-                setSelectedCounties(counties.length > 0 ? [ALL_COUNTIES, ...counties.map(c => c.county)] : []);
+                setSelectedCounties(counties.length > 0 ? [ALL_COUNTIES, ...counties] : []);
               } else {
                 setSelectedCounties(vals);
               }
@@ -189,7 +180,7 @@ export default function Page() {
             onChange={opts => {
               const vals = opts ? opts.map(o => o.value) : [];
               if (vals.includes(ALL_TOWNS)) {
-                setSelectedTowns(towns.length > 0 ? [ALL_TOWNS, ...towns.map(t => t.town)] : []);
+                setSelectedTowns(towns.length > 0 ? [ALL_TOWNS, ...towns] : []);
               } else {
                 setSelectedTowns(vals);
               }
