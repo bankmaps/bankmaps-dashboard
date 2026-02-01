@@ -46,31 +46,36 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950">
-      {/* Header - full width */}
-      <header className="bg-gradient-to-r from-indigo-600 to-blue-700 text-white p-5 shadow-md">
-        <h1 className="text-3xl font-bold text-center">THIS IS A TEST - FIXED LAYOUT 12345</h1>
-        <p className="text-center text-indigo-100 mt-1">Ask anything about your uploaded files...</p>
-      </header>
+    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#f9fafb' }}>
+      {/* Header */}
+      <div style={{ backgroundColor: '#1e40af', color: 'white', padding: '1.5rem', textAlign: 'center', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
+        <h1 style={{ margin: 0, fontSize: '1.8rem', fontWeight: 700 }}>Chat with Your Documents</h1>
+        <p style={{ margin: '0.5rem 0 0', opacity: 0.9, fontSize: '1rem' }}>
+          Ask anything about your uploaded files...
+        </p>
+      </div>
 
-      {/* Messages - full height, scrollable */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '2rem 1.5rem' }}>
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500 dark:text-gray-400">
-            <p className="text-2xl font-medium mb-4">No messages yet</p>
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#6b7280' }}>
+            <p style={{ fontSize: '1.25rem', fontWeight: 500, marginBottom: '0.75rem' }}>No messages yet</p>
             <p>Ask a question to get started</p>
           </div>
         ) : (
-          messages.map((msg, i) => (
-            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div
-                className={`max-w-[85%] md:max-w-[75%] p-5 rounded-2xl shadow-md ${
-                  msg.role === 'user'
-                    ? 'bg-blue-600 text-white rounded-br-none'
-                    : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-none border border-gray-200 dark:border-gray-700'
-                }`}
-              >
-                <div className="whitespace-pre-wrap leading-relaxed text-base">
+          messages.map((msg, index) => (
+            <div key={index} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: '1.5rem' }}>
+              <div style={{
+                maxWidth: '80%',
+                padding: '1rem 1.25rem',
+                borderRadius: '1.25rem',
+                backgroundColor: msg.role === 'user' ? '#1d4ed8' : '#f3f4f6',
+                color: msg.role === 'user' ? 'white' : '#111827',
+                borderBottomRightRadius: msg.role === 'user' ? '0' : '1.25rem',
+                borderBottomLeftRadius: msg.role === 'user' ? '1.25rem' : '0',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+              }}>
+                <div style={{ whiteSpace: 'pre-wrap', lineHeight: '1.5', fontSize: '1.05rem' }}>
                   {msg.content}
                 </div>
               </div>
@@ -79,31 +84,38 @@ export default function ChatPage() {
         )}
 
         {loading && (
-          <div className="flex justify-start">
-            <div className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-md border border-gray-200 dark:border-gray-700">
-              <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                <span className="animate-pulse">Thinking</span>
-                <span className="animate-pulse">.</span>
-                <span className="animate-pulse">.</span>
-                <span className="animate-pulse">.</span>
-              </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+            <div style={{ padding: '1rem 1.25rem', borderRadius: '1.25rem', backgroundColor: '#f3f4f6', borderBottomLeftRadius: '0', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+              <span style={{ color: '#6b7280' }}>Thinking...</span>
             </div>
           </div>
         )}
 
         <div ref={messagesEndRef} />
-      </main>
+      </div>
 
-      {/* Fixed large input at bottom */}
-      <footer className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4 shadow-lg">
-        <div className="max-w-5xl mx-auto flex gap-4 items-end">
+      {/* Fixed input */}
+      <div style={{ borderTop: '1px solid #e5e7eb', backgroundColor: 'white', padding: '1rem 1.5rem', boxShadow: '0 -2px 10px rgba(0,0,0,0.05)' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', gap: '1rem', alignItems: 'flex-end' }}>
           <textarea
             value={question}
             onChange={e => setQuestion(e.target.value)}
             placeholder="Ask anything about your documents..."
             rows={1}
-            className="flex-1 p-5 border border-gray-300 dark:border-gray-600 rounded-2xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white text-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 resize-none shadow-sm"
-            style={{ minHeight: '80px', maxHeight: '240px' }}
+            style={{
+              flex: 1,
+              padding: '1.25rem',
+              border: '1px solid #d1d5db',
+              borderRadius: '1rem',
+              backgroundColor: 'white',
+              fontSize: '1.125rem',
+              lineHeight: '1.5',
+              minHeight: '60px',
+              maxHeight: '180px',
+              resize: 'vertical',
+              outline: 'none',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+            }}
             onKeyDown={e => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
@@ -115,12 +127,24 @@ export default function ChatPage() {
           <button
             onClick={handleAsk}
             disabled={loading || !question.trim()}
-            className="px-10 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-medium transition disabled:opacity-50 shadow-md"
+            style={{
+              padding: '1rem 2rem',
+              backgroundColor: '#2563eb',
+              color: 'white',
+              border: 'none',
+              borderRadius: '1rem',
+              fontSize: '1.125rem',
+              fontWeight: 500,
+              cursor: 'pointer',
+              transition: 'background-color 0.2s',
+              opacity: loading || !question.trim() ? 0.6 : 1,
+              pointerEvents: loading || !question.trim() ? 'none' : 'auto'
+            }}
           >
             {loading ? '...' : 'Send'}
           </button>
         </div>
-      </footer>
+      </div>
     </div>
   )
 }
