@@ -55,9 +55,8 @@ export default function Page() {
 
   const countyOptions = useMemo(() => {
     return counties.map(c => {
-      // Find the state(s) for this county (in case multi-state selection)
       const statesForCounty = Array.from(
-        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.state))
+        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
       ).sort().join(', ');
       return {
         value: c,
@@ -68,11 +67,12 @@ export default function Page() {
 
   const townOptions = useMemo(() => {
     return towns.map(t => {
-      const countyForTown = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county))?.county || '';
-      const stateForTown = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county))?.state || '';
+      const townInfo = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county));
+      const st = townInfo?.st || townInfo?.state || '';
+      const county = townInfo?.county || '';
       return {
         value: t,
-        label: `${stateForTown} - ${countyForTown} - ${t}`
+        label: `${st} - ${county} - ${t}`
       };
     });
   }, [towns, selectedStates, selectedCounties, safeGeo]);
