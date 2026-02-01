@@ -49,7 +49,7 @@ export default function ChatPage() {
     <div className="flex flex-col h-screen bg-gray-50 dark:bg-gray-950">
       {/* Header - full width */}
       <header className="bg-gradient-to-r from-indigo-600 to-blue-700 text-white p-5 shadow-md">
-        <h1 className="text-3xl font-bold text-center">Chat with Your Documents</h1>
+        <h1 className="text-3xl font-bold text-center">THIS IS A TEST - FIXED LAYOUT 12345</h1>
         <p className="text-center text-indigo-100 mt-1">Ask anything about your uploaded files...</p>
       </header>
 
