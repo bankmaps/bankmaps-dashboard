@@ -3,8 +3,8 @@
 'use client';
 
 import { useState, useMemo } from 'react';
-import lendersData from '../../../data/lenders.json';  // relative from app/create-account/ to root data/
-import geoData from '../../../data/geography.json';
+import lendersData from '../../data/hmda_list.json';     // <-- exact name you said
+import geoData from '../../data/geographies.json';       // <-- exact name you said
 
 export default function Page() {
   const [selectedLender, setSelectedLender] = useState('');
@@ -26,7 +26,9 @@ export default function Page() {
 
   const towns = useMemo(() => {
     if (!selectedState || !selectedCounty) return [];
-    const filtered = geoData.filter(item => item.state === selectedState && item.county === selectedCounty);
+    const filtered = geoData.filter(
+      item => item.state === selectedState && item.county === selectedCounty
+    );
     const townsSet = new Set(filtered.map(item => item.town));
     return Array.from(townsSet).sort();
   }, [selectedState, selectedCounty]);
