@@ -2,9 +2,17 @@
 
 'use client';
 
-import { useState, useMemo } from 'react';
-import lendersData from '../../data/hmda_list.json';
-import geoData from '../../data/geographies.json';
+useEffect(() => {
+  fetch('/data/hmda_list.json')
+    .then(res => res.json())
+    .then(json => setLendersData(json.data || []))
+    .catch(err => console.error('Lenders load failed:', err));
+
+  fetch('/data/geographies.json')
+    .then(res => res.json())
+    .then(json => setGeoData(json.data || []))
+    .catch(err => console.error('Geo load failed:', err));
+}, []);
 
 // Skip static prerendering / force SSR for this page (prevents build-time crash)
 export const dynamic = 'force-dynamic';
