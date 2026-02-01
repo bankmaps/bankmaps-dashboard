@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
 
     // Turn question into keywords using Groq
     const rewrite = await groq.chat.completions.create({
-      model: 'groq/compound',
+      model: 'llama-3.1-8b-instant',
       temperature: 0.1,
       max_tokens: 60,
       messages: [
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     // Generate answer with Groq
     const answerRes = await groq.chat.completions.create({
-      model: 'groq/compound',
+      model: 'llama-3.1-8b-instant',
       temperature: 0.3,
       max_tokens: 500,
       messages: [
