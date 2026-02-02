@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive fuzzy similarity
+// Case-insensitive Levenshtein similarity
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -69,7 +69,7 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Filtered lists by selected states (using lender_state and st)
+  // Filtered lists by selected states
   const filteredHmdaList = useMemo(() => {
     if (selectedStates.length === 0) return hmdaList;
     return hmdaList.filter(item => selectedStates.includes(item.lender_state));
@@ -85,7 +85,7 @@ export default function Page() {
     return branchList.filter(item => selectedStates.includes(item.lender_state));
   }, [selectedStates, branchList]);
 
-  // Debounced fuzzy match (filtered by selected states)
+  // Debounced fuzzy match (filtered by states, min 80%)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!orgName.trim()) {
@@ -99,7 +99,7 @@ export default function Page() {
             ...item,
             score: similarity(orgName, item.lender)
           }))
-          .filter(item => item.score > 0.6)
+          .filter(item => item.score > 0.8)  // CHANGED: min 80% match
           .sort((a, b) => b.score - a.score)
           .slice(0, 3)
           .map(item => ({
@@ -128,25 +128,25 @@ export default function Page() {
     }
   }, [orgMatches]);
 
-  // Geography logic - using st for labels and filtering
+  // Geography logic
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
   const uniqueStates = useMemo(() => {
-    const statesSet = new Set(safeGeo.map(item => item.st || item.state)); // prefer st
+    const statesSet = new Set(safeGeo.map(item => item.state));
     return Array.from(statesSet).sort();
   }, [safeGeo]);
 
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
-    const filtered = safeGeo.filter(item => selectedStates.includes(item.st || item.state));
+    const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
     return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedStates, safeGeo]);
 
   const towns = useMemo(() => {
     if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
-      item => selectedStates.includes(item.st || item.state) && selectedCounties.includes(item.county)
+      item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
     );
     return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedStates, selectedCounties, safeGeo]);
@@ -156,11 +156,7 @@ export default function Page() {
   const countyOptions = useMemo(() => {
     return counties.map(c => {
       const stList = Array.from(
-        new Set(
-          safeGeo
-            .filter(item => item.county === c && selectedStates.includes(item.st || item.state))
-            .map(item => item.st || item.state)
-        )
+        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
       ).sort().join(', ');
       return {
         value: c,
