@@ -262,7 +262,9 @@ console.log({
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* State multi-select first */}
 <div>
-<p style="font-size: 14px;">This is a test<br />This is a second line<br /><br /></p>  <!-- smaller -->
+  
+<p style="font-size: 14px;">This is a test<br />This is a second line<br /><br /></p>
+  
   <label>Organization Type </label>
   <select
     value={selectedOrgType}
