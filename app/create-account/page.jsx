@@ -263,7 +263,10 @@ console.log({
         {/* State multi-select first */}
 <div>
   
-<p style="font-size: 14px;">This is a test<br />This is a second line<br /><br /></p>
+<p style={{ fontSize: '12px' }}>
+  This is a test<br />
+  This is a second line<br /><br />
+</p>
   
   <label>Organization Type </label>
   <select
