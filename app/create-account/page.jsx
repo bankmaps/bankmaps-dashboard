@@ -293,7 +293,7 @@ export default function Page() {
         {orgName.trim() && (
           <div style={{ marginTop: '8px', fontSize: '14px' }}>
             {orgMatches.hmda ? (
-              
+              <div>
 <strong>HMDA best match: <span onClick={() => setSelectedLender(orgMatches.hmda.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.hmda.label}</span></strong>
                 <select
                   value=""
@@ -313,7 +313,7 @@ export default function Page() {
             )}
 
             {orgMatches.cra ? (
-      
+      <div>
 <strong>CRA best match: <span onClick={() => setSelectedLender(orgMatches.cra.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.cra.label}</span></strong>
                 <select
                   value=""
@@ -333,7 +333,7 @@ export default function Page() {
             )}
 
             {orgMatches.branch ? (
-              
+              <div>
 <strong>Branch best match: <span onClick={() => setSelectedLender(orgMatches.branch.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.branch.label}</span></strong>
                 <select
                   value=""
@@ -353,7 +353,7 @@ export default function Page() {
             )}
 
             {orgMatches.fdic ? (
-              
+              <div>
 <strong>FDIC best match: <span onClick={() => setSelectedLender(orgMatches.fdic.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.fdic.label}</span></strong>
                 <select
                   value=""
@@ -373,7 +373,7 @@ export default function Page() {
             )}
 
             {orgMatches.ncua ? (
-             
+             <div>
 <strong>NCUA best match: <span onClick={() => setSelectedLender(orgMatches.ncua.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.ncua.label}</span></strong>
                 <select
                   value=""
