@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive Levenshtein similarity (unchanged)
+// Case-insensitive fuzzy similarity (unchanged)
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -30,12 +30,8 @@ const similarity = (a, b) => {
 };
 
 export default function Page() {
-  const [lendersData, setLendersData] = useState([]);
-  const [geoData, setGeoData] = useState([]);
-  const [hmdaList, setHmdaList] = useState([]);
-  const [craList, setCraList] = useState([]);
-  const [branchList, setBranchList] = useState([]);
-
+  const [currentStep, setCurrentStep] = useState(1); // 1 to 4
+  const [selectedOrgType, setSelectedOrgType] = useState(''); // Bank, Credit Union, Mortgage Company
   const [selectedLender, setSelectedLender] = useState('');
   const [selectedStates, setSelectedStates] = useState([]);
   const [selectedCounties, setSelectedCounties] = useState([]);
@@ -43,8 +39,13 @@ export default function Page() {
 
   const [orgName, setOrgName] = useState('');
   const [orgMatches, setOrgMatches] = useState({ hmda: null, cra: null, branch: null, fdic: null, ncua: null });
-  const [selectedOrgType, setSelectedOrgType] = useState('');
-  
+
+  const [lendersData, setLendersData] = useState([]);
+  const [geoData, setGeoData] = useState([]);
+  const [hmdaList, setHmdaList] = useState([]);
+  const [craList, setCraList] = useState([]);
+  const [branchList, setBranchList] = useState([]);
+
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then(res => res.json())
@@ -70,37 +71,53 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
+  // Filtered lists by selected states (using lender_state)
+  const filteredHmdaList = useMemo(() => {
+    if (selectedStates.length === 0) return hmdaList;
+    return hmdaList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, hmdaList]);
+
+  const filteredCraList = useMemo(() => {
+    if (selectedStates.length === 0) return craList;
+    return craList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, craList]);
+
+  const filteredBranchList = useMemo(() => {
+    if (selectedStates.length === 0) return branchList;
+    return branchList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, branchList]);
+
   // Debounced fuzzy match + FDIC/NCUA API calls
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (!orgName.trim()) {
+      if (!orgName.trim() || currentStep !== 3) {
         setOrgMatches({ hmda: null, cra: null, branch: null, fdic: null, ncua: null });
         return;
       }
 
-      // Local fuzzy matches - only top 1 per list
+      // Local fuzzy matches - top 1 per list
       const matchInList = (list) => {
         const matches = list
           .map(item => ({
             ...item,
             score: similarity(orgName, item.lender)
           }))
-          .filter(item => item.score > 0.9)
+          .filter(item => item.score > 0.6)
           .sort((a, b) => b.score - a.score);
         return matches.length > 0 ? matches[0] : null;
       };
 
       const localMatches = {
-        hmda: matchInList(hmdaList),
-        cra: matchInList(craList),
-        branch: matchInList(branchList)
+        hmda: matchInList(filteredHmdaList),
+        cra: matchInList(filteredCraList),
+        branch: matchInList(filteredBranchList)
       };
 
       // FDIC API (banks)
       let fdicMatch = null;
       try {
         const fdicRes = await fetch(
-          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CUNINUM%2CCITY%2CSTALP&limit=5`
+          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=5`
         );
         const fdicData = await fdicRes.json();
         const matches = (fdicData.data || []).map(item => ({
@@ -110,7 +127,7 @@ export default function Page() {
           state: item.data.STALP,
           score: similarity(orgName, item.data.NAME)
         }))
-        .filter(item => item.score > 0.9)
+        .filter(item => item.score > 0.6)
         .sort((a, b) => b.score - a.score);
         fdicMatch = matches.length > 0 ? matches[0] : null;
       } catch (e) {
@@ -131,7 +148,7 @@ export default function Page() {
           state: item.State,
           score: similarity(orgName, item.CU_Name)
         }))
-        .filter(item => item.score > 0.9)
+        .filter(item => item.score > 0.6)
         .sort((a, b) => b.score - a.score);
         ncuaMatch = matches.length > 0 ? matches[0] : null;
       } catch (e) {
@@ -190,20 +207,20 @@ export default function Page() {
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
   const uniqueStates = useMemo(() => {
-    const statesSet = new Set(safeGeo.map(item => item.state));
-    return Array.from(statesSet).sort();
+    const statesSet = new Set(safeGeo.map(item => item.st || item.state));
+    return Array.from(statesSet).filter(Boolean).sort();
   }, [safeGeo]);
 
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
-    const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
+    const filtered = safeGeo.filter(item => selectedStates.includes(item.st || item.state));
     return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedStates, safeGeo]);
 
   const towns = useMemo(() => {
     if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
-      item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
+      item => selectedStates.includes(item.st || item.state) && selectedCounties.includes(item.county)
     );
     return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedStates, selectedCounties, safeGeo]);
@@ -213,7 +230,7 @@ export default function Page() {
   const countyOptions = useMemo(() => {
     return counties.map(c => {
       const stList = Array.from(
-        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
+        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.st || item.state)).map(item => item.st || item.state))
       ).sort().join(', ');
       return {
         value: c,
@@ -237,292 +254,248 @@ export default function Page() {
   const allCountiesOption = { value: ALL_COUNTIES, label: '=== All Counties ===' };
   const allTownsOption = { value: ALL_TOWNS, label: '=== All Towns ===' };
 
+  const nextStep = () => {
+    if (currentStep === 1 && !selectedOrgType) return alert('Please select organization type');
+    if (currentStep === 2 && selectedStates.length === 0) return alert('Please select at least one state');
+    if (currentStep === 3 && !selectedLender) return alert('Please select a lender');
+    setCurrentStep(prev => Math.min(prev + 1, 4));
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-console.log({
-  lender: selectedLender,
-  orgType: selectedOrgType,  // ← added
-  states: selectedStates,
-  counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
-  towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
-});
+    console.log({
+      orgType: selectedOrgType,
+      lender: selectedLender,
+      states: selectedStates,
+      counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
+      towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
+    });
+    alert('All changes saved! (TODO: send to backend)');
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div>
+            <h2>Step 1: Select Your Organization Type</h2>
+            <select
+              value={selectedOrgType}
+              onChange={e => setSelectedOrgType(e.target.value)}
+              required
+              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+            >
+              <option value="">-- Select Type --</option>
+              <option value="Bank">Bank</option>
+              <option value="Credit Union">Credit Union</option>
+              <option value="Mortgage Company">Mortgage Company</option>
+            </select>
+          </div>
+        );
+
+      case 2:
+        return (
+          <div>
+            <h2>Step 2: Select State(s)</h2>
+            <Select
+              isMulti
+              options={stateOptions}
+              value={stateOptions.filter(opt => selectedStates.includes(opt.value))}
+              onChange={opts => {
+                const vals = opts ? opts.map(o => o.value) : [];
+                setSelectedStates(vals);
+              }}
+              placeholder="Select State(s)..."
+              className="basic-multi-select"
+              classNamePrefix="select"
+            />
+          </div>
+        );
+
+      case 3:
+        return (
+          <div>
+            <h2>Step 3: Organization & Lender</h2>
+            <div>
+              <label>Type your organization name (optional auto-match)</label>
+              <input
+                type="text"
+                value={orgName}
+                onChange={e => setOrgName(e.target.value)}
+                placeholder="e.g. East Cambridge Savings Bank"
+                style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+              />
+            </div>
+
+            {orgName.trim() && (
+              <div style={{ marginTop: '8px', fontSize: '14px' }}>
+                {orgMatches.hmda && (
+                  <div>
+                    <strong>HMDA best match:</strong> {orgMatches.hmda.label}
+                  </div>
+                )}
+                {orgMatches.cra && (
+                  <div>
+                    <strong>CRA best match:</strong> {orgMatches.cra.label}
+                  </div>
+                )}
+                {orgMatches.branch && (
+                  <div>
+                    <strong>Branch best match:</strong> {orgMatches.branch.label}
+                  </div>
+                )}
+                {orgMatches.fdic && (
+                  <div>
+                    <strong>FDIC best match:</strong> {orgMatches.fdic.label}
+                  </div>
+                )}
+                {orgMatches.ncua && (
+                  <div>
+                    <strong>NCUA best match:</strong> {orgMatches.ncua.label}
+                  </div>
+                )}
+              </div>
+            )}
+
+            <div style={{ marginTop: '16px' }}>
+              <label>Lender</label>
+              <select
+                value={selectedLender}
+                onChange={e => setSelectedLender(e.target.value)}
+                required
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+              >
+                <option value="">-- Select Lender --</option>
+                {safeLenders.map(l => (
+                  <option key={l.lender_id} value={l.lender_id}>
+                    {l.lender} ({l.lender_state} - {l.regulator})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+
+      case 4:
+        return (
+          <div>
+            <h2>Step 4: Confirm Your Data Connections</h2>
+            <pre style={{ background: '#f8f9fa', padding: '16px', borderRadius: '6px' }}>
+              {JSON.stringify(
+                {
+                  orgType: selectedOrgType,
+                  lender: selectedLender,
+                  states: selectedStates,
+                  counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
+                  towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
+                },
+                null,
+                2
+              )}
+            </pre>
+            <p>Review above and click "Save All Changes" below.</p>
+          </div>
+        );
+
+      default:
+        return null;
+    }
   };
 
   return (
     <div style={{ padding: '40px', maxWidth: '700px', margin: '0 auto' }}>
       <h1>Create Account</h1>
 
-      {!safeLenders.length && (
-        <p style={{ color: 'red' }}>Warning: No lenders loaded from hmda_list.json</p>
-      )}
-      {!safeGeo.length && (
-        <p style={{ color: 'red' }}>Warning: No geography data loaded from geographies.json</p>
-      )}
+      {/* Progress bar */}
+      <div style={{ marginBottom: '32px', textAlign: 'center' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
+          {[1, 2, 3, 4].map(step => (
+            <div
+              key={step}
+              style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                backgroundColor: currentStep >= step ? '#0066cc' : '#ddd',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 'bold'
+              }}
+            >
+              {step}
+            </div>
+          ))}
+        </div>
+      </div>
 
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {/* State multi-select first */}
-<div>
-  
-<p style={{ fontSize: '12px' }}>
-  This is a test<br />
-  This is a second line<br /><br />
-</p>
-  
-  <label>Organization Type </label>
-  <select
-    value={selectedOrgType}
-    onChange={e => setSelectedOrgType(e.target.value)}
-    required
-    style={{ width: '25%', padding: '1px', borderRadius: '1px', border: '1px solid #ccc' }}
-  >
-    <option value="">-- Select Organization Type --</option>
-    <option value="Bank">Bank</option>
-    <option value="Credit Union">Credit Union</option>
-    <option value="Mortgage Company">Mortgage Company</option>
-  </select>
-</div>
-            <div>
-          <label>Select States (Optional)</label>
-          <Select
-            isMulti
-            options={stateOptions}
-            value={stateOptions.filter(opt => selectedStates.includes(opt.value))}
-            onChange={opts => {
-              const vals = opts ? opts.map(o => o.value) : [];
-              setSelectedStates(vals);
-              setOrgName('');
-              setSelectedLender('');
+      {renderStep()}
+
+      {/* Navigation buttons */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
+        {currentStep > 1 && (
+          <button
+            type="button"
+            onClick={prevStep}
+            style={{
+              padding: '12px 24px',
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer'
             }}
-            placeholder="Select State(s)..."
-            className="basic-multi-select"
-            classNamePrefix="select"
-            style={{ width: '25%', padding: '1px', borderRadius: '1px', border: '1px solid #ccc' }}
-          />
-        </div>
-
-        {/* Organization input */}
-        <div>
-          <label>Type your organization name (optional auto-match)</label>
-          <input
-            type="text"
-            value={orgName}
-            onChange={e => setOrgName(e.target.value)}
-            placeholder="e.g. East Cambridge Savings Bank"
-            style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc' }}
-          />
-        </div>
-
-        {/* Matches - top match only per list */}
-        {orgName.trim() && (
-          <div style={{ marginTop: '8px', fontSize: '14px' }}>
-            {orgMatches.hmda ? (
-              <div> 
-                
-<strong>HMDA match: <span onClick={() => setSelectedLender(orgMatches.hmda.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.hmda.label}</span></strong>
-                <select
-                  value=""
-                  onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
-                >
-                  <option value="">Select the organization yourself</option>
-                  {hmdaList.map(l => (
-                    <option key={l.lender_id} value={l.lender_id}>
-                      {l.lender} ({l.lender_state} - {l.regulator})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div>No match in HMDA list</div>
-            )}
-
-            {orgMatches.cra ? (
-      <div>
-<strong>CRA match: <span onClick={() => setSelectedLender(orgMatches.cra.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.cra.label}</span></strong>
-                <select
-                  value=""
-                  onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
-                >
-                  <option value="">Select the organization yourself</option>
-                  {craList.map(l => (
-                    <option key={l.lender_id} value={l.lender_id}>
-                      {l.lender} ({l.lender_state} - {l.regulator})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div>No match in CRA list</div>
-            )}
-
-            {orgMatches.branch ? (
-              <div>
-<strong>Branch match: <span onClick={() => setSelectedLender(orgMatches.branch.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.branch.label}</span></strong>
-                <select
-                  value=""
-                  onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
-                >
-                  <option value="">Select the organization yourself</option>
-                  {branchList.map(l => (
-                    <option key={l.lender_id} value={l.lender_id}>
-                      {l.lender} ({l.lender_state} - {l.regulator})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div>No match in Branch list</div>
-            )}
-
-            {orgMatches.fdic ? (
-              <div>
-<strong>FDIC match: <span onClick={() => setSelectedLender(orgMatches.fdic.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.fdic.label}</span></strong>
-                <select
-                  value=""
-                  onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
-                >
-                  <option value="">Select the organization yourself</option>
-                  {safeLenders.map(l => (
-                    <option key={l.lender_id} value={l.lender_id}>
-                      {l.lender} ({l.lender_state} - {l.regulator})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div>No match in FDIC database</div>
-            )}
-
-            {orgMatches.ncua ? (
-             <div>
-<strong>NCUA match: <span onClick={() => setSelectedLender(orgMatches.ncua.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.ncua.label}</span></strong>
-                <select
-                  value=""
-                  onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '50%', padding: '5px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
-                >
-                  <option value="">Select the organization yourself</option>
-                  {safeLenders.map(l => (
-                    <option key={l.lender_id} value={l.lender_id}>
-                      {l.lender} ({l.lender_state} - {l.regulator})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div>No match in NCUA database</div>
-            )}
-          </div>
+          >
+            Back
+          </button>
         )}
 
-        {/* Lender dropdown */}
-        <div>
-          <label>Lender</label>
-          <select
-            value={selectedLender}
-            onChange={e => setSelectedLender(e.target.value)}
-            required
-            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+        {currentStep < 4 ? (
+          <button
+            type="button"
+            onClick={nextStep}
+            style={{
+              padding: '12px 24px',
+              background: '#0066cc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              marginLeft: 'auto'
+            }}
           >
-            <option value="">-- Select Lender --</option>
-            {safeLenders.map(l => (
-              <option key={l.lender_id} value={l.lender_id}>
-                {l.lender} ({l.lender_state} - {l.regulator})
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Geography sections */}
-        <div>
-          <label>State(s)</label>
-          <Select
-            isMulti
-            options={stateOptions}
-            value={stateOptions.filter(opt => selectedStates.includes(opt.value))}
-            onChange={opts => {
-              const vals = opts ? opts.map(o => o.value) : [];
-              setSelectedStates(vals);
-              setSelectedCounties([]);
-              setSelectedTowns([]);
+            Next
+          </button>
+        ) : (
+          <button
+            type="submit"
+            onClick={handleSubmit}
+            style={{
+              padding: '12px 24px',
+              background: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              marginLeft: 'auto'
             }}
-            placeholder="Select State(s)..."
-            className="basic-multi-select"
-            classNamePrefix="select"
-          />
-        </div>
+          >
+            Save All Changes
+          </button>
+        )}
+      </div>
 
-        <div>
-          <label>County(ies)</label>
-          <Select
-            isMulti
-            options={[allCountiesOption, ...countyOptions]}
-            value={[
-              ...(selectedCounties.includes(ALL_COUNTIES) ? [allCountiesOption] : []),
-              ...countyOptions.filter(opt => selectedCounties.includes(opt.value))
-            ]}
-            onChange={opts => {
-              const vals = opts ? opts.map(o => o.value) : [];
-              if (vals.includes(ALL_COUNTIES)) {
-                setSelectedCounties(counties.length > 0 ? [ALL_COUNTIES, ...counties] : []);
-              } else {
-                setSelectedCounties(vals);
-              }
-              setSelectedTowns([]);
-            }}
-            isDisabled={selectedStates.length === 0}
-            placeholder="Select County(ies)..."
-            className="basic-multi-select"
-            classNamePrefix="select"
-          />
-        </div>
-
-        <div>
-          <label>Town(s)</label>
-          <Select
-            isMulti
-            options={[allTownsOption, ...townOptions]}
-            value={[
-              ...(selectedTowns.includes(ALL_TOWNS) ? [allTownsOption] : []),
-              ...townOptions.filter(opt => selectedTowns.includes(opt.value))
-            ]}
-            onChange={opts => {
-              const vals = opts ? opts.map(o => o.value) : [];
-              if (vals.includes(ALL_TOWNS)) {
-                setSelectedTowns(towns.length > 0 ? [ALL_TOWNS, ...towns] : []);
-              } else {
-                setSelectedTowns(vals);
-              }
-            }}
-            isDisabled={selectedCounties.length === 0}
-            placeholder="Select Town(s)..."
-            className="basic-multi-select"
-            classNamePrefix="select"
-          />
-        </div>
-
-        <button
-          type="submit"
-          style={{
-            padding: '14px',
-            background: '#0066cc',
-            color: 'white',
-            border: 'none',
-            borderRadius: '6px',
-            fontSize: '16px',
-            cursor: 'pointer'
-          }}
-        >
-          Create Account
-        </button>
-      </form>
-
+      {/* Debug */}
       <pre style={{ marginTop: '40px', background: '#f8f9fa', padding: '16px', borderRadius: '6px' }}>
         {JSON.stringify(
           {
+            step: currentStep,
+            orgType: selectedOrgType,
             lender: selectedLender,
             states: selectedStates,
             counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
