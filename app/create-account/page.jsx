@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive Levenshtein similarity
+// Case-insensitive fuzzy similarity
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -69,7 +69,7 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Filtered lists by selected states
+  // Filtered lists by selected states (using lender_state and st)
   const filteredHmdaList = useMemo(() => {
     if (selectedStates.length === 0) return hmdaList;
     return hmdaList.filter(item => selectedStates.includes(item.lender_state));
@@ -85,7 +85,7 @@ export default function Page() {
     return branchList.filter(item => selectedStates.includes(item.lender_state));
   }, [selectedStates, branchList]);
 
-  // Debounced fuzzy match (filtered by states, min 80%)
+  // Debounced fuzzy match (filtered by selected states)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!orgName.trim()) {
@@ -99,7 +99,7 @@ export default function Page() {
             ...item,
             score: similarity(orgName, item.lender)
           }))
-          .filter(item => item.score > 0.8)  // CHANGED: min 80% match
+          .filter(item => item.score > 0.6)
           .sort((a, b) => b.score - a.score)
           .slice(0, 3)
           .map(item => ({
@@ -128,7 +128,6 @@ export default function Page() {
     }
   }, [orgMatches]);
 
-  // Geography logic
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
