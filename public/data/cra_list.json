@@ -6,6 +6,13 @@
   "data": [
     {
       "year": "2024",
+      "lender": "WEBSTER FIVE CENTS SAVINGS BAN",
+      "lender_id": "30000090297",
+      "regulator": "Fdic",
+      "lender_state": "MA"
+    },
+    {
+      "year": "2024",
       "lender": "1ST SOURCE BANK",
       "lender_id": "20000991340",
       "regulator": "Fed",
