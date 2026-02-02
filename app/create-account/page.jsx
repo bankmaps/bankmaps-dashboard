@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive fuzzy similarity
+// Case-insensitive Levenshtein similarity
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -69,7 +69,7 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Filtered lists by selected states
+  // Filtered lists by selected states (using lender_state)
   const filteredHmdaList = useMemo(() => {
     if (selectedStates.length === 0) return hmdaList;
     return hmdaList.filter(item => selectedStates.includes(item.lender_state));
@@ -159,7 +159,7 @@ export default function Page() {
         new Set(
           safeGeo
             .filter(item => item.county === c && selectedStates.includes(item.state))
-            .map(item => item.st || item.state)  // prefer st
+            .map(item => item.st || item.state)  // ST first, fallback to state
         )
       ).sort().join(', ');
       return {
@@ -216,7 +216,7 @@ export default function Page() {
             onChange={opts => {
               const vals = opts ? opts.map(o => o.value) : [];
               setSelectedStates(vals);
-              setOrgName(''); // reset match when states change
+              setOrgName('');
               setSelectedLender('');
             }}
             placeholder="Select State(s)..."
@@ -287,7 +287,7 @@ export default function Page() {
           </div>
         )}
 
-        {/* Lender dropdown */}
+        {/* Lender */}
         <div>
           <label>Lender</label>
           <select
@@ -305,7 +305,7 @@ export default function Page() {
           </select>
         </div>
 
-        {/* Geography sections */}
+        {/* Geography */}
         <div>
           <label>State(s)</label>
           <Select
