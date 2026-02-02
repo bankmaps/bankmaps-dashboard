@@ -282,7 +282,7 @@ export default function Page() {
       case 1:
         return (
           <div>
-            <h2>Step 1: Select Your Organization Type</h2>
+            <h2>Step 1: Select Organization Type</h2>
             <select
               value={selectedOrgType}
               onChange={e => setSelectedOrgType(e.target.value)}
@@ -319,7 +319,7 @@ export default function Page() {
       case 3:
         return (
           <div>
-            <h2>Step 3: Organization Name </h2>
+            <h2>Step 3: Match Organization Name to Databases </h2>
             <div>
               <label>Type your organization name (as you want it to appear in your reports)</label>
               <input
