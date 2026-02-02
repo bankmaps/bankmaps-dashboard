@@ -294,7 +294,7 @@ export default function Page() {
           <div style={{ marginTop: '8px', fontSize: '14px' }}>
             {orgMatches.hmda ? (
               <div>
-<strong>HMDA best match: <span onClick={() => setSelectedLender(orgMatches.hmda.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.hmda.label}</span></strong>
+<strong>HMDA best match: <span onClick={() => setSelectedLender(orgMatches.hmda.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.hmda.label}</span></strong></div>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
@@ -313,7 +313,7 @@ export default function Page() {
             )}
 
             {orgMatches.cra ? (
-<strong>CRA best match: <span onClick={() => setSelectedLender(orgMatches.cra.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.cra.label}</span></strong>
+<strong>CRA best match: <span onClick={() => setSelectedLender(orgMatches.cra.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.cra.label}</span></strong></div>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
@@ -333,7 +333,7 @@ export default function Page() {
 
             {orgMatches.branch ? (
               <div>
-<strong>Branch best match: <span onClick={() => setSelectedLender(orgMatches.branch.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.branch.label}</span></strong>
+<strong>Branch best match: <span onClick={() => setSelectedLender(orgMatches.branch.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.branch.label}</span></strong></div>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
@@ -353,7 +353,7 @@ export default function Page() {
 
             {orgMatches.fdic ? (
               <div>
-<strong>FDIC Call Rpt best match: <span onClick={() => setSelectedLender(orgMatches.fdic.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.fdic.label}</span></strong>
+<strong>FDIC Call Rpt best match: <span onClick={() => setSelectedLender(orgMatches.fdic.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.fdic.label}</span></strong></div>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
@@ -373,7 +373,7 @@ export default function Page() {
 
             {orgMatches.ncua ? (
               <div>
-<strong>NCUA Call Rpt best match: <span onClick={() => setSelectedLender(orgMatches.ncua.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.ncua.label}</span></strong>
+<strong>NCUA Call Rpt best match: <span onClick={() => setSelectedLender(orgMatches.ncua.value)} style={{ cursor: 'pointer', color: 'blue' }}>{orgMatches.ncua.label}</span></strong></div>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
