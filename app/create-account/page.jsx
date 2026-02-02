@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive Levenshtein similarity (unchanged)
+// Case-insensitive fuzzy similarity
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -42,7 +42,7 @@ export default function Page() {
   const [selectedTowns, setSelectedTowns] = useState([]);
 
   const [orgName, setOrgName] = useState('');
-  const [orgMatches, setOrgMatches] = useState({ hmda: [], cra: [], branch: [], fdic: [], ncua: [] });
+  const [orgMatches, setOrgMatches] = useState({ hmda: [], cra: [], branch: [] });
 
   useEffect(() => {
     fetch('/data/hmda_list.json')
@@ -69,15 +69,30 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // FDIC & NCUA + local fuzzy match (debounced)
+  // Filtered lists by selected states (using lender_state and st)
+  const filteredHmdaList = useMemo(() => {
+    if (selectedStates.length === 0) return hmdaList;
+    return hmdaList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, hmdaList]);
+
+  const filteredCraList = useMemo(() => {
+    if (selectedStates.length === 0) return craList;
+    return craList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, craList]);
+
+  const filteredBranchList = useMemo(() => {
+    if (selectedStates.length === 0) return branchList;
+    return branchList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, branchList]);
+
+  // Debounced fuzzy match (filtered by selected states)
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       if (!orgName.trim()) {
-        setOrgMatches({ hmda: [], cra: [], branch: [], fdic: [], ncua: [] });
+        setOrgMatches({ hmda: [], cra: [], branch: [] });
         return;
       }
 
-      // Local fuzzy matches (unchanged)
       const matchInList = (list) => {
         return list
           .map(item => ({
@@ -94,88 +109,44 @@ export default function Page() {
           }));
       };
 
-      const localMatches = {
-        hmda: matchInList(hmdaList),
-        cra: matchInList(craList),
-        branch: matchInList(branchList)
-      };
-
-      // FDIC API (banks) - no key needed
-      let fdicMatches = [];
-      try {
-        const fdicRes = await fetch(
-          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=3`
-        );
-        const fdicData = await fdicRes.json();
-        fdicMatches = (fdicData.data || []).map(item => ({
-          label: `${item.data.NAME} (RSSD ${item.data.RSSD}, ${item.data.CITY}, ${item.data.STALP})`,
-          value: item.data.RSSD,
-          score: 0.9
-        }));
-      } catch (e) {
-        console.error('FDIC fetch failed:', e);
-      }
-
-      // NCUA API (credit unions) - no key needed
-      let ncuaMatches = [];
-      try {
-        const ncuaRes = await fetch(
-          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=3`
-        );
-        const ncuaData = await ncuaRes.json();
-        ncuaMatches = (ncuaData || []).map(item => ({
-          label: `${item.CU_Name} (Charter ${item.CU_Number}, ${item.City}, ${item.State})`,
-          value: item.CU_Number,
-          score: 0.9
-        }));
-      } catch (e) {
-        console.error('NCUA fetch failed:', e);
-      }
-
       setOrgMatches({
-        ...localMatches,
-        fdic: fdicMatches,
-        ncua: ncuaMatches
+        hmda: matchInList(filteredHmdaList),
+        cra: matchInList(filteredCraList),
+        branch: matchInList(filteredBranchList)
       });
-    }, 600); // slight debounce
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [orgName, hmdaList, craList, branchList]);
+  }, [orgName, filteredHmdaList, filteredCraList, filteredBranchList]);
 
   // Auto-fill on strong match (>80%)
   useEffect(() => {
-    const allMatches = [
-      ...orgMatches.hmda,
-      ...orgMatches.cra,
-      ...orgMatches.branch,
-      ...orgMatches.fdic,
-      ...orgMatches.ncua
-    ];
+    const allMatches = [...orgMatches.hmda, ...orgMatches.cra, ...orgMatches.branch];
     const best = allMatches[0];
     if (best && best.score > 0.8) {
       setSelectedLender(best.value);
     }
   }, [orgMatches]);
 
-  // Geography logic (unchanged from your current version)
+  // Geography logic - using st for top dropdown and labels
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
   const uniqueStates = useMemo(() => {
-    const statesSet = new Set(safeGeo.map(item => item.state));
-    return Array.from(statesSet).sort();
+    const statesSet = new Set(safeGeo.map(item => item.st)); // only st
+    return Array.from(statesSet).filter(Boolean).sort(); // remove empty
   }, [safeGeo]);
 
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
-    const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
+    const filtered = safeGeo.filter(item => selectedStates.includes(item.st));
     return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedStates, safeGeo]);
 
   const towns = useMemo(() => {
     if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
-      item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
+      item => selectedStates.includes(item.st) && selectedCounties.includes(item.county)
     );
     return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedStates, selectedCounties, safeGeo]);
@@ -185,7 +156,11 @@ export default function Page() {
   const countyOptions = useMemo(() => {
     return counties.map(c => {
       const stList = Array.from(
-        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
+        new Set(
+          safeGeo
+            .filter(item => item.county === c && selectedStates.includes(item.st))
+            .map(item => item.st)
+        )
       ).sort().join(', ');
       return {
         value: c,
@@ -197,7 +172,7 @@ export default function Page() {
   const townOptions = useMemo(() => {
     return towns.map(t => {
       const townInfo = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county));
-      const st = townInfo?.st || townInfo?.state || '';
+      const st = townInfo?.st || '';
       const county = townInfo?.county || '';
       return {
         value: t,
@@ -262,7 +237,7 @@ export default function Page() {
           />
         </div>
 
-        {/* Matches display */}
+        {/* Matches */}
         {orgName.trim() && (
           <div style={{ marginTop: '8px', fontSize: '14px' }}>
             {orgMatches.hmda.length > 0 ? (
@@ -309,40 +284,10 @@ export default function Page() {
             ) : (
               <div>No match in Branch list</div>
             )}
-
-            {orgMatches.fdic.length > 0 ? (
-              <div>
-                <strong>FDIC matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.fdic.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div>No match in FDIC database</div>
-            )}
-
-            {orgMatches.ncua.length > 0 ? (
-              <div>
-                <strong>NCUA matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.ncua.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div>No match in NCUA database</div>
-            )}
           </div>
         )}
 
-        {/* Lender dropdown */}
+        {/* Lender */}
         <div>
           <label>Lender</label>
           <select
@@ -360,7 +305,7 @@ export default function Page() {
           </select>
         </div>
 
-        {/* Geography sections */}
+        {/* Geography */}
         <div>
           <label>State(s)</label>
           <Select
