@@ -262,7 +262,8 @@ console.log({
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* State multi-select first */}
 <div>
-  <label>Organization Type</label>
+<p>This is a test<br />This is a second line<br /><br /></p>
+  <label>Organization Type </label>
   <select
     value={selectedOrgType}
     onChange={e => setSelectedOrgType(e.target.value)}
@@ -276,7 +277,7 @@ console.log({
   </select>
 </div>
             <div>
-          <label>Select State(s) to filter organization matches</label>
+          <label>Select States (Optional)</label>
           <Select
             isMulti
             options={stateOptions}
