@@ -79,7 +79,6 @@ export default function Page() {
         return;
       }
 
-      // Local fuzzy matches - top 1 per list
       const matchInList = (list) => {
         const matches = list
           .map(item => ({
@@ -95,11 +94,11 @@ export default function Page() {
         hmda: matchInList(hmdaList),
         cra: selectedOrgType === 'Bank' ? matchInList(craList) : null,
         branch: selectedOrgType !== 'Mortgage Company' ? matchInList(branchList) : null,
-        fdic: selectedOrgType === 'Bank' ? null : null, // placeholder - add fetch below
-        ncua: selectedOrgType === 'Credit Union' ? null : null // placeholder
+        fdic: null,
+        ncua: null
       };
 
-      // FDIC API (only for Bank)
+      // FDIC only for Bank
       if (selectedOrgType === 'Bank') {
         try {
           const fdicRes = await fetch(
@@ -121,7 +120,7 @@ export default function Page() {
         }
       }
 
-      // NCUA API (only for Credit Union)
+      // NCUA only for Credit Union
       if (selectedOrgType === 'Credit Union') {
         try {
           const ncuaRes = await fetch(
@@ -190,25 +189,25 @@ export default function Page() {
     }
   }, [orgMatches]);
 
-  // Geography logic (unchanged)
+  // Geography logic
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
   const uniqueStates = useMemo(() => {
-    const statesSet = new Set(safeGeo.map(item => item.state));
-    return Array.from(statesSet).sort();
+    const statesSet = new Set(safeGeo.map(item => item.st || item.state));
+    return Array.from(statesSet).filter(Boolean).sort();
   }, [safeGeo]);
 
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
-    const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
+    const filtered = safeGeo.filter(item => selectedStates.includes(item.st || item.state));
     return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedStates, safeGeo]);
 
   const towns = useMemo(() => {
     if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
-      item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
+      item => selectedStates.includes(item.st || item.state) && selectedCounties.includes(item.county)
     );
     return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedStates, selectedCounties, safeGeo]);
@@ -218,7 +217,7 @@ export default function Page() {
   const countyOptions = useMemo(() => {
     return counties.map(c => {
       const stList = Array.from(
-        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
+        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.st || item.state)).map(item => item.st || item.state))
       ).sort().join(', ');
       return {
         value: c,
@@ -411,111 +410,3 @@ export default function Page() {
       orgType: selectedOrgType,
       lender: selectedLender,
       states: selectedStates,
-      counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
-      towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
-    });
-    alert('All changes saved! (TODO: send to backend)');
-  };
-
-  return (
-    <div style={{ padding: '40px', maxWidth: '700px', margin: '0 auto' }}>
-      <h1>Create Account</h1>
-
-      {/* Progress bar */}
-      <div style={{ marginBottom: '32px', textAlign: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: '16px' }}>
-          {[1, 2, 3, 4].map(step => (
-            <div
-              key={step}
-              style={{
-                width: '40px',
-                height: '40px',
-                borderRadius: '50%',
-                backgroundColor: currentStep >= step ? '#0066cc' : '#ddd',
-                color: 'white',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontWeight: 'bold'
-              }}
-            >
-              {step}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {renderStep()}
-
-      {/* Navigation */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
-        {currentStep > 1 && (
-          <button
-            type="button"
-            onClick={prevStep}
-            style={{
-              padding: '12px 24px',
-              background: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            Back
-          </button>
-        )}
-
-        {currentStep < 4 ? (
-          <button
-            type="button"
-            onClick={nextStep}
-            style={{
-              padding: '12px 24px',
-              background: '#0066cc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              marginLeft: 'auto'
-            }}
-          >
-            Next
-          </button>
-        ) : (
-          <button
-            type="submit"
-            onClick={handleSubmit}
-            style={{
-              padding: '12px 24px',
-              background: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              marginLeft: 'auto'
-            }}
-          >
-            Save All Changes
-          </button>
-        )}
-      </div>
-
-      {/* Debug */}
-      <pre style={{ marginTop: '40px', background: '#f8f9fa', padding: '16px', borderRadius: '6px' }}>
-        {JSON.stringify(
-          {
-            step: currentStep,
-            orgType: selectedOrgType,
-            lender: selectedLender,
-            states: selectedStates,
-            counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
-            towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
-          },
-          null,
-          2
-        )}
-      </pre>
-    </div>
-  );
-}
