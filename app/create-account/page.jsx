@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive Levenshtein similarity
+// Case-insensitive fuzzy similarity
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -69,7 +69,7 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Filtered lists by selected states (using lender_state)
+  // Filtered lists by selected states (using lender_state and st)
   const filteredHmdaList = useMemo(() => {
     if (selectedStates.length === 0) return hmdaList;
     return hmdaList.filter(item => selectedStates.includes(item.lender_state));
@@ -128,7 +128,7 @@ export default function Page() {
     }
   }, [orgMatches]);
 
-  // Geography logic
+  // Geography logic - using st for labels
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
@@ -159,7 +159,7 @@ export default function Page() {
         new Set(
           safeGeo
             .filter(item => item.county === c && selectedStates.includes(item.state))
-            .map(item => item.st || item.state)  // ST first, fallback to state
+            .map(item => item.st || item.state)  // ST first
         )
       ).sort().join(', ');
       return {
@@ -232,7 +232,7 @@ export default function Page() {
             type="text"
             value={orgName}
             onChange={e => setOrgName(e.target.value)}
-            placeholder="e.g. East Cambridge Savings Bank"
+            placeholder="e.g. XYZ Savings Bank"
             style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
           />
         </div>
