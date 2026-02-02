@@ -8,8 +8,9 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Simple Levenshtein distance for fuzzy matching
-const levenshtein = (a, b) => {
+// Simple Levenshtein similarity (fuzzy match)
+const similarity = (a, b) => {
+  if (a.length === 0 || b.length === 0) return 0;
   const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
   for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
   for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
@@ -23,12 +24,7 @@ const levenshtein = (a, b) => {
       );
     }
   }
-  return matrix[b.length][a.length];
-};
-
-const similarity = (a, b) => {
-  if (a.length === 0 || b.length === 0) return 0;
-  return 1 - levenshtein(a.toLowerCase(), b.toLowerCase()) / Math.max(a.length, b.length);
+  return 1 - matrix[b.length][a.length] / Math.max(a.length, b.length);
 };
 
 export default function Page() {
@@ -71,7 +67,7 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Fuzzy match on org name change (debounced)
+  // Debounced fuzzy match on org name
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!orgName.trim()) {
@@ -85,12 +81,13 @@ export default function Page() {
             ...item,
             score: similarity(orgName, item.lender)
           }))
-          .filter(item => item.score > 0.6) // min 60% match
+          .filter(item => item.score > 0.6)
           .sort((a, b) => b.score - a.score)
-          .slice(0, 3) // top 3
+          .slice(0, 3)
           .map(item => ({
             label: `${item.lender} (${item.lender_state} - ${item.regulator}) - ${Math.round(item.score * 100)}% match`,
-            value: item.lender_id
+            value: item.lender_id,
+            score: item.score
           }));
       };
 
@@ -104,7 +101,7 @@ export default function Page() {
     return () => clearTimeout(timer);
   }, [orgName, hmdaList, craList, branchList]);
 
-  // Auto-fill on strong match (e.g. >80%)
+  // Auto-fill lender on strong match (>80%)
   useEffect(() => {
     const allMatches = [...orgMatches.hmda, ...orgMatches.cra, ...orgMatches.branch];
     const best = allMatches[0];
@@ -113,7 +110,7 @@ export default function Page() {
     }
   }, [orgMatches]);
 
-  // Geography logic (unchanged from previous version, included for completeness)
+  // Geography logic (unchanged)
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
@@ -178,7 +175,7 @@ export default function Page() {
 
   return (
     <div style={{ padding: '40px', maxWidth: '700px', margin: '0 auto' }}>
-      <h1>Create YOUR XYZ Account</h1>
+      <h1>Create Account</h1>
 
       {!safeLenders.length && (
         <p style={{ color: 'red' }}>Warning: No lenders loaded from hmda_list.json</p>
@@ -195,10 +192,10 @@ export default function Page() {
             type="text"
             value={orgName}
             onChange={e => setOrgName(e.target.value)}
-            placeholder="e.g. Bank of America, Wells Fargo"
+            placeholder="e.g. Bank of America, Navy Federal"
             style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
           />
-          {/* Show matches */}
+
           {orgName.trim() && (
             <div style={{ marginTop: '8px', fontSize: '14px' }}>
               {orgMatches.hmda.length > 0 ? (
@@ -267,7 +264,7 @@ export default function Page() {
           </select>
         </div>
 
-        {/* Geography sections (unchanged from previous version) */}
+        {/* Geography sections */}
         <div>
           <label>State(s)</label>
           <Select
