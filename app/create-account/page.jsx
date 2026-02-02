@@ -301,7 +301,7 @@ console.log({
             value={orgName}
             onChange={e => setOrgName(e.target.value)}
             placeholder="e.g. East Cambridge Savings Bank"
-            style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+            style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc' }}
           />
         </div>
 
@@ -316,7 +316,7 @@ console.log({
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                  style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
                 >
                   <option value="">Select the organization yourself</option>
                   {hmdaList.map(l => (
@@ -336,7 +336,7 @@ console.log({
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                  style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
                 >
                   <option value="">Select the organization yourself</option>
                   {craList.map(l => (
@@ -356,7 +356,7 @@ console.log({
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                  style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
                 >
                   <option value="">Select the organization yourself</option>
                   {branchList.map(l => (
@@ -376,7 +376,7 @@ console.log({
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                  style={{ width: '50%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
                 >
                   <option value="">Select the organization yourself</option>
                   {safeLenders.map(l => (
@@ -396,7 +396,7 @@ console.log({
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                  style={{ width: '50%', padding: '5px', borderRadius: '2px', border: '1px solid #ccc', marginTop: '1px' }}
                 >
                   <option value="">Select the organization yourself</option>
                   {safeLenders.map(l => (
