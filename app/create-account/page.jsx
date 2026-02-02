@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive Levenshtein similarity
+// Case-insensitive Levenshtein similarity (unchanged)
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -79,19 +79,14 @@ export default function Page() {
 
       // Local fuzzy matches
       const matchInList = (list) => {
-        return list
+        const matches = list
           .map(item => ({
             ...item,
             score: similarity(orgName, item.lender)
           }))
           .filter(item => item.score > 0.6)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 3)
-          .map(item => ({
-            label: `${item.lender} (${item.lender_state} - ${item.regulator}) - ${Math.round(item.score * 100)}% match`,
-            value: item.lender_id,
-            score: item.score
-          }));
+          .sort((a, b) => b.score - a.score);
+        return matches.length > 0 ? [matches[0]] : []; // only top 1
       };
 
       const localMatches = {
@@ -100,62 +95,60 @@ export default function Page() {
         branch: matchInList(branchList)
       };
 
-// FDIC API (inside the timer callback)
-let fdicMatches = [];
-try {
-  const fdicRes = await fetch(
-    `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=10` // increased limit to 10 for fuzzy
-  );
-  const fdicData = await fdicRes.json();
-  fdicMatches = (fdicData.data || []).map(item => ({
-    name: item.data.NAME,
-    id: item.data.RSSD,
-    city: item.data.CITY,
-    state: item.data.STALP,
-    score: similarity(orgName, item.data.NAME)
-  }))
-  .filter(item => item.score > 0.6)
-  .sort((a, b) => b.score - a.score)
-  .slice(0, 3)
-  .map(item => ({
-    label: `${item.name} (RSSD ${item.id}, ${item.city}, ${item.state}) - ${Math.round(item.score * 100)}% match`,
-    value: item.id,
-    score: item.score
-  }));
-} catch (e) {
-  console.error('FDIC fetch failed:', e);
-}
+      // FDIC API (banks)
+      let fdicMatches = [];
+      try {
+        const fdicRes = await fetch(
+          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=5`
+        );
+        const fdicData = await fdicRes.json();
+        const matches = (fdicData.data || []).map(item => ({
+          name: item.data.NAME,
+          id: item.data.RSSD,
+          city: item.data.CITY,
+          state: item.data.STALP,
+          score: similarity(orgName, item.data.NAME)
+        }))
+        .filter(item => item.score > 0.6)
+        .sort((a, b) => b.score - a.score);
+        fdicMatches = matches.length > 0 ? [matches[0]] : [];
+      } catch (e) {
+        console.error('FDIC fetch failed:', e);
+      }
 
       // NCUA API (credit unions)
-let ncuaMatches = [];
-try {
-  const ncuaRes = await fetch(
-    `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=10` // increased limit to 10
-  );
-  const ncuaData = await ncuaRes.json();
-  ncuaMatches = (ncuaData || []).map(item => ({
-    name: item.CU_Name,
-    id: item.CU_Number,
-    city: item.City,
-    state: item.State,
-    score: similarity(orgName, item.CU_Name)
-  }))
-  .filter(item => item.score > 0.6)
-  .sort((a, b) => b.score - a.score)
-  .slice(0, 3)
-  .map(item => ({
-    label: `${item.name} (Charter ${item.id}, ${item.city}, ${item.state}) - ${Math.round(item.score * 100)}% match`,
-    value: item.id,
-    score: item.score
-  }));
-} catch (e) {
-  console.error('NCUA fetch failed:', e);
-}
+      let ncuaMatches = [];
+      try {
+        const ncuaRes = await fetch(
+          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=5`
+        );
+        const ncuaData = await ncuaRes.json();
+        const matches = (ncuaData || []).map(item => ({
+          name: item.CU_Name,
+          id: item.CU_Number,
+          city: item.City,
+          state: item.State,
+          score: similarity(orgName, item.CU_Name)
+        }))
+        .filter(item => item.score > 0.6)
+        .sort((a, b) => b.score - a.score);
+        ncuaMatches = matches.length > 0 ? [matches[0]] : [];
+      } catch (e) {
+        console.error('NCUA fetch failed:', e);
+      }
 
       setOrgMatches({
         ...localMatches,
-        fdic: fdicMatches,
-        ncua: ncuaMatches
+        fdic: fdicMatches.map(m => ({
+          label: `${m.name} (RSSD ${m.id}, ${m.city}, ${m.state}) - ${Math.round(m.score * 100)}% match`,
+          value: m.id,
+          score: m.score
+        })),
+        ncua: ncuaMatches.map(m => ({
+          label: `${m.name} (Charter ${m.id}, ${m.city}, ${m.state}) - ${Math.round(m.score * 100)}% match`,
+          value: m.id,
+          score: m.score
+        }))
       });
     }, 600);
 
@@ -282,19 +275,32 @@ try {
           />
         </div>
 
-        {/* Matches display */}
+        {/* Matches - only top match per list */}
         {orgName.trim() && (
           <div style={{ marginTop: '8px', fontSize: '14px' }}>
             {orgMatches.hmda.length > 0 ? (
               <div>
-                <strong>HMDA matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.hmda.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
+                <strong>HMDA best match:</strong>
+                <div style={{ margin: '4px 0' }}>
+                  <span
+                    onClick={() => setSelectedLender(orgMatches.hmda[0].value)}
+                    style={{ cursor: 'pointer', color: 'blue' }}
+                  >
+                    {orgMatches.hmda[0].label}
+                  </span>
+                </div>
+                <select
+                  value={selectedLender}
+                  onChange={e => setSelectedLender(e.target.value)}
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                >
+                  <option value="">Select the organization yourself</option>
+                  {safeLenders.map(l => (
+                    <option key={l.lender_id} value={l.lender_id}>
+                      {l.lender} ({l.lender_state} - {l.regulator})
+                    </option>
                   ))}
-                </ul>
+                </select>
               </div>
             ) : (
               <div>No match in HMDA list</div>
@@ -302,14 +308,27 @@ try {
 
             {orgMatches.cra.length > 0 ? (
               <div>
-                <strong>CRA matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.cra.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
+                <strong>CRA best match:</strong>
+                <div style={{ margin: '4px 0' }}>
+                  <span
+                    onClick={() => setSelectedLender(orgMatches.cra[0].value)}
+                    style={{ cursor: 'pointer', color: 'blue' }}
+                  >
+                    {orgMatches.cra[0].label}
+                  </span>
+                </div>
+                <select
+                  value={selectedLender}
+                  onChange={e => setSelectedLender(e.target.value)}
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                >
+                  <option value="">Select the organization yourself</option>
+                  {safeLenders.map(l => (
+                    <option key={l.lender_id} value={l.lender_id}>
+                      {l.lender} ({l.lender_state} - {l.regulator})
+                    </option>
                   ))}
-                </ul>
+                </select>
               </div>
             ) : (
               <div>No match in CRA list</div>
@@ -317,14 +336,27 @@ try {
 
             {orgMatches.branch.length > 0 ? (
               <div>
-                <strong>Branch matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.branch.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
+                <strong>Branch best match:</strong>
+                <div style={{ margin: '4px 0' }}>
+                  <span
+                    onClick={() => setSelectedLender(orgMatches.branch[0].value)}
+                    style={{ cursor: 'pointer', color: 'blue' }}
+                  >
+                    {orgMatches.branch[0].label}
+                  </span>
+                </div>
+                <select
+                  value={selectedLender}
+                  onChange={e => setSelectedLender(e.target.value)}
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                >
+                  <option value="">Select the organization yourself</option>
+                  {safeLenders.map(l => (
+                    <option key={l.lender_id} value={l.lender_id}>
+                      {l.lender} ({l.lender_state} - {l.regulator})
+                    </option>
                   ))}
-                </ul>
+                </select>
               </div>
             ) : (
               <div>No match in Branch list</div>
@@ -332,14 +364,27 @@ try {
 
             {orgMatches.fdic.length > 0 ? (
               <div>
-                <strong>FDIC matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.fdic.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
+                <strong>FDIC best match:</strong>
+                <div style={{ margin: '4px 0' }}>
+                  <span
+                    onClick={() => setSelectedLender(orgMatches.fdic[0].value)}
+                    style={{ cursor: 'pointer', color: 'blue' }}
+                  >
+                    {orgMatches.fdic[0].label}
+                  </span>
+                </div>
+                <select
+                  value={selectedLender}
+                  onChange={e => setSelectedLender(e.target.value)}
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                >
+                  <option value="">Select the organization yourself</option>
+                  {safeLenders.map(l => (
+                    <option key={l.lender_id} value={l.lender_id}>
+                      {l.lender} ({l.lender_state} - {l.regulator})
+                    </option>
                   ))}
-                </ul>
+                </select>
               </div>
             ) : (
               <div>No match in FDIC database</div>
@@ -347,14 +392,27 @@ try {
 
             {orgMatches.ncua.length > 0 ? (
               <div>
-                <strong>NCUA matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.ncua.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
+                <strong>NCUA best match:</strong>
+                <div style={{ margin: '4px 0' }}>
+                  <span
+                    onClick={() => setSelectedLender(orgMatches.ncua[0].value)}
+                    style={{ cursor: 'pointer', color: 'blue' }}
+                  >
+                    {orgMatches.ncua[0].label}
+                  </span>
+                </div>
+                <select
+                  value={selectedLender}
+                  onChange={e => setSelectedLender(e.target.value)}
+                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
+                >
+                  <option value="">Select the organization yourself</option>
+                  {safeLenders.map(l => (
+                    <option key={l.lender_id} value={l.lender_id}>
+                      {l.lender} ({l.lender_state} - {l.regulator})
+                    </option>
                   ))}
-                </ul>
+                </select>
               </div>
             ) : (
               <div>No match in NCUA database</div>
@@ -362,7 +420,7 @@ try {
           </div>
         )}
 
-        {/* Lender */}
+        {/* Lender dropdown */}
         <div>
           <label>Lender</label>
           <select
