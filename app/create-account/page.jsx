@@ -5,7 +5,7 @@ import Select from 'react-select';
 
 export const dynamic = 'force-dynamic';
 
-// Case-insensitive Levenshtein similarity
+// Case-insensitive Levenshtein similarity (unchanged)
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -62,43 +62,46 @@ export default function Page() {
   const [branchList, setBranchList] = useState([]);
   const [geoData, setGeoData] = useState([]);
 
-  // Load data
+  // Load data once
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then(res => res.json())
       .then(json => setHmdaList(json.data || []))
-      .catch(err => console.error('HMDA failed:', err));
+      .catch(err => console.error('HMDA load failed:', err));
 
     fetch('/data/cra_list.json')
       .then(res => res.json())
       .then(json => setCraList(json.data || []))
-      .catch(err => console.error('CRA failed:', err));
+      .catch(err => console.error('CRA load failed:', err));
 
     fetch('/data/branch_list.json')
       .then(res => res.json())
       .then(json => setBranchList(json.data || []))
-      .catch(err => console.error('Branch failed:', err));
+      .catch(err => console.error('Branch load failed:', err));
 
     fetch('/data/geographies.json')
       .then(res => res.json())
       .then(json => setGeoData(json.data || []))
-      .catch(err => console.error('Geo failed:', err));
+      .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Filtered lists
-  const filteredHmdaList = useMemo(() =>
-    selectedStates.length === 0 ? hmdaList : hmdaList.filter(item => selectedStates.includes(item.lender_state)),
-  [selectedStates, hmdaList]);
+  // Filtered lists — only by selected states (no similarity filter here)
+  const filteredHmdaList = useMemo(() => {
+    if (selectedStates.length === 0) return hmdaList;
+    return hmdaList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, hmdaList]);
 
-  const filteredCraList = useMemo(() =>
-    selectedStates.length === 0 ? craList : craList.filter(item => selectedStates.includes(item.lender_state)),
-  [selectedStates, craList]);
+  const filteredCraList = useMemo(() => {
+    if (selectedStates.length === 0) return craList;
+    return craList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, craList]);
 
-  const filteredBranchList = useMemo(() =>
-    selectedStates.length === 0 ? branchList : branchList.filter(item => selectedStates.includes(item.lender_state)),
-  [selectedStates, branchList]);
+  const filteredBranchList = useMemo(() => {
+    if (selectedStates.length === 0) return branchList;
+    return branchList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, branchList]);
 
-  // Matching + candidates
+  // Compute matches + all candidates (debounced)
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
@@ -107,29 +110,27 @@ export default function Page() {
         return;
       }
 
-      const getLocalCandidates = (list, limit = 12) => {
-        return list
-          .map(item => {
-            const score = similarity(orgName, item.lender);
-            return {
-              label: `${item.lender} (${item.lender_state} – ${item.regulator || '?'}) – ${Math.round(score * 100)}%`,
-              value: item.lender_id,
-              score,
-            };
-          })
-          .filter(m => m.score > 0.55)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, limit);
+      // Helper: format candidates from local lists (no score cutoff)
+      const formatLocalCandidates = (list) => {
+        return list.map(item => {
+          const score = similarity(orgName, item.lender);
+          return {
+            label: `${item.lender} (${item.lender_state} – ${item.regulator || '?'}) – ${Math.round(score * 100)}%`,
+            value: item.lender_id,
+            score,
+          };
+        }).sort((a, b) => b.score - a.score); // best first, but ALL included
       };
 
-      const hmdaCands = getLocalCandidates(filteredHmdaList);
-      const craCands  = getLocalCandidates(filteredCraList);
-      const branchCands = getLocalCandidates(filteredBranchList);
+      const hmdaCands = formatLocalCandidates(filteredHmdaList);
+      const craCands = formatLocalCandidates(filteredCraList);
+      const branchCands = formatLocalCandidates(filteredBranchList);
 
+      // FDIC — broader fetch, no score filter in candidates
       let fdicCands = [];
       try {
         const res = await fetch(
-          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=10`
+          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=30`
         );
         const data = await res.json();
         fdicCands = (data.data || []).map(item => {
@@ -139,15 +140,16 @@ export default function Page() {
             value: item.data.RSSD,
             score,
           };
-        }).filter(m => m.score > 0.55).sort((a,b) => b.score - a.score);
+        }).sort((a, b) => b.score - a.score);
       } catch (e) {
-        console.error('FDIC failed:', e);
+        console.error('FDIC fetch failed:', e);
       }
 
+      // NCUA — broader fetch, no score filter in candidates
       let ncuaCands = [];
       try {
         const res = await fetch(
-          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=10`
+          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=30`
         );
         const data = await res.json();
         ncuaCands = (data || []).map(item => {
@@ -157,9 +159,9 @@ export default function Page() {
             value: item.CU_Number,
             score,
           };
-        }).filter(m => m.score > 0.55).sort((a,b) => b.score - a.score);
+        }).sort((a, b) => b.score - a.score);
       } catch (e) {
-        console.error('NCUA failed:', e);
+        console.error('NCUA fetch failed:', e);
       }
 
       setCandidates({
@@ -170,6 +172,7 @@ export default function Page() {
         ncua: ncuaCands,
       });
 
+      // Best matches for top display only
       setOrgMatches({
         hmda: hmdaCands[0] || null,
         cra: craCands[0] || null,
@@ -178,7 +181,7 @@ export default function Page() {
         ncua: ncuaCands[0] || null,
       });
 
-      // Auto-preselect best matches
+      // Pre-select best in dropdowns
       setSelectedLenderPerSource({
         hmda: hmdaCands[0]?.value || null,
         cra: craCands[0]?.value || null,
@@ -191,14 +194,14 @@ export default function Page() {
     return () => clearTimeout(timer);
   }, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
 
-  // States for step 3
+  // Geography states (for step 3)
   const uniqueStates = useMemo(() =>
     [...new Set(geoData.map(item => item.st || item.state))].filter(Boolean).sort(),
   [geoData]);
 
   const stateOptions = uniqueStates.map(s => ({ value: s, label: s }));
 
-  // Navigation helpers
+  // Navigation
   const canAdvance = () => {
     if (currentStep === 1) return orgName.trim().length >= 3;
     if (currentStep === 2) return !!selectedOrgType;
@@ -207,7 +210,7 @@ export default function Page() {
   };
 
   const nextStep = () => {
-    if (!canAdvance()) return alert('Please complete the current step');
+    if (!canAdvance()) return alert('Please complete the current step.');
     setCurrentStep(p => Math.min(p + 1, 4));
   };
 
@@ -217,10 +220,10 @@ export default function Page() {
     console.log({
       name: orgName.trim(),
       type: selectedOrgType,
-      states: selectedStates,
-      links: selectedLenderPerSource,
+      headquartersStates: selectedStates,
+      linked: selectedLenderPerSource,
     });
-    alert('Saved! (TODO: send to backend)');
+    alert('Saved! (TODO: backend integration)');
   };
 
   const renderStep = () => {
@@ -234,7 +237,7 @@ export default function Page() {
               value={orgName}
               onChange={e => setOrgName(e.target.value)}
               placeholder="e.g. XYZ Savings Bank"
-              style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }}
+              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
             />
           </div>
         );
@@ -246,9 +249,9 @@ export default function Page() {
             <select
               value={selectedOrgType}
               onChange={e => setSelectedOrgType(e.target.value)}
-              style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }}
+              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
             >
-              <option value="">-- Select --</option>
+              <option value="">-- Select Type --</option>
               <option value="Bank">Bank</option>
               <option value="Credit Union">Credit Union</option>
               <option value="Mortgage Company">Mortgage Company</option>
@@ -266,6 +269,8 @@ export default function Page() {
               value={stateOptions.filter(opt => selectedStates.includes(opt.value))}
               onChange={opts => setSelectedStates(opts ? opts.map(o => o.value) : [])}
               placeholder="Select state(s)..."
+              className="basic-multi-select"
+              classNamePrefix="select"
             />
           </div>
         );
@@ -288,31 +293,21 @@ export default function Page() {
               fontSize: '15px',
               lineHeight: '1.6'
             }}>
-              <div>
-                <strong>HMDA Match</strong> - {orgMatches.hmda ? orgMatches.hmda.label.split(' – ')[0] + ' ' + Math.round(orgMatches.hmda.score * 100) + '%' : 'No strong match found'}
-              </div>
-              <div>
-                <strong>CRA Match</strong> - {orgMatches.cra ? orgMatches.cra.label.split(' – ')[0] + ' ' + Math.round(orgMatches.cra.score * 100) + '%' : 'No strong match found'}
-              </div>
-              <div>
-                <strong>Branch Match</strong> - {orgMatches.branch ? orgMatches.branch.label.split(' – ')[0] + ' ' + Math.round(orgMatches.branch.score * 100) + '%' : 'No strong match found'}
-              </div>
-              <div>
-                <strong>FDIC Match</strong> - {orgMatches.fdic ? orgMatches.fdic.label.split(' (RSSD')[0] + ' ' + Math.round(orgMatches.fdic.score * 100) + '%' : 'No strong match found'}
-              </div>
-              <div>
-                <strong>NCUA Match</strong> - {orgMatches.ncua ? orgMatches.ncua.label.split(' (Charter')[0] + ' ' + Math.round(orgMatches.ncua.score * 100) + '%' : 'No strong match found'}
-              </div>
+              <div><strong>HMDA Match</strong> - {orgMatches.hmda ? orgMatches.hmda.label.split(' – ')[0] + ' ' + Math.round(orgMatches.hmda.score * 100) + '%' : 'No strong match found'}</div>
+              <div><strong>CRA Match</strong> - {orgMatches.cra ? orgMatches.cra.label.split(' – ')[0] + ' ' + Math.round(orgMatches.cra.score * 100) + '%' : 'No strong match found'}</div>
+              <div><strong>Branch Match</strong> - {orgMatches.branch ? orgMatches.branch.label.split(' – ')[0] + ' ' + Math.round(orgMatches.branch.score * 100) + '%' : 'No strong match found'}</div>
+              <div><strong>FDIC Match</strong> - {orgMatches.fdic ? orgMatches.fdic.label.split(' (RSSD')[0] + ' ' + Math.round(orgMatches.fdic.score * 100) + '%' : 'No strong match found'}</div>
+              <div><strong>NCUA Match</strong> - {orgMatches.ncua ? orgMatches.ncua.label.split(' (Charter')[0] + ' ' + Math.round(orgMatches.ncua.score * 100) + '%' : 'No strong match found'}</div>
             </div>
 
-            <p style={{ fontWeight: '500', margin: '0 0 16px 0' }}>
+            <p style={{ fontWeight: '500', margin: '0 0 20px 0' }}>
               Use the drop down lists below to override the matches
             </p>
 
             {['hmda', 'cra', 'branch', 'fdic', 'ncua'].map(key => (
-              <div key={key} style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '6px', fontWeight: '500', textTransform: 'uppercase' }}>
-                  {key}
+              <div key={key} style={{ marginBottom: '24px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500', textTransform: 'uppercase' }}>
+                  {key.toUpperCase()}
                 </label>
                 <select
                   value={selectedLenderPerSource[key] || ''}
@@ -340,16 +335,16 @@ export default function Page() {
   };
 
   return (
-    <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px' }}>
+    <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px', fontFamily: 'system-ui, sans-serif' }}>
       <h1>Create Account</h1>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', margin: '32px 0' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '32px 0' }}>
         {[1,2,3,4].map(s => (
           <div
             key={s}
             style={{
-              width: '44px',
-              height: '44px',
+              width: '48px',
+              height: '48px',
               borderRadius: '50%',
               background: currentStep >= s ? '#0066cc' : '#e0e0e0',
               color: 'white',
@@ -357,6 +352,7 @@ export default function Page() {
               alignItems: 'center',
               justifyContent: 'center',
               fontWeight: 'bold',
+              fontSize: '1.2rem'
             }}
           >
             {s}
@@ -370,7 +366,7 @@ export default function Page() {
         {currentStep > 1 && (
           <button
             onClick={prevStep}
-            style={{ padding: '12px 28px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '6px' }}
+            style={{ padding: '12px 28px', background: '#6c757d', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
           >
             Back
           </button>
@@ -395,7 +391,7 @@ export default function Page() {
         ) : (
           <button
             onClick={handleSave}
-            style={{ padding: '12px 28px', background: '#28a745', color: 'white', border: 'none', borderRadius: '6px', marginLeft: 'auto' }}
+            style={{ padding: '12px 28px', background: '#28a745', color: 'white', border: 'none', borderRadius: '6px', marginLeft: 'auto', cursor: 'pointer' }}
           >
             Save & Continue
           </button>
