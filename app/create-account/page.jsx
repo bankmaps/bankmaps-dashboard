@@ -69,7 +69,7 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Filtered lists by selected states (using lender_state and st)
+  // Filtered lists by selected states (using st and lender_state)
   const filteredHmdaList = useMemo(() => {
     if (selectedStates.length === 0) return hmdaList;
     return hmdaList.filter(item => selectedStates.includes(item.lender_state));
@@ -128,24 +128,25 @@ export default function Page() {
     }
   }, [orgMatches]);
 
+  // Geography logic - using st exclusively for options and labels
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
   const uniqueStates = useMemo(() => {
-    const statesSet = new Set(safeGeo.map(item => item.state));
-    return Array.from(statesSet).sort();
+    const statesSet = new Set(safeGeo.map(item => item.st)); // only st
+    return Array.from(statesSet).filter(Boolean).sort(); // remove undefined
   }, [safeGeo]);
 
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
-    const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
+    const filtered = safeGeo.filter(item => selectedStates.includes(item.st));
     return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedStates, safeGeo]);
 
   const towns = useMemo(() => {
     if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
-      item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
+      item => selectedStates.includes(item.st) && selectedCounties.includes(item.county)
     );
     return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedStates, selectedCounties, safeGeo]);
@@ -155,7 +156,11 @@ export default function Page() {
   const countyOptions = useMemo(() => {
     return counties.map(c => {
       const stList = Array.from(
-        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
+        new Set(
+          safeGeo
+            .filter(item => item.county === c && selectedStates.includes(item.st))
+            .map(item => item.st)
+        )
       ).sort().join(', ');
       return {
         value: c,
@@ -167,7 +172,7 @@ export default function Page() {
   const townOptions = useMemo(() => {
     return towns.map(t => {
       const townInfo = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county));
-      const st = townInfo?.st || townInfo?.state || '';
+      const st = townInfo?.st || '';
       const county = townInfo?.county || '';
       return {
         value: t,
