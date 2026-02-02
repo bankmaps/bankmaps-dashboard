@@ -300,7 +300,7 @@ export default function Page() {
       case 2:
         return (
           <div>
-            <h2>Step 2: Select State(s)</h2>
+            <h2>Step 2: Select Organization Headquarters State </h2>
             <Select
               isMulti
               options={stateOptions}
@@ -361,29 +361,14 @@ export default function Page() {
               </div>
             )}
 
-            <div style={{ marginTop: '16px' }}>
-              <label>Lender</label>
-              <select
-                value={selectedLender}
-                onChange={e => setSelectedLender(e.target.value)}
-                required
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-              >
-                <option value="">-- Select Lender --</option>
-                {safeLenders.map(l => (
-                  <option key={l.lender_id} value={l.lender_id}>
-                    {l.lender} ({l.lender_state} - {l.regulator})
-                  </option>
-                ))}
-              </select>
-            </div>
+            
           </div>
         );
 
       case 4:
         return (
           <div>
-            <h2>Step 4: Confirm Your Data Connections</h2>
+            <h2>Step 4: Confirm Your Selections</h2>
             <pre style={{ background: '#f8f9fa', padding: '16px', borderRadius: '6px' }}>
               {JSON.stringify(
                 {
