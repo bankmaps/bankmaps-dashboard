@@ -267,7 +267,7 @@ console.log({
     value={selectedOrgType}
     onChange={e => setSelectedOrgType(e.target.value)}
     required
-    style={{ width: '25%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc' }}
+    style={{ width: '25%', padding: '1px', borderRadius: '1px', border: '1px solid #ccc' }}
   >
     <option value="">-- Select Organization Type --</option>
     <option value="Bank">Bank</option>
@@ -290,6 +290,7 @@ console.log({
             placeholder="Select State(s)..."
             className="basic-multi-select"
             classNamePrefix="select"
+            style={{ width: '25%', padding: '1px', borderRadius: '1px', border: '1px solid #ccc' }}
           />
         </div>
 
