@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive fuzzy similarity (unchanged)
+// Case-insensitive fuzzy similarity
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -30,8 +30,8 @@ const similarity = (a, b) => {
 };
 
 export default function Page() {
-  const [currentStep, setCurrentStep] = useState(1); // 1 to 4
-  const [selectedOrgType, setSelectedOrgType] = useState(''); // Bank, Credit Union, Mortgage Company
+  const [currentStep, setCurrentStep] = useState(1);
+  const [selectedOrgType, setSelectedOrgType] = useState('');
   const [selectedLender, setSelectedLender] = useState('');
   const [selectedStates, setSelectedStates] = useState([]);
   const [selectedCounties, setSelectedCounties] = useState([]);
@@ -71,23 +71,7 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Filtered lists by selected states (using lender_state)
-  const filteredHmdaList = useMemo(() => {
-    if (selectedStates.length === 0) return hmdaList;
-    return hmdaList.filter(item => selectedStates.includes(item.lender_state));
-  }, [selectedStates, hmdaList]);
-
-  const filteredCraList = useMemo(() => {
-    if (selectedStates.length === 0) return craList;
-    return craList.filter(item => selectedStates.includes(item.lender_state));
-  }, [selectedStates, craList]);
-
-  const filteredBranchList = useMemo(() => {
-    if (selectedStates.length === 0) return branchList;
-    return branchList.filter(item => selectedStates.includes(item.lender_state));
-  }, [selectedStates, branchList]);
-
-  // Debounced fuzzy match + FDIC/NCUA API calls
+  // Debounced fuzzy match + conditional API calls based on org type
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!orgName.trim() || currentStep !== 3) {
@@ -107,85 +91,89 @@ export default function Page() {
         return matches.length > 0 ? matches[0] : null;
       };
 
-      const localMatches = {
-        hmda: matchInList(filteredHmdaList),
-        cra: matchInList(filteredCraList),
-        branch: matchInList(filteredBranchList)
+      const matches = {
+        hmda: matchInList(hmdaList),
+        cra: selectedOrgType === 'Bank' ? matchInList(craList) : null,
+        branch: selectedOrgType !== 'Mortgage Company' ? matchInList(branchList) : null,
+        fdic: selectedOrgType === 'Bank' ? null : null, // placeholder - add fetch below
+        ncua: selectedOrgType === 'Credit Union' ? null : null // placeholder
       };
 
-      // FDIC API (banks)
-      let fdicMatch = null;
-      try {
-        const fdicRes = await fetch(
-          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CSTALP&limit=5`
-        );
-        const fdicData = await fdicRes.json();
-        const matches = (fdicData.data || []).map(item => ({
-          name: item.data.NAME,
-          id: item.data.RSSD,
-          city: item.data.CITY,
-          state: item.data.STALP,
-          score: similarity(orgName, item.data.NAME)
-        }))
-        .filter(item => item.score > 0.6)
-        .sort((a, b) => b.score - a.score);
-        fdicMatch = matches.length > 0 ? matches[0] : null;
-      } catch (e) {
-        console.error('FDIC fetch failed:', e);
+      // FDIC API (only for Bank)
+      if (selectedOrgType === 'Bank') {
+        try {
+          const fdicRes = await fetch(
+            `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=5`
+          );
+          const fdicData = await fdicRes.json();
+          const fdicMatches = (fdicData.data || []).map(item => ({
+            name: item.data.NAME,
+            id: item.data.RSSD,
+            city: item.data.CITY,
+            state: item.data.STALP,
+            score: similarity(orgName, item.data.NAME)
+          }))
+          .filter(item => item.score > 0.6)
+          .sort((a, b) => b.score - a.score);
+          matches.fdic = fdicMatches.length > 0 ? fdicMatches[0] : null;
+        } catch (e) {
+          console.error('FDIC fetch failed:', e);
+        }
       }
 
-      // NCUA API (credit unions)
-      let ncuaMatch = null;
-      try {
-        const ncuaRes = await fetch(
-          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=5`
-        );
-        const ncuaData = await ncuaRes.json();
-        const matches = (ncuaData || []).map(item => ({
-          name: item.CU_Name,
-          id: item.CU_Number,
-          city: item.City,
-          state: item.State,
-          score: similarity(orgName, item.CU_Name)
-        }))
-        .filter(item => item.score > 0.6)
-        .sort((a, b) => b.score - a.score);
-        ncuaMatch = matches.length > 0 ? matches[0] : null;
-      } catch (e) {
-        console.error('NCUA fetch failed:', e);
+      // NCUA API (only for Credit Union)
+      if (selectedOrgType === 'Credit Union') {
+        try {
+          const ncuaRes = await fetch(
+            `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=5`
+          );
+          const ncuaData = await ncuaRes.json();
+          const ncuaMatches = (ncuaData || []).map(item => ({
+            name: item.CU_Name,
+            id: item.CU_Number,
+            city: item.City,
+            state: item.State,
+            score: similarity(orgName, item.CU_Name)
+          }))
+          .filter(item => item.score > 0.6)
+          .sort((a, b) => b.score - a.score);
+          matches.ncua = ncuaMatches.length > 0 ? ncuaMatches[0] : null;
+        } catch (e) {
+          console.error('NCUA fetch failed:', e);
+        }
       }
 
       setOrgMatches({
-        hmda: localMatches.hmda ? {
-          label: `${localMatches.hmda.lender} (${localMatches.hmda.lender_state} - ${localMatches.hmda.regulator}) - ${Math.round(localMatches.hmda.score * 100)}% match`,
-          value: localMatches.hmda.lender_id,
-          score: localMatches.hmda.score
+        hmda: matches.hmda ? {
+          label: `${matches.hmda.lender} (${matches.hmda.lender_state} - ${matches.hmda.regulator}) - ${Math.round(matches.hmda.score * 100)}% match`,
+          value: matches.hmda.lender_id,
+          score: matches.hmda.score
         } : null,
-        cra: localMatches.cra ? {
-          label: `${localMatches.cra.lender} (${localMatches.cra.lender_state} - ${localMatches.cra.regulator}) - ${Math.round(localMatches.cra.score * 100)}% match`,
-          value: localMatches.cra.lender_id,
-          score: localMatches.cra.score
+        cra: matches.cra ? {
+          label: `${matches.cra.lender} (${matches.cra.lender_state} - ${matches.cra.regulator}) - ${Math.round(matches.cra.score * 100)}% match`,
+          value: matches.cra.lender_id,
+          score: matches.cra.score
         } : null,
-        branch: localMatches.branch ? {
-          label: `${localMatches.branch.lender} (${localMatches.branch.lender_state} - ${localMatches.branch.regulator}) - ${Math.round(localMatches.branch.score * 100)}% match`,
-          value: localMatches.branch.lender_id,
-          score: localMatches.branch.score
+        branch: matches.branch ? {
+          label: `${matches.branch.lender} (${matches.branch.lender_state} - ${matches.branch.regulator}) - ${Math.round(matches.branch.score * 100)}% match`,
+          value: matches.branch.lender_id,
+          score: matches.branch.score
         } : null,
-        fdic: fdicMatch ? {
-          label: `${fdicMatch.name} (RSSD ${fdicMatch.id}, ${fdicMatch.city}, ${fdicMatch.state}) - ${Math.round(fdicMatch.score * 100)}% match`,
-          value: fdicMatch.id,
-          score: fdicMatch.score
+        fdic: matches.fdic ? {
+          label: `${matches.fdic.name} (RSSD ${matches.fdic.id}, ${matches.fdic.city}, ${matches.fdic.state}) - ${Math.round(matches.fdic.score * 100)}% match`,
+          value: matches.fdic.id,
+          score: matches.fdic.score
         } : null,
-        ncua: ncuaMatch ? {
-          label: `${ncuaMatch.name} (Charter ${ncuaMatch.id}, ${ncuaMatch.city}, ${ncuaMatch.state}) - ${Math.round(ncuaMatch.score * 100)}% match`,
-          value: ncuaMatch.id,
-          score: ncuaMatch.score
+        ncua: matches.ncua ? {
+          label: `${matches.ncua.name} (Charter ${matches.ncua.id}, ${matches.ncua.city}, ${matches.ncua.state}) - ${Math.round(matches.ncua.score * 100)}% match`,
+          value: matches.ncua.id,
+          score: matches.ncua.score
         } : null
       });
     }, 600);
 
     return () => clearTimeout(timer);
-  }, [orgName, hmdaList, craList, branchList]);
+  }, [orgName, selectedOrgType, hmdaList, craList, branchList]);
 
   // Auto-fill on strong match (>80%)
   useEffect(() => {
@@ -207,20 +195,20 @@ export default function Page() {
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
   const uniqueStates = useMemo(() => {
-    const statesSet = new Set(safeGeo.map(item => item.st || item.state));
-    return Array.from(statesSet).filter(Boolean).sort();
+    const statesSet = new Set(safeGeo.map(item => item.state));
+    return Array.from(statesSet).sort();
   }, [safeGeo]);
 
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
-    const filtered = safeGeo.filter(item => selectedStates.includes(item.st || item.state));
+    const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
     return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedStates, safeGeo]);
 
   const towns = useMemo(() => {
     if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
-      item => selectedStates.includes(item.st || item.state) && selectedCounties.includes(item.county)
+      item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
     );
     return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedStates, selectedCounties, safeGeo]);
@@ -230,7 +218,7 @@ export default function Page() {
   const countyOptions = useMemo(() => {
     return counties.map(c => {
       const stList = Array.from(
-        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.st || item.state)).map(item => item.st || item.state))
+        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
       ).sort().join(', ');
       return {
         value: c,
@@ -282,7 +270,7 @@ export default function Page() {
       case 1:
         return (
           <div>
-            <h2>Step 1: Select Organization Type</h2>
+            <h2>Step 1: Select Your Organization Type</h2>
             <select
               value={selectedOrgType}
               onChange={e => setSelectedOrgType(e.target.value)}
@@ -300,7 +288,7 @@ export default function Page() {
       case 2:
         return (
           <div>
-            <h2>Step 2: Select Organization Headquarters State </h2>
+            <h2>Step 2: Select State(s)</h2>
             <Select
               isMulti
               options={stateOptions}
@@ -319,14 +307,14 @@ export default function Page() {
       case 3:
         return (
           <div>
-            <h2>Step 3: Match Organization Name to Databases </h2>
+            <h2>Step 3: Organization & Lender ({selectedOrgType})</h2>
             <div>
-              <label>Type your organization name (as you want it to appear in your reports)</label>
+              <label>Type your organization name (optional auto-match)</label>
               <input
                 type="text"
                 value={orgName}
                 onChange={e => setOrgName(e.target.value)}
-                placeholder="e.g. XYZ Savings Bank"
+                placeholder="e.g. East Cambridge Savings Bank"
                 style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
               />
             </div>
@@ -335,40 +323,55 @@ export default function Page() {
               <div style={{ marginTop: '8px', fontSize: '14px' }}>
                 {orgMatches.hmda && (
                   <div>
-                    <strong>HMDA Match:</strong> {orgMatches.hmda.label}
+                    <strong>HMDA best match:</strong> {orgMatches.hmda.label}
                   </div>
                 )}
-                {orgMatches.cra && (
+                {orgMatches.cra && selectedOrgType === 'Bank' && (
                   <div>
-                    <strong>CRA Match:</strong> {orgMatches.cra.label}
+                    <strong>CRA best match:</strong> {orgMatches.cra.label}
                   </div>
                 )}
-                {orgMatches.branch && (
+                {orgMatches.branch && selectedOrgType !== 'Mortgage Company' && (
                   <div>
-                    <strong>Branch Match:</strong> {orgMatches.branch.label}
+                    <strong>Branch best match:</strong> {orgMatches.branch.label}
                   </div>
                 )}
-                {orgMatches.fdic && (
+                {orgMatches.fdic && selectedOrgType === 'Bank' && (
                   <div>
-                    <strong>FDIC Call Rpt Match:</strong> {orgMatches.fdic.label}
+                    <strong>FDIC best match:</strong> {orgMatches.fdic.label}
                   </div>
                 )}
-                {orgMatches.ncua && (
+                {orgMatches.ncua && selectedOrgType === 'Credit Union' && (
                   <div>
-                    <strong>NCUA Call Rpt Match:</strong> {orgMatches.ncua.label}
+                    <strong>NCUA best match:</strong> {orgMatches.ncua.label}
                   </div>
                 )}
               </div>
             )}
 
-            
+            <div style={{ marginTop: '16px' }}>
+              <label>Lender</label>
+              <select
+                value={selectedLender}
+                onChange={e => setSelectedLender(e.target.value)}
+                required
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+              >
+                <option value="">-- Select Lender --</option>
+                {safeLenders.map(l => (
+                  <option key={l.lender_id} value={l.lender_id}>
+                    {l.lender} ({l.lender_state} - {l.regulator})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         );
 
       case 4:
         return (
           <div>
-            <h2>Step 4: Confirm Your Selections</h2>
+            <h2>Step 4: Confirm Your Data Connections</h2>
             <pre style={{ background: '#f8f9fa', padding: '16px', borderRadius: '6px' }}>
               {JSON.stringify(
                 {
@@ -389,6 +392,29 @@ export default function Page() {
       default:
         return null;
     }
+  };
+
+  const nextStep = () => {
+    if (currentStep === 1 && !selectedOrgType) return alert('Please select organization type');
+    if (currentStep === 2 && selectedStates.length === 0) return alert('Please select at least one state');
+    if (currentStep === 3 && !selectedLender) return alert('Please select a lender');
+    setCurrentStep(prev => Math.min(prev + 1, 4));
+  };
+
+  const prevStep = () => {
+    setCurrentStep(prev => Math.max(prev - 1, 1));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log({
+      orgType: selectedOrgType,
+      lender: selectedLender,
+      states: selectedStates,
+      counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
+      towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
+    });
+    alert('All changes saved! (TODO: send to backend)');
   };
 
   return (
@@ -421,7 +447,7 @@ export default function Page() {
 
       {renderStep()}
 
-      {/* Navigation buttons */}
+      {/* Navigation */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '32px' }}>
         {currentStep > 1 && (
           <button
