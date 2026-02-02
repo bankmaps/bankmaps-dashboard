@@ -43,7 +43,8 @@ export default function Page() {
 
   const [orgName, setOrgName] = useState('');
   const [orgMatches, setOrgMatches] = useState({ hmda: null, cra: null, branch: null, fdic: null, ncua: null });
-
+  const [selectedOrgType, setSelectedOrgType] = useState('');
+  
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then(res => res.json())
@@ -238,12 +239,13 @@ export default function Page() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log({
-      lender: selectedLender,
-      states: selectedStates,
-      counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
-      towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
-    });
+console.log({
+  lender: selectedLender,
+  orgType: selectedOrgType,  // ← added
+  states: selectedStates,
+  counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
+  towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
+});
   };
 
   return (
@@ -259,7 +261,21 @@ export default function Page() {
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* State multi-select first */}
-        <div>
+<div>
+  <label>Organization Type</label>
+  <select
+    value={selectedOrgType}
+    onChange={e => setSelectedOrgType(e.target.value)}
+    required
+    style={{ width: '50%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+  >
+    <option value="">-- Select Organization Type --</option>
+    <option value="Bank">Bank</option>
+    <option value="Credit Union">Credit Union</option>
+    <option value="Mortgage Company">Mortgage Company</option>
+  </select>
+</div>
+            <div>
           <label>Select State(s) to filter organization matches</label>
           <Select
             isMulti
