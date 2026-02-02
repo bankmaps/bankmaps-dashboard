@@ -104,33 +104,53 @@ export default function Page() {
 let fdicMatches = [];
 try {
   const fdicRes = await fetch(
-    `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CUNINUM%2CCITY%2CSTALP&limit=3`
+    `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=10` // increased limit to 10 for fuzzy
   );
   const fdicData = await fdicRes.json();
   fdicMatches = (fdicData.data || []).map(item => ({
-    label: `${item.data.NAME} (UNINUM ${item.data.UNINUM || 'N/A'}, ${item.data.CITY}, ${item.data.STALP})`,
-    value: item.data.UNINUM || item.data.CERT || '',
-    score: 0.9
+    name: item.data.NAME,
+    id: item.data.RSSD,
+    city: item.data.CITY,
+    state: item.data.STALP,
+    score: similarity(orgName, item.data.NAME)
+  }))
+  .filter(item => item.score > 0.6)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 3)
+  .map(item => ({
+    label: `${item.name} (RSSD ${item.id}, ${item.city}, ${item.state}) - ${Math.round(item.score * 100)}% match`,
+    value: item.id,
+    score: item.score
   }));
 } catch (e) {
   console.error('FDIC fetch failed:', e);
 }
 
       // NCUA API (credit unions)
-      let ncuaMatches = [];
-      try {
-        const ncuaRes = await fetch(
-          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=3`
-        );
-        const ncuaData = await ncuaRes.json();
-        ncuaMatches = (ncuaData || []).map(item => ({
-          label: `${item.CU_Name} (Charter ${item.CU_Number}, ${item.City}, ${item.State})`,
-          value: item.CU_Number,
-          score: 0.9
-        }));
-      } catch (e) {
-        console.error('NCUA fetch failed:', e);
-      }
+let ncuaMatches = [];
+try {
+  const ncuaRes = await fetch(
+    `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=10` // increased limit to 10
+  );
+  const ncuaData = await ncuaRes.json();
+  ncuaMatches = (ncuaData || []).map(item => ({
+    name: item.CU_Name,
+    id: item.CU_Number,
+    city: item.City,
+    state: item.State,
+    score: similarity(orgName, item.CU_Name)
+  }))
+  .filter(item => item.score > 0.6)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 3)
+  .map(item => ({
+    label: `${item.name} (Charter ${item.id}, ${item.city}, ${item.state}) - ${Math.round(item.score * 100)}% match`,
+    value: item.id,
+    score: item.score
+  }));
+} catch (e) {
+  console.error('NCUA fetch failed:', e);
+}
 
       setOrgMatches({
         ...localMatches,
