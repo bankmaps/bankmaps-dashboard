@@ -84,7 +84,7 @@ export default function Page() {
             ...item,
             score: similarity(orgName, item.lender)
           }))
-          .filter(item => item.score > 0.9)
+          .filter(item => item.score > 0.6)
           .sort((a, b) => b.score - a.score)
           .slice(0, 3)
           .map(item => ({
