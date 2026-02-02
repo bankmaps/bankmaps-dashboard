@@ -267,7 +267,7 @@ console.log({
     value={selectedOrgType}
     onChange={e => setSelectedOrgType(e.target.value)}
     required
-    style={{ width: '50%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+    style={{ width: '25%', padding: '6px', borderRadius: '2px', border: '1px solid #ccc' }}
   >
     <option value="">-- Select Organization Type --</option>
     <option value="Bank">Bank</option>
