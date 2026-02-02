@@ -117,7 +117,7 @@ export default function Page() {
       let fdicMatch = null;
       try {
         const fdicRes = await fetch(
-          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=5`
+          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CSTALP&limit=5`
         );
         const fdicData = await fdicRes.json();
         const matches = (fdicData.data || []).map(item => ({
