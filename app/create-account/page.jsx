@@ -294,9 +294,9 @@ export default function Page() {
           <div style={{ marginTop: '8px', fontSize: '14px' }}>
             {orgMatches.hmda ? (
               <div>
-
-This is a test
-this is only a test
+<br></>
+This is a test 
+this is only a test<br></>
                 
 <strong>HMDA best match: <span onClick={() => setSelectedLender(orgMatches.hmda.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.hmda.label}</span></strong>
                 <select
