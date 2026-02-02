@@ -360,22 +360,7 @@ export default function Page() {
                 )}
               </div>
             )}
-<div style={{ marginTop: '16px' }}>
-              <label>Lender</label>
-              <select
-                value={selectedLender}
-                onChange={e => setSelectedLender(e.target.value)}
-                required
-                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-              >
-                <option value="">-- Select Lender --</option>
-                {safeLenders.map(l => (
-                  <option key={l.lender_id} value={l.lender_id}>
-                    {l.lender} ({l.lender_state} - {l.regulator})
-                  </option>
-                ))}
-              </select>
-            </div>
+
             
           </div>
         );
