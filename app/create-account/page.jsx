@@ -128,25 +128,25 @@ export default function Page() {
     }
   }, [orgMatches]);
 
-  // Geography logic - using st for labels
+  // Geography logic - using st for labels and filtering
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
   const uniqueStates = useMemo(() => {
-    const statesSet = new Set(safeGeo.map(item => item.state));
+    const statesSet = new Set(safeGeo.map(item => item.st || item.state)); // prefer st
     return Array.from(statesSet).sort();
   }, [safeGeo]);
 
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
-    const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
+    const filtered = safeGeo.filter(item => selectedStates.includes(item.st || item.state));
     return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedStates, safeGeo]);
 
   const towns = useMemo(() => {
     if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
-      item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
+      item => selectedStates.includes(item.st || item.state) && selectedCounties.includes(item.county)
     );
     return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedStates, selectedCounties, safeGeo]);
@@ -158,8 +158,8 @@ export default function Page() {
       const stList = Array.from(
         new Set(
           safeGeo
-            .filter(item => item.county === c && selectedStates.includes(item.state))
-            .map(item => item.st || item.state)  // ST first
+            .filter(item => item.county === c && selectedStates.includes(item.st || item.state))
+            .map(item => item.st || item.state)
         )
       ).sort().join(', ');
       return {
@@ -232,7 +232,7 @@ export default function Page() {
             type="text"
             value={orgName}
             onChange={e => setOrgName(e.target.value)}
-            placeholder="e.g. XYZ Savings Bank"
+            placeholder="e.g. East Cambridge Savings Bank"
             style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
           />
         </div>
