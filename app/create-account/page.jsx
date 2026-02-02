@@ -8,125 +8,26 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive fuzzy similarity (Levenshtein)
-const similarity = (a, b) => {
-  a = a.toLowerCase();
-  b = b.toLowerCase();
-  if (a.length === 0 || b.length === 0) return 0;
-  const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
-  for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
-  for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
-  for (let j = 1; j <= b.length; j++) {
-    for (let i = 1; i <= a.length; i++) {
-      const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
-      matrix[j][i] = Math.min(
-        matrix[j][i - 1] + 1,
-        matrix[j - 1][i] + 1,
-        matrix[j - 1][i - 1] + indicator
-      );
-    }
-  }
-  return 1 - matrix[b.length][a.length] / Math.max(a.length, b.length);
-};
-
 export default function Page() {
   const [lendersData, setLendersData] = useState([]);
   const [geoData, setGeoData] = useState([]);
-  const [hmdaList, setHmdaList] = useState([]);
-  const [craList, setCraList] = useState([]);
-  const [branchList, setBranchList] = useState([]);
 
   const [selectedLender, setSelectedLender] = useState('');
   const [selectedStates, setSelectedStates] = useState([]);
   const [selectedCounties, setSelectedCounties] = useState([]);
   const [selectedTowns, setSelectedTowns] = useState([]);
 
-  const [orgName, setOrgName] = useState('');
-  const [orgMatches, setOrgMatches] = useState({ hmda: [], cra: [], branch: [] });
-
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then(res => res.json())
-      .then(json => {
-        setLendersData(json.data || []);
-        setHmdaList(json.data || []);
-      })
-      .catch(err => console.error('HMDA load failed:', err));
-
-    fetch('/data/cra_list.json')
-      .then(res => res.json())
-      .then(json => setCraList(json.data || []))
-      .catch(err => console.error('CRA load failed:', err));
-
-    fetch('/data/branch_list.json')
-      .then(res => res.json())
-      .then(json => setBranchList(json.data || []))
-      .catch(err => console.error('Branch load failed:', err));
+      .then(json => setLendersData(json.data || []))
+      .catch(err => console.error('Lenders load failed:', err));
 
     fetch('/data/geographies.json')
       .then(res => res.json())
       .then(json => setGeoData(json.data || []))
       .catch(err => console.error('Geo load failed:', err));
   }, []);
-
-  // Filter lists by selected states
-  const filteredHmdaList = useMemo(() => {
-    if (selectedStates.length === 0) return hmdaList;
-    return hmdaList.filter(item => selectedStates.includes(item.lender_state));
-  }, [selectedStates, hmdaList]);
-
-  const filteredCraList = useMemo(() => {
-    if (selectedStates.length === 0) return craList;
-    return craList.filter(item => selectedStates.includes(item.lender_state));
-  }, [selectedStates, craList]);
-
-  const filteredBranchList = useMemo(() => {
-    if (selectedStates.length === 0) return branchList;
-    return branchList.filter(item => selectedStates.includes(item.lender_state));
-  }, [selectedStates, branchList]);
-
-  // Auto-match on org name (debounced, filtered by states)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!orgName.trim()) {
-        setOrgMatches({ hmda: [], cra: [], branch: [] });
-        return;
-      }
-
-      const matchInList = (list) => {
-        return list
-          .map(item => ({
-            ...item,
-            score: similarity(orgName, item.lender)
-          }))
-          .filter(item => item.score > 0.6)
-          .sort((a, b) => b.score - a.score)
-          .slice(0, 3)
-          .map(item => ({
-            label: `${item.lender} (${item.lender_state} - ${item.regulator}) - ${Math.round(item.score * 100)}% match`,
-            value: item.lender_id,
-            score: item.score
-          }));
-      };
-
-      setOrgMatches({
-        hmda: matchInList(filteredHmdaList),
-        cra: matchInList(filteredCraList),
-        branch: matchInList(filteredBranchList)
-      });
-    }, 500); // debounce
-
-    return () => clearTimeout(timer);
-  }, [orgName, filteredHmdaList, filteredCraList, filteredBranchList]);
-
-  // Auto-fill on strong match (>80%)
-  useEffect(() => {
-    const allMatches = [...orgMatches.hmda, ...orgMatches.cra, ...orgMatches.branch];
-    const best = allMatches[0];
-    if (best && best.score > 0.8) {
-      setSelectedLender(best.value);
-    }
-  }, [orgMatches]);
 
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
@@ -155,7 +56,11 @@ export default function Page() {
   const countyOptions = useMemo(() => {
     return counties.map(c => {
       const stList = Array.from(
-        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
+        new Set(
+          safeGeo
+            .filter(item => item.county === c && selectedStates.includes(item.state))
+            .map(item => item.st || item.state)  // prefer st, fallback to state
+        )
       ).sort().join(', ');
       return {
         value: c,
@@ -167,7 +72,7 @@ export default function Page() {
   const townOptions = useMemo(() => {
     return towns.map(t => {
       const townInfo = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county));
-      const st = townInfo?.st || townInfo?.state || '';
+      const st = townInfo?.st || townInfo?.state || '';  // prefer st
       const county = townInfo?.county || '';
       return {
         value: t,
@@ -202,88 +107,6 @@ export default function Page() {
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {/* State multi-select for filtering */}
-        <div>
-          <label>Select State(s) for organization match</label>
-          <Select
-            isMulti
-            options={stateOptions}
-            value={stateOptions.filter(opt => selectedStates.includes(opt.value))}
-            onChange={opts => {
-              const vals = opts ? opts.map(o => o.value) : [];
-              setSelectedStates(vals);
-              setOrgName(''); // reset match on state change
-              setSelectedLender(''); // reset lender
-            }}
-            placeholder="Select State(s) to filter matches..."
-            className="basic-multi-select"
-            classNamePrefix="select"
-          />
-        </div>
-
-        {/* Organization input */}
-        <div>
-          <label>Type your organization name (optional auto-match)</label>
-          <input
-            type="text"
-            value={orgName}
-            onChange={e => setOrgName(e.target.value)}
-            placeholder="e.g. East Cambridge Savings Bank"
-            style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
-          />
-        </div>
-
-        {/* Matches display */}
-        {orgName.trim() && (
-          <div style={{ marginTop: '8px', fontSize: '14px' }}>
-            {orgMatches.hmda.length > 0 ? (
-              <div>
-                <strong>HMDA matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.hmda.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div>No match in HMDA list</div>
-            )}
-
-            {orgMatches.cra.length > 0 ? (
-              <div>
-                <strong>CRA matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.cra.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div>No match in CRA list</div>
-            )}
-
-            {orgMatches.branch.length > 0 ? (
-              <div>
-                <strong>Branch matches:</strong>
-                <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                  {orgMatches.branch.map(match => (
-                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                      {match.label}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ) : (
-              <div>No match in Branch list</div>
-            )}
-          </div>
-        )}
-
-        {/* Lender dropdown */}
         <div>
           <label>Lender</label>
           <select
@@ -301,7 +124,6 @@ export default function Page() {
           </select>
         </div>
 
-        {/* Geography sections */}
         <div>
           <label>State(s)</label>
           <Select
@@ -386,7 +208,16 @@ export default function Page() {
       </form>
 
       <pre style={{ marginTop: '40px', background: '#f8f9fa', padding: '16px', borderRadius: '6px' }}>
-        {JSON.stringify({ lender: selectedLender, states: selectedStates, counties: selectedCounties, towns: selectedTowns }, null, 2)}
+        {JSON.stringify(
+          {
+            lender: selectedLender,
+            states: selectedStates,
+            counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
+            towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
+          },
+          null,
+          2
+        )}
       </pre>
     </div>
   );
