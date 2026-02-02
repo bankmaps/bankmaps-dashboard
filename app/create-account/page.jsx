@@ -304,12 +304,12 @@ export default function Page() {
                   </span>
                 </div>
                 <select
-                  value={selectedLender}
+                  value=""
                   onChange={e => setSelectedLender(e.target.value)}
                   style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
                 >
                   <option value="">Select the organization yourself</option>
-                  {safeLenders.map(l => (
+                  {hmdaList.map(l => (
                     <option key={l.lender_id} value={l.lender_id}>
                       {l.lender} ({l.lender_state} - {l.regulator})
                     </option>
@@ -332,12 +332,12 @@ export default function Page() {
                   </span>
                 </div>
                 <select
-                  value={selectedLender}
+                  value=""
                   onChange={e => setSelectedLender(e.target.value)}
                   style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
                 >
                   <option value="">Select the organization yourself</option>
-                  {safeLenders.map(l => (
+                  {craList.map(l => (
                     <option key={l.lender_id} value={l.lender_id}>
                       {l.lender} ({l.lender_state} - {l.regulator})
                     </option>
@@ -360,12 +360,12 @@ export default function Page() {
                   </span>
                 </div>
                 <select
-                  value={selectedLender}
+                  value=""
                   onChange={e => setSelectedLender(e.target.value)}
                   style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
                 >
                   <option value="">Select the organization yourself</option>
-                  {safeLenders.map(l => (
+                  {branchList.map(l => (
                     <option key={l.lender_id} value={l.lender_id}>
                       {l.lender} ({l.lender_state} - {l.regulator})
                     </option>
@@ -388,7 +388,7 @@ export default function Page() {
                   </span>
                 </div>
                 <select
-                  value={selectedLender}
+                  value=""
                   onChange={e => setSelectedLender(e.target.value)}
                   style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
                 >
@@ -416,7 +416,7 @@ export default function Page() {
                   </span>
                 </div>
                 <select
-                  value={selectedLender}
+                  value=""
                   onChange={e => setSelectedLender(e.target.value)}
                   style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #ccc', marginTop: '4px' }}
                 >
