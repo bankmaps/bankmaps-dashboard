@@ -5,7 +5,7 @@ import Select from 'react-select';
 
 export const dynamic = 'force-dynamic';
 
-// Case-insensitive Levenshtein similarity
+// Simple Levenshtein-based similarity (case-insensitive)
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -33,8 +33,16 @@ export default function Page() {
   const [selectedOrgType, setSelectedOrgType] = useState('');
   const [selectedStates, setSelectedStates] = useState([]);
 
-  const [selectedLender, setSelectedLender] = useState('');
   const [orgMatches, setOrgMatches] = useState({
+    hmda: null,
+    cra: null,
+    branch: null,
+    fdic: null,
+    ncua: null,
+  });
+
+  // ← New: per-source selection (null = not linked / user overrode)
+  const [selectedLenderPerSource, setSelectedLenderPerSource] = useState({
     hmda: null,
     cra: null,
     branch: null,
@@ -46,9 +54,9 @@ export default function Page() {
   const [hmdaList, setHmdaList] = useState([]);
   const [craList, setCraList] = useState([]);
   const [branchList, setBranchList] = useState([]);
-  const [geoData, setGeoData] = useState([]); // still loading it, in case we need states list
+  const [geoData, setGeoData] = useState([]);
 
-  // Load data
+  // Load all static data
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((res) => res.json())
@@ -68,14 +76,13 @@ export default function Page() {
       .then((json) => setBranchList(json.data || []))
       .catch((err) => console.error('Branch load failed:', err));
 
-    // Still load geo just for unique states
     fetch('/data/geographies.json')
       .then((res) => res.json())
       .then((json) => setGeoData(json.data || []))
       .catch((err) => console.error('Geo load failed:', err));
   }, []);
 
-  // Filtered lists based on selected states (improves match quality)
+  // Filtered lists (better matching when states are selected)
   const filteredHmdaList = useMemo(() => {
     if (selectedStates.length === 0) return hmdaList;
     return hmdaList.filter((item) => selectedStates.includes(item.lender_state));
@@ -91,7 +98,7 @@ export default function Page() {
     return branchList.filter((item) => selectedStates.includes(item.lender_state));
   }, [selectedStates, branchList]);
 
-  // Matching logic – only when we have name + type + at least one state
+  // Fuzzy + external API matching
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
@@ -107,7 +114,7 @@ export default function Page() {
           }))
           .filter((item) => item.score > 0.6)
           .sort((a, b) => b.score - a.score);
-        return matches.length > 0 ? matches[0] : null;
+        return matches[0] ?? null;
       };
 
       const localMatches = {
@@ -157,45 +164,35 @@ export default function Page() {
       setOrgMatches({
         hmda: localMatches.hmda
           ? {
-              label: `${localMatches.hmda.lender} (${localMatches.hmda.lender_state} - ${localMatches.hmda.regulator}) - ${Math.round(
-                localMatches.hmda.score * 100
-              )}%`,
+              label: `${localMatches.hmda.lender} (${localMatches.hmda.lender_state} – ${localMatches.hmda.regulator}) – ${Math.round(localMatches.hmda.score * 100)}%`,
               value: localMatches.hmda.lender_id,
               score: localMatches.hmda.score,
             }
           : null,
         cra: localMatches.cra
           ? {
-              label: `${localMatches.cra.lender} (${localMatches.cra.lender_state} - ${localMatches.cra.regulator}) - ${Math.round(
-                localMatches.cra.score * 100
-              )}%`,
+              label: `${localMatches.cra.lender} (${localMatches.cra.lender_state} – ${localMatches.cra.regulator}) – ${Math.round(localMatches.cra.score * 100)}%`,
               value: localMatches.cra.lender_id,
               score: localMatches.cra.score,
             }
           : null,
         branch: localMatches.branch
           ? {
-              label: `${localMatches.branch.lender} (${localMatches.branch.lender_state} - ${localMatches.branch.regulator}) - ${Math.round(
-                localMatches.branch.score * 100
-              )}%`,
+              label: `${localMatches.branch.lender} (${localMatches.branch.lender_state} – ${localMatches.branch.regulator}) – ${Math.round(localMatches.branch.score * 100)}%`,
               value: localMatches.branch.lender_id,
               score: localMatches.branch.score,
             }
           : null,
         fdic: fdicMatch
           ? {
-              label: `${fdicMatch.name} (RSSD ${fdicMatch.id}, ${fdicMatch.city}, ${fdicMatch.state}) - ${Math.round(
-                fdicMatch.score * 100
-              )}%`,
+              label: `${fdicMatch.name} (RSSD ${fdicMatch.id}, ${fdicMatch.city}, ${fdicMatch.state}) – ${Math.round(fdicMatch.score * 100)}%`,
               value: fdicMatch.id,
               score: fdicMatch.score,
             }
           : null,
         ncua: ncuaMatch
           ? {
-              label: `${ncuaMatch.name} (Charter ${ncuaMatch.id}, ${ncuaMatch.city}, ${ncuaMatch.state}) - ${Math.round(
-                ncuaMatch.score * 100
-              )}%`,
+              label: `${ncuaMatch.name} (Charter ${ncuaMatch.id}, ${ncuaMatch.city}, ${ncuaMatch.state}) – ${Math.round(ncuaMatch.score * 100)}%`,
               value: ncuaMatch.id,
               score: ncuaMatch.score,
             }
@@ -206,23 +203,7 @@ export default function Page() {
     return () => clearTimeout(timer);
   }, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
 
-  // Auto-select very strong match
-  useEffect(() => {
-    const all = [
-      orgMatches.hmda,
-      orgMatches.cra,
-      orgMatches.branch,
-      orgMatches.fdic,
-      orgMatches.ncua,
-    ].filter(Boolean);
-    if (all.length === 0) return;
-    const best = all.reduce((prev, curr) => (curr.score > prev.score ? curr : prev));
-    if (best.score > 0.82) {
-      setSelectedLender(best.value);
-    }
-  }, [orgMatches]);
-
-  // ─── States for step 3 ──────────────────────────────────────
+  // ─── States dropdown data ────────────────────────────────────
   const uniqueStates = useMemo(
     () =>
       [...new Set(geoData.map((item) => item.st || item.state))]
@@ -230,10 +211,9 @@ export default function Page() {
         .sort(),
     [geoData]
   );
-
   const stateOptions = uniqueStates.map((s) => ({ value: s, label: s }));
 
-  // ─── Navigation helpers ─────────────────────────────────────
+  // ─── Navigation logic ───────────────────────────────────────
   const canAdvance = () => {
     if (currentStep === 1) return orgName.trim().length >= 3;
     if (currentStep === 2) return !!selectedOrgType;
@@ -246,29 +226,29 @@ export default function Page() {
       alert('Please complete the current step.');
       return;
     }
-    setCurrentStep((prev) => Math.min(prev + 1, 4));
+    setCurrentStep((p) => Math.min(p + 1, 4));
   };
 
-  const prevStep = () => setCurrentStep((prev) => Math.max(prev - 1, 1));
+  const prevStep = () => setCurrentStep((p) => Math.max(p - 1, 1));
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!selectedLender) {
-      alert('Please select a database match in Step 4 (or confirm none match).');
-      return;
+  const handleSubmit = () => {
+    const anyLinked = Object.values(selectedLenderPerSource).some(Boolean);
+
+    if (!anyLinked) {
+      if (!window.confirm("You haven't selected any data source matches. Continue anyway?")) {
+        return;
+      }
     }
 
     const payload = {
       name: orgName.trim(),
       type: selectedOrgType,
       headquartersStates: selectedStates,
-      linkedLenderId: selectedLender,
-      // ← geography will be added later
+      linkedLenders: selectedLenderPerSource,   // { hmda: id|null, cra: id|null, ... }
     };
 
-    console.log('Submitting:', payload);
-    alert('Account setup saved! (TODO: send to backend)');
-    // → redirect or next flow
+    console.log('Account setup payload:', payload);
+    alert('Setup saved! (TODO → send to backend / redirect)');
   };
 
   const renderStep = () => {
@@ -277,7 +257,7 @@ export default function Page() {
         return (
           <div>
             <h2>Step 1 – Organization Name</h2>
-            <label>Enter the name as you want it to appear in reports:</label>
+            <label>Enter the name exactly as you want it to appear in reports:</label>
             <input
               type="text"
               value={orgName}
@@ -314,7 +294,7 @@ export default function Page() {
               options={stateOptions}
               value={stateOptions.filter((opt) => selectedStates.includes(opt.value))}
               onChange={(opts) => setSelectedStates(opts ? opts.map((o) => o.value) : [])}
-              placeholder="Select headquarters state(s)..."
+              placeholder="Select one or more states..."
               className="basic-multi-select"
               classNamePrefix="select"
             />
@@ -325,45 +305,78 @@ export default function Page() {
         return (
           <div>
             <h2>Step 4 – Database Connections</h2>
-            <p>Potential matches found for <strong>{orgName || 'your organization'}</strong>:</p>
+            <p style={{ marginBottom: '24px' }}>
+              Potential matches found for <strong>{orgName || 'your organization'}</strong>.<br />
+              Choose whether to use each match — or override by selecting "Do not link".
+            </p>
 
-            <div style={{ margin: '20px 0' }}>
-              {['hmda', 'cra', 'branch', 'fdic', 'ncua'].map((key) => {
-                const match = orgMatches[key];
-                if (!match) return null;
-                const selected = selectedLender === match.value;
-                return (
-                  <div
-                    key={key}
-                    onClick={() => setSelectedLender(match.value)}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {[
+                { key: 'hmda',   title: 'HMDA',   match: orgMatches.hmda   },
+                { key: 'cra',    title: 'CRA',    match: orgMatches.cra    },
+                { key: 'branch', title: 'Branch', match: orgMatches.branch },
+                { key: 'fdic',   title: 'FDIC',   match: orgMatches.fdic   },
+                { key: 'ncua',   title: 'NCUA',   match: orgMatches.ncua   },
+              ].map(({ key, title, match }) => (
+                <div
+                  key={key}
+                  style={{
+                    padding: '16px',
+                    border: '1px solid #e0e0e0',
+                    borderRadius: '8px',
+                    backgroundColor: '#f9f9f9',
+                  }}
+                >
+                  <div style={{ fontWeight: 'bold', fontSize: '1.1rem', marginBottom: '12px' }}>
+                    {title} Source
+                  </div>
+
+                  {match ? (
+                    <div style={{ marginBottom: '16px' }}>
+                      <div style={{ color: '#2c3e50', fontWeight: 500 }}>Best match:</div>
+                      <div style={{ marginTop: '4px', lineHeight: '1.4' }}>{match.label}</div>
+                    </div>
+                  ) : (
+                    <div style={{ color: '#7f8c8d', marginBottom: '16px' }}>
+                      No strong match found
+                    </div>
+                  )}
+
+                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 500 }}>
+                    Link this source to:
+                  </label>
+                  <select
+                    value={selectedLenderPerSource[key] ?? (match ? match.value : '')}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedLenderPerSource((prev) => ({
+                        ...prev,
+                        [key]: val || null,
+                      }));
+                    }}
                     style={{
-                      padding: '14px',
-                      margin: '10px 0',
-                      border: selected ? '2px solid #0066cc' : '1px solid #ddd',
-                      borderRadius: '8px',
-                      background: selected ? '#f0f8ff' : '#fafafa',
-                      cursor: 'pointer',
+                      width: '100%',
+                      padding: '10px',
+                      borderRadius: '6px',
+                      border: '1px solid #ccc',
+                      backgroundColor: 'white',
                     }}
                   >
-                    <strong style={{ textTransform: 'uppercase' }}>{key}:</strong>{' '}
-                    {match.label}
-                    {selected && (
-                      <span style={{ marginLeft: '12px', color: '#0066cc', fontWeight: 'bold' }}>✓ Selected</span>
+                    <option value="">Do not link / None</option>
+                    {match && (
+                      <option value={match.value}>
+                        Use best match ({Math.round(match.score * 100)}%)
+                      </option>
                     )}
-                  </div>
-                );
-              })}
-
-              {Object.values(orgMatches).every((m) => !m) && (
-                <p style={{ color: '#c0392b', marginTop: '16px' }}>
-                  No strong matches found. You can continue without linking for now.
-                </p>
-              )}
+                  </select>
+                </div>
+              ))}
             </div>
 
-            <p style={{ fontSize: '14px', color: '#555' }}>
-              Click the best match above. You can change this later if needed.
-            </p>
+            <div style={{ marginTop: '28px', fontSize: '14px', color: '#555' }}>
+              <p>• You can leave any source unlinked by choosing "Do not link / None".</p>
+              <p>• Linking can be changed later in account settings.</p>
+            </div>
           </div>
         );
 
@@ -373,29 +386,29 @@ export default function Page() {
   };
 
   return (
-    <div style={{ padding: '40px', maxWidth: '720px', margin: '0 auto' }}>
+    <div style={{ padding: '40px', maxWidth: '720px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
       <h1>Create Account</h1>
 
-      {/* Progress */}
+      {/* Progress indicators */}
       <div style={{ margin: '32px 0', textAlign: 'center' }}>
         <div style={{ display: 'flex', justifyContent: 'center', gap: '20px' }}>
-          {[1, 2, 3, 4].map((step) => (
+          {[1, 2, 3, 4].map((s) => (
             <div
-              key={step}
+              key={s}
               style={{
                 width: '44px',
                 height: '44px',
                 borderRadius: '50%',
-                backgroundColor: currentStep >= step ? '#0066cc' : '#e0e0e0',
+                backgroundColor: currentStep >= s ? '#0066cc' : '#e0e0e0',
                 color: 'white',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 'bold',
-                fontSize: '18px',
+                fontSize: '1.1rem',
               }}
             >
-              {step}
+              {s}
             </div>
           ))}
         </div>
@@ -403,7 +416,7 @@ export default function Page() {
 
       {renderStep()}
 
-      {/* Buttons */}
+      {/* Navigation buttons */}
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
         {currentStep > 1 && (
           <button
@@ -455,9 +468,19 @@ export default function Page() {
         )}
       </div>
 
-      {/* Optional debug – uncomment during dev */}
+      {/* Debug (uncomment during development) */}
       {/* <pre style={{ marginTop: '60px', background: '#f8f9fa', padding: '16px', borderRadius: '8px', fontSize: '13px' }}>
-        {JSON.stringify({ step: currentStep, orgName, type: selectedOrgType, states: selectedStates, lender: selectedLender }, null, 2)}
+        {JSON.stringify(
+          {
+            step: currentStep,
+            orgName,
+            type: selectedOrgType,
+            states: selectedStates,
+            links: selectedLenderPerSource,
+          },
+          null,
+          2
+        )}
       </pre> */}
     </div>
   );
