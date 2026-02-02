@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
-// Case-insensitive Levenshtein similarity
+// Case-insensitive fuzzy similarity
 const similarity = (a, b) => {
   a = a.toLowerCase();
   b = b.toLowerCase();
@@ -69,7 +69,23 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
-  // Debounced fuzzy match on org name
+  // Filtered lists by selected states
+  const filteredHmdaList = useMemo(() => {
+    if (selectedStates.length === 0) return hmdaList;
+    return hmdaList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, hmdaList]);
+
+  const filteredCraList = useMemo(() => {
+    if (selectedStates.length === 0) return craList;
+    return craList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, craList]);
+
+  const filteredBranchList = useMemo(() => {
+    if (selectedStates.length === 0) return branchList;
+    return branchList.filter(item => selectedStates.includes(item.lender_state));
+  }, [selectedStates, branchList]);
+
+  // Debounced fuzzy match (filtered by selected states)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!orgName.trim()) {
@@ -94,16 +110,16 @@ export default function Page() {
       };
 
       setOrgMatches({
-        hmda: matchInList(hmdaList),
-        cra: matchInList(craList),
-        branch: matchInList(branchList)
+        hmda: matchInList(filteredHmdaList),
+        cra: matchInList(filteredCraList),
+        branch: matchInList(filteredBranchList)
       });
-    }, 500); // debounce
+    }, 500);
 
     return () => clearTimeout(timer);
-  }, [orgName, hmdaList, craList, branchList]);
+  }, [orgName, filteredHmdaList, filteredCraList, filteredBranchList]);
 
-  // Auto-fill lender on strong match (>80%)
+  // Auto-fill on strong match (>80%)
   useEffect(() => {
     const allMatches = [...orgMatches.hmda, ...orgMatches.cra, ...orgMatches.branch];
     const best = allMatches[0];
@@ -112,6 +128,7 @@ export default function Page() {
     }
   }, [orgMatches]);
 
+  // Geography logic
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
@@ -139,7 +156,11 @@ export default function Page() {
   const countyOptions = useMemo(() => {
     return counties.map(c => {
       const stList = Array.from(
-        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
+        new Set(
+          safeGeo
+            .filter(item => item.county === c && selectedStates.includes(item.state))
+            .map(item => item.st || item.state)  // prefer st
+        )
       ).sort().join(', ');
       return {
         value: c,
@@ -171,7 +192,6 @@ export default function Page() {
       counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
       towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
     });
-    // TODO: send to backend/API
   };
 
   return (
@@ -186,68 +206,88 @@ export default function Page() {
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        {/* Organization auto-match */}
+        {/* State multi-select first */}
+        <div>
+          <label>Select State(s) to filter organization matches</label>
+          <Select
+            isMulti
+            options={stateOptions}
+            value={stateOptions.filter(opt => selectedStates.includes(opt.value))}
+            onChange={opts => {
+              const vals = opts ? opts.map(o => o.value) : [];
+              setSelectedStates(vals);
+              setOrgName(''); // reset match when states change
+              setSelectedLender('');
+            }}
+            placeholder="Select State(s)..."
+            className="basic-multi-select"
+            classNamePrefix="select"
+          />
+        </div>
+
+        {/* Organization input */}
         <div>
           <label>Type your organization name (optional auto-match)</label>
           <input
             type="text"
             value={orgName}
             onChange={e => setOrgName(e.target.value)}
-            placeholder="e.g. Bank of America, East Cambridge Savings Bank"
+            placeholder="e.g. East Cambridge Savings Bank"
             style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
           />
-
-          {orgName.trim() && (
-            <div style={{ marginTop: '8px', fontSize: '14px' }}>
-              {orgMatches.hmda.length > 0 ? (
-                <div>
-                  <strong>HMDA matches:</strong>
-                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                    {orgMatches.hmda.map(match => (
-                      <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                        {match.label}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div>No match in HMDA list</div>
-              )}
-
-              {orgMatches.cra.length > 0 ? (
-                <div>
-                  <strong>CRA matches:</strong>
-                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                    {orgMatches.cra.map(match => (
-                      <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                        {match.label}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div>No match in CRA list</div>
-              )}
-
-              {orgMatches.branch.length > 0 ? (
-                <div>
-                  <strong>Branch matches:</strong>
-                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
-                    {orgMatches.branch.map(match => (
-                      <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
-                        {match.label}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : (
-                <div>No match in Branch list</div>
-              )}
-            </div>
-          )}
         </div>
 
-        {/* Lender */}
+        {/* Matches */}
+        {orgName.trim() && (
+          <div style={{ marginTop: '8px', fontSize: '14px' }}>
+            {orgMatches.hmda.length > 0 ? (
+              <div>
+                <strong>HMDA matches:</strong>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  {orgMatches.hmda.map(match => (
+                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
+                      {match.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div>No match in HMDA list</div>
+            )}
+
+            {orgMatches.cra.length > 0 ? (
+              <div>
+                <strong>CRA matches:</strong>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  {orgMatches.cra.map(match => (
+                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
+                      {match.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div>No match in CRA list</div>
+            )}
+
+            {orgMatches.branch.length > 0 ? (
+              <div>
+                <strong>Branch matches:</strong>
+                <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                  {orgMatches.branch.map(match => (
+                    <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
+                      {match.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : (
+              <div>No match in Branch list</div>
+            )}
+          </div>
+        )}
+
+        {/* Lender dropdown */}
         <div>
           <label>Lender</label>
           <select
