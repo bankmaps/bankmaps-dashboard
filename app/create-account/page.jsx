@@ -262,7 +262,7 @@ console.log({
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {/* State multi-select first */}
 <div>
-<p>This is a test<br />This is a second line<br /><br />fontSize: '8px'</p>
+<p style="font-size: 14px;">This is a test<br />This is a second line<br /><br /></p>  <!-- smaller -->
   <label>Organization Type </label>
   <select
     value={selectedOrgType}
@@ -311,8 +311,7 @@ console.log({
         {orgName.trim() && (
           <div style={{ marginTop: '8px', fontSize: '14px' }}>
             {orgMatches.hmda ? (
-              <div>
-<p>This is a test<br />This is a second line<br /><br /></p>
+              <div> 
                 
 <strong>HMDA match: <span onClick={() => setSelectedLender(orgMatches.hmda.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.hmda.label}</span></strong>
                 <select
