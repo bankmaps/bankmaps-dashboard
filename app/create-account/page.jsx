@@ -84,7 +84,7 @@ export default function Page() {
             ...item,
             score: similarity(orgName, item.lender)
           }))
-          .filter(item => item.score > 0.6)
+          .filter(item => item.score > 0.9)
           .sort((a, b) => b.score - a.score);
         return matches.length > 0 ? matches[0] : null;
       };
@@ -109,7 +109,7 @@ export default function Page() {
           state: item.data.STALP,
           score: similarity(orgName, item.data.NAME)
         }))
-        .filter(item => item.score > 0.6)
+        .filter(item => item.score > 0.9)
         .sort((a, b) => b.score - a.score);
         fdicMatch = matches.length > 0 ? matches[0] : null;
       } catch (e) {
@@ -130,7 +130,7 @@ export default function Page() {
           state: item.State,
           score: similarity(orgName, item.CU_Name)
         }))
-        .filter(item => item.score > 0.6)
+        .filter(item => item.score > 0.9)
         .sort((a, b) => b.score - a.score);
         ncuaMatch = matches.length > 0 ? matches[0] : null;
       } catch (e) {
