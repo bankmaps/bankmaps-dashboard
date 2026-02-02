@@ -100,7 +100,7 @@ export default function Page() {
       let fdicMatch = null;
       try {
         const fdicRes = await fetch(
-          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=5`
+          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CUNINUM%2CCITY%2CSTALP&limit=5`
         );
         const fdicData = await fdicRes.json();
         const matches = (fdicData.data || []).map(item => ({
@@ -313,7 +313,7 @@ console.log({
               <div>
 <p>This is a test<br />This is a second line<br /><br /></p>
                 
-<strong>HMDA best match: <span onClick={() => setSelectedLender(orgMatches.hmda.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.hmda.label}</span></strong>
+<strong>HMDA match: <span onClick={() => setSelectedLender(orgMatches.hmda.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.hmda.label}</span></strong>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
@@ -333,7 +333,7 @@ console.log({
 
             {orgMatches.cra ? (
       <div>
-<strong>CRA best match: <span onClick={() => setSelectedLender(orgMatches.cra.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.cra.label}</span></strong>
+<strong>CRA match: <span onClick={() => setSelectedLender(orgMatches.cra.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.cra.label}</span></strong>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
@@ -353,7 +353,7 @@ console.log({
 
             {orgMatches.branch ? (
               <div>
-<strong>Branch best match: <span onClick={() => setSelectedLender(orgMatches.branch.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.branch.label}</span></strong>
+<strong>Branch match: <span onClick={() => setSelectedLender(orgMatches.branch.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.branch.label}</span></strong>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
@@ -373,7 +373,7 @@ console.log({
 
             {orgMatches.fdic ? (
               <div>
-<strong>FDIC best match: <span onClick={() => setSelectedLender(orgMatches.fdic.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.fdic.label}</span></strong>
+<strong>FDIC match: <span onClick={() => setSelectedLender(orgMatches.fdic.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.fdic.label}</span></strong>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
@@ -393,7 +393,7 @@ console.log({
 
             {orgMatches.ncua ? (
              <div>
-<strong>NCUA best match: <span onClick={() => setSelectedLender(orgMatches.ncua.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.ncua.label}</span></strong>
+<strong>NCUA match: <span onClick={() => setSelectedLender(orgMatches.ncua.value)} style={{ cursor: 'pointer', color: 'blue' }} >{orgMatches.ncua.label}</span></strong>
                 <select
                   value=""
                   onChange={e => setSelectedLender(e.target.value)}
