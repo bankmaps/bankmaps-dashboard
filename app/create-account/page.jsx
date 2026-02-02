@@ -319,7 +319,7 @@ export default function Page() {
       case 3:
         return (
           <div>
-            <h2>Step 3: Organization Name & Datasets </h2>
+            <h2>Step 3: Organization Name </h2>
             <div>
               <label>Type your organization name (as you want to see it in your reports)</label>
               <input
@@ -335,27 +335,27 @@ export default function Page() {
               <div style={{ marginTop: '8px', fontSize: '14px' }}>
                 {orgMatches.hmda && (
                   <div>
-                    <strong>HMDA best match:</strong> {orgMatches.hmda.label}
+                    <strong>HMDA Match:</strong> {orgMatches.hmda.label}
                   </div>
                 )}
                 {orgMatches.cra && (
                   <div>
-                    <strong>CRA best match:</strong> {orgMatches.cra.label}
+                    <strong>CRA Match:</strong> {orgMatches.cra.label}
                   </div>
                 )}
                 {orgMatches.branch && (
                   <div>
-                    <strong>Branch best match:</strong> {orgMatches.branch.label}
+                    <strong>Branch Match</strong> {orgMatches.branch.label}
                   </div>
                 )}
                 {orgMatches.fdic && (
                   <div>
-                    <strong>FDIC best match:</strong> {orgMatches.fdic.label}
+                    <strong>FDIC Call Rpt Match:</strong> {orgMatches.fdic.label}
                   </div>
                 )}
                 {orgMatches.ncua && (
                   <div>
-                    <strong>NCUA best match:</strong> {orgMatches.ncua.label}
+                    <strong>NCUA Call Rpt Match:</strong> {orgMatches.ncua.label}
                   </div>
                 )}
               </div>
