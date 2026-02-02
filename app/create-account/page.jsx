@@ -8,20 +8,62 @@ export const dynamic = 'force-dynamic';
 const ALL_COUNTIES = '%%ALL_COUNTIES%%';
 const ALL_TOWNS = '%%ALL_TOWNS%%';
 
+// Simple Levenshtein distance for fuzzy matching
+const levenshtein = (a, b) => {
+  const matrix = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(null));
+  for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+  for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+  for (let j = 1; j <= b.length; j++) {
+    for (let i = 1; i <= a.length; i++) {
+      const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[j][i] = Math.min(
+        matrix[j][i - 1] + 1,
+        matrix[j - 1][i] + 1,
+        matrix[j - 1][i - 1] + indicator
+      );
+    }
+  }
+  return matrix[b.length][a.length];
+};
+
+const similarity = (a, b) => {
+  if (a.length === 0 || b.length === 0) return 0;
+  return 1 - levenshtein(a.toLowerCase(), b.toLowerCase()) / Math.max(a.length, b.length);
+};
+
 export default function Page() {
   const [lendersData, setLendersData] = useState([]);
   const [geoData, setGeoData] = useState([]);
+  const [hmdaList, setHmdaList] = useState([]);
+  const [craList, setCraList] = useState([]);
+  const [branchList, setBranchList] = useState([]);
 
   const [selectedLender, setSelectedLender] = useState('');
   const [selectedStates, setSelectedStates] = useState([]);
   const [selectedCounties, setSelectedCounties] = useState([]);
   const [selectedTowns, setSelectedTowns] = useState([]);
 
+  const [orgName, setOrgName] = useState('');
+  const [orgMatches, setOrgMatches] = useState({ hmda: [], cra: [], branch: [] });
+
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then(res => res.json())
-      .then(json => setLendersData(json.data || []))
-      .catch(err => console.error('Lenders load failed:', err));
+      .then(json => {
+        setLendersData(json.data || []);
+        setHmdaList(json.data || []);
+      })
+      .catch(err => console.error('HMDA load failed:', err));
+
+    fetch('/data/cra_list.json')
+      .then(res => res.json())
+      .then(json => setCraList(json.data || []))
+      .catch(err => console.error('CRA load failed:', err));
+
+    fetch('/data/branch_list.json')
+      .then(res => res.json())
+      .then(json => setBranchList(json.data || []))
+      .catch(err => console.error('Branch load failed:', err));
 
     fetch('/data/geographies.json')
       .then(res => res.json())
@@ -29,6 +71,49 @@ export default function Page() {
       .catch(err => console.error('Geo load failed:', err));
   }, []);
 
+  // Fuzzy match on org name change (debounced)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!orgName.trim()) {
+        setOrgMatches({ hmda: [], cra: [], branch: [] });
+        return;
+      }
+
+      const matchInList = (list) => {
+        return list
+          .map(item => ({
+            ...item,
+            score: similarity(orgName, item.lender)
+          }))
+          .filter(item => item.score > 0.6) // min 60% match
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 3) // top 3
+          .map(item => ({
+            label: `${item.lender} (${item.lender_state} - ${item.regulator}) - ${Math.round(item.score * 100)}% match`,
+            value: item.lender_id
+          }));
+      };
+
+      setOrgMatches({
+        hmda: matchInList(hmdaList),
+        cra: matchInList(craList),
+        branch: matchInList(branchList)
+      });
+    }, 500); // debounce 500ms
+
+    return () => clearTimeout(timer);
+  }, [orgName, hmdaList, craList, branchList]);
+
+  // Auto-fill on strong match (e.g. >80%)
+  useEffect(() => {
+    const allMatches = [...orgMatches.hmda, ...orgMatches.cra, ...orgMatches.branch];
+    const best = allMatches[0];
+    if (best && best.score > 0.8) {
+      setSelectedLender(best.value);
+    }
+  }, [orgMatches]);
+
+  // Geography logic (unchanged from previous version, included for completeness)
   const safeLenders = Array.isArray(lendersData) ? lendersData : [];
   const safeGeo = Array.isArray(geoData) ? geoData : [];
 
@@ -37,69 +122,45 @@ export default function Page() {
     return Array.from(statesSet).sort();
   }, [safeGeo]);
 
-  // Counties: sorted by ST then County
   const counties = useMemo(() => {
     if (selectedStates.length === 0) return [];
     const filtered = safeGeo.filter(item => selectedStates.includes(item.state));
-
-    // Group by ST, collect counties, sort
-    const grouped = {};
-    filtered.forEach(item => {
-      const st = item.st || item.state;  // prefer st if present
-      if (!grouped[st]) grouped[st] = new Set();
-      grouped[st].add(item.county);
-    });
-
-    // Sort STs, then counties within each
-    const sorted = [];
-    Object.keys(grouped).sort().forEach(st => {
-      Array.from(grouped[st]).sort().forEach(county => {
-        sorted.push({ st, county });
-      });
-    });
-
-    return sorted;
+    return Array.from(new Set(filtered.map(item => item.county))).sort();
   }, [selectedStates, safeGeo]);
 
-  // Towns: sorted by ST then Town
   const towns = useMemo(() => {
     if (selectedStates.length === 0 || selectedCounties.length === 0) return [];
     const filtered = safeGeo.filter(
       item => selectedStates.includes(item.state) && selectedCounties.includes(item.county)
     );
-
-    const grouped = {};
-    filtered.forEach(item => {
-      const st = item.st || item.state;
-      if (!grouped[st]) grouped[st] = new Set();
-      grouped[st].add(item.town);
-    });
-
-    const sorted = [];
-    Object.keys(grouped).sort().forEach(st => {
-      Array.from(grouped[st]).sort().forEach(town => {
-        sorted.push({ st, town });
-      });
-    });
-
-    return sorted;
+    return Array.from(new Set(filtered.map(item => item.town))).sort();
   }, [selectedStates, selectedCounties, safeGeo]);
 
   const stateOptions = uniqueStates.map(s => ({ value: s, label: s }));
 
   const countyOptions = useMemo(() => {
-    return counties.map(({ st, county }) => ({
-      value: county,
-      label: `${st} - ${county}`
-    }));
-  }, [counties]);
+    return counties.map(c => {
+      const stList = Array.from(
+        new Set(safeGeo.filter(item => item.county === c && selectedStates.includes(item.state)).map(item => item.st || item.state))
+      ).sort().join(', ');
+      return {
+        value: c,
+        label: `${stList} - ${c}`
+      };
+    });
+  }, [counties, selectedStates, safeGeo]);
 
   const townOptions = useMemo(() => {
-    return towns.map(({ st, town }) => ({
-      value: town,
-      label: `${st} - ${town}`
-    }));
-  }, [towns]);
+    return towns.map(t => {
+      const townInfo = safeGeo.find(item => item.town === t && selectedCounties.includes(item.county));
+      const st = townInfo?.st || townInfo?.state || '';
+      const county = townInfo?.county || '';
+      return {
+        value: t,
+        label: `${st} - ${county} - ${t}`
+      };
+    });
+  }, [towns, selectedStates, selectedCounties, safeGeo]);
 
   const allCountiesOption = { value: ALL_COUNTIES, label: '=== All Counties ===' };
   const allTownsOption = { value: ALL_TOWNS, label: '=== All Towns ===' };
@@ -112,11 +173,12 @@ export default function Page() {
       counties: selectedCounties.includes(ALL_COUNTIES) ? 'All Counties' : selectedCounties,
       towns: selectedTowns.includes(ALL_TOWNS) ? 'All Towns' : selectedTowns
     });
+    // TODO: send to backend/API
   };
 
   return (
     <div style={{ padding: '40px', maxWidth: '700px', margin: '0 auto' }}>
-      <h1>Create Account</h1>
+      <h1>Create YOUR XYZ Account</h1>
 
       {!safeLenders.length && (
         <p style={{ color: 'red' }}>Warning: No lenders loaded from hmda_list.json</p>
@@ -126,6 +188,68 @@ export default function Page() {
       )}
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Organization auto-match */}
+        <div>
+          <label>Type your organization name (optional auto-match)</label>
+          <input
+            type="text"
+            value={orgName}
+            onChange={e => setOrgName(e.target.value)}
+            placeholder="e.g. Bank of America, Wells Fargo"
+            style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+          />
+          {/* Show matches */}
+          {orgName.trim() && (
+            <div style={{ marginTop: '8px', fontSize: '14px' }}>
+              {orgMatches.hmda.length > 0 ? (
+                <div>
+                  <strong>HMDA matches:</strong>
+                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                    {orgMatches.hmda.map(match => (
+                      <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
+                        {match.label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div>No match in HMDA list</div>
+              )}
+
+              {orgMatches.cra.length > 0 ? (
+                <div>
+                  <strong>CRA matches:</strong>
+                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                    {orgMatches.cra.map(match => (
+                      <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
+                        {match.label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div>No match in CRA list</div>
+              )}
+
+              {orgMatches.branch.length > 0 ? (
+                <div>
+                  <strong>Branch matches:</strong>
+                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                    {orgMatches.branch.map(match => (
+                      <li key={match.value} onClick={() => setSelectedLender(match.value)} style={{ cursor: 'pointer', color: 'blue' }}>
+                        {match.label}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <div>No match in Branch list</div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Lender dropdown */}
         <div>
           <label>Lender</label>
           <select
@@ -143,6 +267,7 @@ export default function Page() {
           </select>
         </div>
 
+        {/* Geography sections (unchanged from previous version) */}
         <div>
           <label>State(s)</label>
           <Select
@@ -173,7 +298,7 @@ export default function Page() {
             onChange={opts => {
               const vals = opts ? opts.map(o => o.value) : [];
               if (vals.includes(ALL_COUNTIES)) {
-                setSelectedCounties(counties.length > 0 ? [ALL_COUNTIES, ...counties.map(c => c.county)] : []);
+                setSelectedCounties(counties.length > 0 ? [ALL_COUNTIES, ...counties] : []);
               } else {
                 setSelectedCounties(vals);
               }
@@ -198,7 +323,7 @@ export default function Page() {
             onChange={opts => {
               const vals = opts ? opts.map(o => o.value) : [];
               if (vals.includes(ALL_TOWNS)) {
-                setSelectedTowns(towns.length > 0 ? [ALL_TOWNS, ...towns.map(t => t.town)] : []);
+                setSelectedTowns(towns.length > 0 ? [ALL_TOWNS, ...towns] : []);
               } else {
                 setSelectedTowns(vals);
               }
