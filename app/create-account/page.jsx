@@ -100,21 +100,21 @@ export default function Page() {
         branch: matchInList(branchList)
       };
 
-      // FDIC API (banks)
-      let fdicMatches = [];
-      try {
-        const fdicRes = await fetch(
-          `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CRSSD%2CCITY%2CSTALP&limit=3&sort=NAME&order=ASC`
-        );
-        const fdicData = await fdicRes.json();
-        fdicMatches = (fdicData.data || []).map(item => ({
-          label: `${item.data.NAME} (RSSD ${item.data.RSSD}, ${item.data.CITY}, ${item.data.STALP})`,
-          value: item.data.RSSD,
-          score: 0.9
-        }));
-      } catch (e) {
-        console.error('FDIC fetch failed:', e);
-      }
+// FDIC API (inside the timer callback)
+let fdicMatches = [];
+try {
+  const fdicRes = await fetch(
+    `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&fields=NAME%2CUNINUM%2CCITY%2CSTALP&limit=3`
+  );
+  const fdicData = await fdicRes.json();
+  fdicMatches = (fdicData.data || []).map(item => ({
+    label: `${item.data.NAME} (UNINUM ${item.data.UNINUM || 'N/A'}, ${item.data.CITY}, ${item.data.STALP})`,
+    value: item.data.UNINUM || item.data.CERT || '',
+    score: 0.9
+  }));
+} catch (e) {
+  console.error('FDIC fetch failed:', e);
+}
 
       // NCUA API (credit unions)
       let ncuaMatches = [];
