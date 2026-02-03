@@ -31,39 +31,48 @@ const similarity = (a, b) => {
   return 1 - matrix[b.length][a.length] / Math.max(a.length, b.length);
 };
 
+const SOURCE_CONFIG = {
+  Bank: {
+    sources: ['hmda', 'cra', 'branch', 'fdic'],
+    labels: {
+      hmda: 'HMDA',
+      cra: 'CRA',
+      branch: 'Branch',
+      fdic: 'FDIC',
+    },
+  },
+  'Credit Union': {
+    sources: ['hmda', 'branch', 'ncua'],
+    labels: {
+      hmda: 'HMDA',
+      branch: 'Branch',
+      ncua: 'NCUA',
+    },
+  },
+  'Mortgage Company': {
+    sources: ['hmda'],
+    labels: {
+      hmda: 'HMDA',
+    },
+  },
+};
+
 export default function Page() {
   const [currentStep, setCurrentStep] = useState(1);
   const [orgName, setOrgName] = useState('');
   const [selectedOrgType, setSelectedOrgType] = useState('');
   const [selectedStates, setSelectedStates] = useState([]);
 
-  const [orgMatches, setOrgMatches] = useState({
-    hmda: null,
-    cra: null,
-    branch: null,
-    fdic: null,
-    ncua: null,
-  });
-  const [candidates, setCandidates] = useState({
-    hmda: [],
-    cra: [],
-    branch: [],
-    fdic: [],
-    ncua: [],
-  });
-  const [selectedLenderPerSource, setSelectedLenderPerSource] = useState({
-    hmda: null,
-    cra: null,
-    branch: null,
-    fdic: null,
-    ncua: null,
-  });
+  const [orgMatches, setOrgMatches] = useState({});
+  const [candidates, setCandidates] = useState({});
+  const [selectedLenderPerSource, setSelectedLenderPerSource] = useState({});
 
   const [hmdaList, setHmdaList] = useState([]);
   const [craList, setCraList] = useState([]);
   const [branchList, setBranchList] = useState([]);
   const [geoData, setGeoData] = useState([]);
 
+  // Load static data
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((r) => r.json())
@@ -106,13 +115,20 @@ export default function Page() {
     [selectedStates, branchList]
   );
 
+  // Main matching logic – now respects organization type
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
-        setOrgMatches({ hmda: null, cra: null, branch: null, fdic: null, ncua: null });
-        setCandidates({ hmda: [], cra: [], branch: [], fdic: [], ncua: [] });
+        setOrgMatches({});
+        setCandidates({});
+        setSelectedLenderPerSource({});
         return;
       }
+
+      const config = SOURCE_CONFIG[selectedOrgType];
+      if (!config) return;
+
+      const activeSources = config.sources;
 
       const formatLocal = (list) =>
         list.map((item) => ({
@@ -121,70 +137,77 @@ export default function Page() {
           score: similarity(orgName, item.lender),
         }));
 
-      let hmdaCands = formatLocal(filteredHmdaList);
-      let craCands = formatLocal(filteredCraList);
-      let branchCands = formatLocal(filteredBranchList);
+      let newCandidates = {};
+      let newMatches = {};
+      let newSelected = {};
 
-      let fdicCands = [];
-      try {
-        const r = await fetch(
-          `https://banks.data.fdic.gov/api/institutions?filters=NAME LIKE "${encodeURIComponent(
-            orgName
-          )}"&fields=NAME,RSSD,CITY,STALP&limit=30`
-        );
-        const d = await r.json();
-        fdicCands = (d.data || []).map((i) => ({
-          label: `${i.data.NAME} (RSSD ${i.data.RSSD}, ${i.data.CITY}, ${i.data.STALP})`,
-          value: i.data.RSSD,
-          score: similarity(orgName, i.data.NAME),
-        }));
-      } catch (e) {
-        console.error('FDIC:', e);
+      // Local lists (always available)
+      if (activeSources.includes('hmda')) {
+        const cands = formatLocal(filteredHmdaList);
+        newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.hmda = newMatches.hmda?.value || null;
       }
 
-      let ncuaCands = [];
-      try {
-        const r = await fetch(
-          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=30`
-        );
-        const d = await r.json();
-        ncuaCands = (d || []).map((i) => ({
-          label: `${i.CU_Name} (Charter ${i.CU_Number}, ${i.City}, ${i.State})`,
-          value: i.CU_Number,
-          score: similarity(orgName, i.CU_Name),
-        }));
-      } catch (e) {
-        console.error('NCUA:', e);
+      if (activeSources.includes('cra')) {
+        const cands = formatLocal(filteredCraList);
+        newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.cra = newMatches.cra?.value || null;
       }
 
-      const sortAlpha = (arr) =>
-        arr.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+      if (activeSources.includes('branch')) {
+        const cands = formatLocal(filteredBranchList);
+        newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.branch = newMatches.branch?.value || null;
+      }
 
-      setCandidates({
-        hmda: sortAlpha(hmdaCands),
-        cra: sortAlpha(craCands),
-        branch: sortAlpha(branchCands),
-        fdic: sortAlpha(fdicCands),
-        ncua: sortAlpha(ncuaCands),
-      });
+      // FDIC API
+      if (activeSources.includes('fdic')) {
+        try {
+          const r = await fetch(
+            `https://banks.data.fdic.gov/api/institutions?filters=NAME LIKE "${encodeURIComponent(
+              orgName
+            )}"&fields=NAME,RSSD,CITY,STALP&limit=30`
+          );
+          const d = await r.json();
+          const cands = (d.data || []).map((i) => ({
+            label: `${i.data.NAME} (RSSD ${i.data.RSSD}, ${i.data.CITY}, ${i.data.STALP})`,
+            value: i.data.RSSD,
+            score: similarity(orgName, i.data.NAME),
+          }));
+          newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+          newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
+          newSelected.fdic = newMatches.fdic?.value || null;
+        } catch (e) {
+          console.error('FDIC fetch failed:', e);
+        }
+      }
 
-      const getBest = (arr) => arr.sort((a, b) => b.score - a.score)[0] || null;
+      // NCUA API
+      if (activeSources.includes('ncua')) {
+        try {
+          const r = await fetch(
+            `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=30`
+          );
+          const d = await r.json();
+          const cands = (d || []).map((i) => ({
+            label: `${i.CU_Name} (Charter ${i.CU_Number}, ${i.City}, ${i.State})`,
+            value: i.CU_Number,
+            score: similarity(orgName, i.CU_Name),
+          }));
+          newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+          newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
+          newSelected.ncua = newMatches.ncua?.value || null;
+        } catch (e) {
+          console.error('NCUA fetch failed:', e);
+        }
+      }
 
-      setOrgMatches({
-        hmda: getBest(hmdaCands),
-        cra: getBest(craCands),
-        branch: getBest(branchCands),
-        fdic: getBest(fdicCands),
-        ncua: getBest(ncuaCands),
-      });
-
-      setSelectedLenderPerSource({
-        hmda: getBest(hmdaCands)?.value || null,
-        cra: getBest(craCands)?.value || null,
-        branch: getBest(branchCands)?.value || null,
-        fdic: getBest(fdicCands)?.value || null,
-        ncua: getBest(ncuaCands)?.value || null,
-      });
+      setCandidates(newCandidates);
+      setOrgMatches(newMatches);
+      setSelectedLenderPerSource(newSelected);
     }, 700);
 
     return () => clearTimeout(timer);
@@ -220,6 +243,8 @@ export default function Page() {
     });
     alert('Saved! (TODO: send to backend)');
   };
+
+  const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -290,43 +315,23 @@ export default function Page() {
                 lineHeight: '1.6',
               }}
             >
-              <div>
-                <strong>HMDA Match</strong> -{' '}
-                {orgMatches.hmda
-                  ? `${orgMatches.hmda.label.split(' – ')[0]} (${Math.round(orgMatches.hmda.score * 100)}%)`
-                  : 'No strong match found'}
-              </div>
-              <div>
-                <strong>CRA Match</strong> -{' '}
-                {orgMatches.cra
-                  ? `${orgMatches.cra.label.split(' – ')[0]} (${Math.round(orgMatches.cra.score * 100)}%)`
-                  : 'No strong match found'}
-              </div>
-              <div>
-                <strong>Branch Match</strong> -{' '}
-                {orgMatches.branch
-                  ? `${orgMatches.branch.label.split(' – ')[0]} (${Math.round(orgMatches.branch.score * 100)}%)`
-                  : 'No strong match found'}
-              </div>
-              <div>
-                <strong>FDIC Match</strong> -{' '}
-                {orgMatches.fdic
-                  ? `${orgMatches.fdic.label.split(' (RSSD')[0]} (${Math.round(orgMatches.fdic.score * 100)}%)`
-                  : 'No strong match found'}
-              </div>
-              <div>
-                <strong>NCUA Match</strong> -{' '}
-                {orgMatches.ncua
-                  ? `${orgMatches.ncua.label.split(' (Charter')[0]} (${Math.round(orgMatches.ncua.score * 100)}%)`
-                  : 'No strong match found'}
-              </div>
+              {config.sources.map((key) => (
+                <div key={key}>
+                  <strong>{config.labels[key]} Match</strong> -{' '}
+                  {orgMatches[key]
+                    ? `${orgMatches[key].label.split(' (')[0] || orgMatches[key].label} (${Math.round(
+                        orgMatches[key].score * 100
+                      )}%)`
+                    : 'No strong match found'}
+                </div>
+              ))}
             </div>
 
             <p style={{ fontWeight: '500', margin: '0 0 20px 0' }}>
               Use the drop down lists below to override the matches
             </p>
 
-            {['hmda', 'cra', 'branch', 'fdic', 'ncua'].map((key) => (
+            {config.sources.map((key) => (
               <div key={key} style={{ marginBottom: '24px' }}>
                 <label
                   style={{
@@ -336,7 +341,7 @@ export default function Page() {
                     textTransform: 'uppercase',
                   }}
                 >
-                  {key.toUpperCase()}
+                  {config.labels[key]}
                 </label>
                 <select
                   value={selectedLenderPerSource[key] || ''}
@@ -349,7 +354,7 @@ export default function Page() {
                   style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
                 >
                   <option value="">— Do not link / None —</option>
-                  {candidates[key].map((opt) => (
+                  {(candidates[key] || []).map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
                     </option>
