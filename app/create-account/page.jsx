@@ -71,6 +71,8 @@ export default function Page() {
   const [hmdaList, setHmdaList] = useState([]);
   const [craList, setCraList] = useState([]);
   const [branchList, setBranchList] = useState([]);
+  const [fdicList, setFdicList] = useState([]);
+  const [ncuaList, setNcuaList] = useState([]);
   const [hqStates, setHqStates] = useState([]);
 
   useEffect(() => {
@@ -86,11 +88,17 @@ export default function Page() {
       .then((r) => r.json())
       .then((j) => setBranchList(j.data || []));
 
+    fetch('/data/fdic_list.json')
+      .then((r) => r.json())
+      .then((j) => setFdicList(j.data || []));
+
+    fetch('/data/ncua_list.json')
+      .then((r) => r.json())
+      .then((j) => setNcuaList(j.data || []));
+
     fetch('/data/hqstate_list.json')
       .then((r) => r.json())
-      .then((j) => {
-        setHqStates(j.data || []);
-      });
+      .then((j) => setHqStates(j.data || []));
   }, []);
 
   const filteredHmdaList = useMemo(
@@ -117,6 +125,22 @@ export default function Page() {
     [selectedStates, branchList]
   );
 
+  const filteredFdicList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? fdicList
+        : fdicList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, fdicList]
+  );
+
+  const filteredNcuaList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? ncuaList
+        : ncuaList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, ncuaList]
+  );
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!orgName.trim() || !selectedOrgType || !selectedRegulator || selectedStates.length === 0) {
@@ -133,7 +157,7 @@ export default function Page() {
 
       const formatLocal = (list, sourceType) =>
         list.map((item) => {
-          const regulator = item.regulator || '?';
+          const regulator = item.regulator || selectedRegulator || '?';
           const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
           return {
             label: `${item.lender} (${suffix})`,
@@ -167,13 +191,37 @@ export default function Page() {
         newSelected.branch = newMatches.branch?.value || null;
       }
 
+      if (activeSources.includes('fdic')) {
+        const cands = formatLocal(filteredFdicList, 'fdic');
+        newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.fdic = newMatches.fdic?.value || null;
+      }
+
+      if (activeSources.includes('ncua')) {
+        const cands = formatLocal(filteredNcuaList, 'ncua');
+        newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.ncua = newMatches.ncua?.value || null;
+      }
+
       setCandidates(newCandidates);
       setOrgMatches(newMatches);
       setSelectedLenderPerSource(newSelected);
     }, 700);
 
     return () => clearTimeout(timer);
-  }, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
+  }, [
+    orgName,
+    selectedOrgType,
+    selectedRegulator,
+    selectedStates,
+    filteredHmdaList,
+    filteredCraList,
+    filteredBranchList,
+    filteredFdicList,
+    filteredNcuaList,
+  ]);
 
   const stateOptions = useMemo(() => {
     if (!hqStates.length) return [];
