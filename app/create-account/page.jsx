@@ -1,5 +1,4 @@
 'use client';
-//test
 
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
@@ -59,7 +58,7 @@ const SOURCE_CONFIG = {
 };
 
 export default function Page() {
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(1); // 1 = combined info, 2 = database connections
   const [orgName, setOrgName] = useState('');
   const [selectedOrgType, setSelectedOrgType] = useState('');
   const [selectedStates, setSelectedStates] = useState([]);
@@ -72,10 +71,6 @@ export default function Page() {
   const [craList, setCraList] = useState([]);
   const [branchList, setBranchList] = useState([]);
   const [geoData, setGeoData] = useState([]);
-
-  // New: error states for external APIs
-  const [fdicError, setFdicError] = useState(null);
-  const [ncuaError, setNcuaError] = useState(null);
 
   useEffect(() => {
     fetch('/data/hmda_list.json')
@@ -125,8 +120,6 @@ export default function Page() {
         setOrgMatches({});
         setCandidates({});
         setSelectedLenderPerSource({});
-        setFdicError(null);
-        setNcuaError(null);
         return;
       }
 
@@ -150,7 +143,6 @@ export default function Page() {
       let newMatches = {};
       let newSelected = {};
 
-      // ── Local lists ────────────────────────────────────────
       if (activeSources.includes('hmda')) {
         const cands = formatLocal(filteredHmdaList, 'hmda');
         newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
@@ -172,81 +164,7 @@ export default function Page() {
         newSelected.branch = newMatches.branch?.value || null;
       }
 
-      // ── FDIC ───────────────────────────────────────────────
-      if (activeSources.includes('fdic')) {
-        setFdicError(null);
-        try {
-          const cleanName = orgName.trim();
-          if (cleanName.length < 3) throw new Error('Name too short');
-
-          const url = `https://banks.data.fdic.gov/api/institutions?filters=NAME:"${encodeURIComponent(cleanName)}"&fields=NAME,RSSD,CITY,STALP&limit=30&offset=0`;
-          
-          const r = await fetch(url);
-          if (!r.ok) {
-            throw new Error(`FDIC HTTP ${r.status}`);
-          }
-          const d = await r.json();
-
-          const apiItems = d.data || [];
-          const cands = apiItems.map((i) => {
-            const name = i.data.NAME;
-            const state = i.data.STALP || '?';
-            const suffix = `${state}–FDIC–FDIC`;
-            return {
-              label: `${name} (${suffix})`,
-              value: i.data.RSSD,
-              score: similarity(cleanName, name),
-            };
-          });
-
-          newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-          newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
-          newSelected.fdic = newMatches.fdic?.value || null;
-        } catch (e) {
-          console.error('FDIC fetch failed:', e);
-          setFdicError('Could not load FDIC matches – check name or try later');
-          newCandidates.fdic = [];
-          newMatches.fdic = null;
-          newSelected.fdic = null;
-        }
-      }
-
-      // ── NCUA ───────────────────────────────────────────────
-      if (activeSources.includes('ncua')) {
-        setNcuaError(null);
-        try {
-          const cleanName = orgName.trim();
-          if (cleanName.length < 3) throw new Error('Name too short');
-
-          const r = await fetch(
-            `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(cleanName)}&limit=30`
-          );
-          if (!r.ok) throw new Error(`NCUA HTTP ${r.status}`);
-          const d = await r.json();
-
-          const apiItems = d || [];
-          const cands = apiItems.map((i) => {
-            const name = i.CU_Name;
-            const state = i.State || '?';
-            const suffix = `${state}–NCUA–NCUA`;
-            return {
-              label: `${name} (${suffix})`,
-              value: i.CU_Number,
-              score: similarity(cleanName, name),
-            };
-          });
-
-          newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-          newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
-          newSelected.ncua = newMatches.ncua?.value || null;
-        } catch (e) {
-          console.error('NCUA fetch failed:', e);
-          setNcuaError('Could not load NCUA matches – check name or try later');
-          newCandidates.ncua = [];
-          newMatches.ncua = null;
-          newSelected.ncua = null;
-        }
-      }
+      // FDIC & NCUA would go here if you add static lists later
 
       setCandidates(newCandidates);
       setOrgMatches(newMatches);
@@ -263,19 +181,15 @@ export default function Page() {
 
   const stateOptions = uniqueStates.map((s) => ({ value: s, label: s }));
 
-  const canAdvance = () => {
-    if (currentStep === 1) return orgName.trim().length >= 3;
-    if (currentStep === 2) return !!selectedOrgType;
-    if (currentStep === 3) return selectedStates.length > 0;
-    return true;
-  };
+  // Validation for the combined Step 1
+  const canProceed = orgName.trim().length >= 3 && !!selectedOrgType && selectedStates.length > 0;
 
   const nextStep = () => {
-    if (!canAdvance()) return alert('Please complete the current step.');
-    setCurrentStep((p) => Math.min(p + 1, 4));
+    if (!canProceed) return;
+    setCurrentStep(2);
   };
 
-  const prevStep = () => setCurrentStep((p) => Math.max(p - 1, 1));
+  const prevStep = () => setCurrentStep(1);
 
   const handleSave = () => {
     console.log({
@@ -289,147 +203,129 @@ export default function Page() {
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
 
-  const renderStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <div>
-            <h2>Step 1 – Organization Name</h2>
-            <input
-              type="text"
-              value={orgName}
-              onChange={(e) => setOrgName(e.target.value)}
-              placeholder="e.g. XYZ Savings Bank"
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
-            />
+  const renderCombinedStep1 = () => (
+    <div>
+      <h2>Step 1 – Organization Information</h2>
+
+      <div style={{ marginBottom: '32px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Organization Name
+        </label>
+        <input
+          type="text"
+          value={orgName}
+          onChange={(e) => setOrgName(e.target.value)}
+          placeholder="e.g. East Cambridge Savings Bank"
+          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '32px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Organization Type
+        </label>
+        <select
+          value={selectedOrgType}
+          onChange={(e) => setSelectedOrgType(e.target.value)}
+          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">-- Select Type --</option>
+          <option value="Bank">Bank</option>
+          <option value="Credit Union">Credit Union</option>
+          <option value="Mortgage Company">Mortgage Company</option>
+        </select>
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Headquarters State(s)
+        </label>
+        <Select
+          isMulti
+          options={stateOptions}
+          value={stateOptions.filter((opt) => selectedStates.includes(opt.value))}
+          onChange={(opts) => setSelectedStates(opts ? opts.map((o) => o.value) : [])}
+          placeholder="Select one or more states..."
+          className="basic-multi-select"
+          classNamePrefix="select"
+        />
+      </div>
+    </div>
+  );
+
+  const renderDatabaseConnections = () => (
+    <div>
+      <h2>Step 2 – Database Connections</h2>
+
+      <p style={{ marginBottom: '16px' }}>
+        Best matches found for <strong>{orgName.trim() || 'your organization'}</strong>:
+      </p>
+
+      <div
+        style={{
+          padding: '16px',
+          background: '#f8f9fa',
+          borderRadius: '8px',
+          border: '1px solid #dee2e6',
+          marginBottom: '32px',
+          fontSize: '15px',
+          lineHeight: '1.6',
+        }}
+      >
+        {config.sources.map((key) => (
+          <div key={key}>
+            <strong>{config.labels[key]} Match</strong> -{' '}
+            {orgMatches[key]
+              ? `${orgMatches[key].label.split(' (')[0]} (${Math.round(orgMatches[key].score * 100)}%)`
+              : 'No strong match found'}
           </div>
-        );
+        ))}
+      </div>
 
-      case 2:
-        return (
-          <div>
-            <h2>Step 2 – Organization Type</h2>
-            <select
-              value={selectedOrgType}
-              onChange={(e) => setSelectedOrgType(e.target.value)}
-              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
-            >
-              <option value="">-- Select Type --</option>
-              <option value="Bank">Bank</option>
-              <option value="Credit Union">Credit Union</option>
-              <option value="Mortgage Company">Mortgage Company</option>
-            </select>
-          </div>
-        );
+      <p style={{ fontWeight: '500', margin: '0 0 20px 0' }}>
+        Use the drop down lists below to override the matches
+      </p>
 
-      case 3:
-        return (
-          <div>
-            <h2>Step 3 – Organization Headquarters State(s)</h2>
-            <Select
-              isMulti
-              options={stateOptions}
-              value={stateOptions.filter((opt) => selectedStates.includes(opt.value))}
-              onChange={(opts) => setSelectedStates(opts ? opts.map((o) => o.value) : [])}
-              placeholder="Select state(s)..."
-              className="basic-multi-select"
-              classNamePrefix="select"
-            />
-          </div>
-        );
-
-      case 4:
-        return (
-          <div>
-            <h2>Step 4 – Database Connections</h2>
-
-            <p style={{ marginBottom: '16px' }}>
-              Best matches found for <strong>{orgName.trim() || 'your organization'}</strong>:
-            </p>
-
-            <div
-              style={{
-                padding: '16px',
-                background: '#f8f9fa',
-                borderRadius: '8px',
-                border: '1px solid #dee2e6',
-                marginBottom: '32px',
-                fontSize: '15px',
-                lineHeight: '1.6',
-              }}
-            >
-              {config.sources.map((key) => (
-                <div key={key}>
-                  <strong>{config.labels[key]} Match</strong> -{' '}
-                  {orgMatches[key]
-                    ? `${orgMatches[key].label.split(' (')[0]} (${Math.round(orgMatches[key].score * 100)}%)`
-                    : 'No strong match found'}
-                </div>
-              ))}
-            </div>
-
-            <p style={{ fontWeight: '500', margin: '0 0 20px 0' }}>
-              Use the drop down lists below to override the matches
-            </p>
-
-            {config.sources.map((key) => (
-              <div key={key} style={{ marginBottom: '24px' }}>
-                <label
-                  style={{
-                    display: 'block',
-                    marginBottom: '8px',
-                    fontWeight: '500',
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {config.labels[key]}
-                </label>
-
-                {/* Error feedback for external APIs */}
-                {key === 'fdic' && fdicError && (
-                  <div style={{ color: '#dc3545', marginBottom: '8px', fontSize: '0.9em' }}>
-                    {fdicError}
-                  </div>
-                )}
-                {key === 'ncua' && ncuaError && (
-                  <div style={{ color: '#dc3545', marginBottom: '8px', fontSize: '0.9em' }}>
-                    {ncuaError}
-                  </div>
-                )}
-
-                <select
-                  value={selectedLenderPerSource[key] || ''}
-                  onChange={(e) =>
-                    setSelectedLenderPerSource((prev) => ({
-                      ...prev,
-                      [key]: e.target.value || null,
-                    }))
-                  }
-                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
-                >
-                  <option value="">— Do not link / None —</option>
-                  {(candidates[key] || []).map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
+      {config.sources.map((key) => (
+        <div key={key} style={{ marginBottom: '24px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: '500',
+              textTransform: 'uppercase',
+            }}
+          >
+            {config.labels[key]}
+          </label>
+          <select
+            value={selectedLenderPerSource[key] || ''}
+            onChange={(e) =>
+              setSelectedLenderPerSource((prev) => ({
+                ...prev,
+                [key]: e.target.value || null,
+              }))
+            }
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+          >
+            <option value="">— Do not link / None —</option>
+            {(candidates[key] || []).map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
             ))}
-          </div>
-        );
-
-      default:
-        return null;
-    }
-  };
+          </select>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px' }}>
       <h1>Create Account</h1>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '32px 0' }}>
-        {[1, 2, 3, 4].map((s) => (
+        {[1, 2].map((s) => (
           <div
             key={s}
             style={{
@@ -450,10 +346,10 @@ export default function Page() {
         ))}
       </div>
 
-      {renderStep()}
+      {currentStep === 1 ? renderCombinedStep1() : renderDatabaseConnections()}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
-        {currentStep > 1 && (
+        {currentStep === 2 && (
           <button
             onClick={prevStep}
             style={{
@@ -469,18 +365,18 @@ export default function Page() {
           </button>
         )}
 
-        {currentStep < 4 ? (
+        {currentStep === 1 ? (
           <button
             onClick={nextStep}
-            disabled={!canAdvance()}
+            disabled={!canProceed}
             style={{
               padding: '12px 28px',
-              background: canAdvance() ? '#0066cc' : '#ccc',
+              background: canProceed ? '#0066cc' : '#ccc',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
               marginLeft: 'auto',
-              cursor: canAdvance() ? 'pointer' : 'not-allowed',
+              cursor: canProceed ? 'pointer' : 'not-allowed',
             }}
           >
             Next
