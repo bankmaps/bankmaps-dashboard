@@ -1,6 +1,5 @@
 'use client';
 
-
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
 
@@ -72,7 +71,7 @@ export default function Page() {
   const [hmdaList, setHmdaList] = useState([]);
   const [craList, setCraList] = useState([]);
   const [branchList, setBranchList] = useState([]);
-  const [geoData, setGeoData] = useState([]);
+  const [hqStates, setHqStates] = useState([]); // ← new
 
   useEffect(() => {
     fetch('/data/hmda_list.json')
@@ -87,9 +86,14 @@ export default function Page() {
       .then((r) => r.json())
       .then((j) => setBranchList(j.data || []));
 
-    fetch('/data/geographies.json')
+    // Replaced geographies.json with hqstate_list.json
+    fetch('/data/hqstate_list.json')
       .then((r) => r.json())
-      .then((j) => setGeoData(j.data || []));
+      .then((j) => {
+        // Assuming flat array of strings like ["MA", "NY", ...]
+        // If your file has { data: [...] } or different shape, adjust here
+        setHqStates(Array.isArray(j) ? j : j.data || []);
+      });
   }, []);
 
   const filteredHmdaList = useMemo(
@@ -176,9 +180,10 @@ export default function Page() {
     return () => clearTimeout(timer);
   }, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
 
+  // Updated: use hqStates instead of geoData
   const uniqueStates = useMemo(
-    () => [...new Set(geoData.map((i) => i.st || i.state))].filter(Boolean).sort(),
-    [geoData]
+    () => [...new Set(hqStates)].filter(Boolean).sort(),
+    [hqStates]
   );
 
   const stateOptions = uniqueStates.map((s) => ({ value: s, label: s }));
