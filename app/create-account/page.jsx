@@ -130,38 +130,52 @@ export default function Page() {
 
       const activeSources = config.sources;
 
-      const formatLocal = (list) =>
-        list.map((item) => ({
-          label: `${item.lender} (${item.lender_state} – ${item.regulator || '?'})`,
-          value: item.lender_id,
-          score: similarity(orgName, item.lender),
-        }));
+      const formatLocal = (list, sourceType) =>
+  list.map((item) => {
+    // Use different suffix depending on which list we're formatting
+    let suffix = '';
+    if (sourceType === 'hmda') {
+      suffix = `${item.lender_state || '?'}–${item.regulator || '?'}–HMDA`;
+    } else if (sourceType === 'cra') {
+      suffix = `${item.lender_state || '?'}–${item.regulator || '?'}–CRA`;
+    } else if (sourceType === 'branch') {
+      suffix = `${item.lender_state || '?'}–${item.regulator || '?'}–Branch`;
+    } else {
+      suffix = `${item.lender_state || '?'}–${item.regulator || '?'}–${sourceType.toUpperCase()}`;
+    }
+
+    return {
+      label: `${item.lender} (${suffix})`,
+      value: item.lender_id,
+      score: similarity(orgName, item.lender),
+    };
+  });
 
       let newCandidates = {};
       let newMatches = {};
       let newSelected = {};
 
       // Local lists (always available)
-      if (activeSources.includes('hmda')) {
-        const cands = formatLocal(filteredHmdaList);
-        newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
-        newSelected.hmda = newMatches.hmda?.value || null;
-      }
+if (activeSources.includes('hmda')) {
+  const cands = formatLocal(filteredHmdaList, 'hmda');
+  newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+  newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
+  newSelected.hmda = newMatches.hmda?.value || null;
+}
 
-      if (activeSources.includes('cra')) {
-        const cands = formatLocal(filteredCraList);
-        newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
-        newSelected.cra = newMatches.cra?.value || null;
-      }
+if (activeSources.includes('cra')) {
+  const cands = formatLocal(filteredCraList, 'cra');
+  newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+  newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
+  newSelected.cra = newMatches.cra?.value || null;
+}
 
-      if (activeSources.includes('branch')) {
-        const cands = formatLocal(filteredBranchList);
-        newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
-        newSelected.branch = newMatches.branch?.value || null;
-      }
+if (activeSources.includes('branch')) {
+  const cands = formatLocal(filteredBranchList, 'branch');
+  newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+  newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
+  newSelected.branch = newMatches.branch?.value || null;
+}
 
       // FDIC API
       if (activeSources.includes('fdic')) {
