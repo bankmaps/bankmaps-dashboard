@@ -1,6 +1,5 @@
 'use client';
 
-
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
 
@@ -73,7 +72,6 @@ export default function Page() {
   const [branchList, setBranchList] = useState([]);
   const [geoData, setGeoData] = useState([]);
 
-  // Load static data
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((r) => r.json())
@@ -116,7 +114,6 @@ export default function Page() {
     [selectedStates, branchList]
   );
 
-  // Main matching logic – now respects organization type
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
@@ -128,99 +125,59 @@ export default function Page() {
 
       const config = SOURCE_CONFIG[selectedOrgType];
       if (!config) return;
+
       const activeSources = config.sources;
-      
-const formatCandidate = (item, sourceType, nameKey = 'lender', stateKey = 'lender_state', regulator = null) => {
-  let name, state;
 
-  if (sourceType === 'fdic') {
-    name  = item.data.NAME;
-    state = item.data.STALP;
-    regulator = 'FDIC';
-  } else if (sourceType === 'ncua') {
-    name  = item.CU_Name;
-    state = item.State;
-    regulator = 'NCUA';
-  } else {
-    // local lists
-    name  = item[nameKey];
-    state = item[stateKey];
-    regulator = item.regulator || '?';
-  }
-
-  const suffix = `${state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
-
-  return {
-    label: `${name} (${suffix})`,
-    value: item.value || item.lender_id || item.data?.RSSD || item.CU_Number,
-    score: similarity(orgName, name),
-  };
-};
-
-
-// HMDA
-const cands = filteredHmdaList.map(item => formatCandidate(item, 'hmda', 'lender', 'lender_state'));
-
-// CRA
-const cands = filteredCraList.map(item => formatCandidate(item, 'cra', 'lender', 'lender_state'));
-
-// Branch
-const cands = filteredBranchList.map(item => formatCandidate(item, 'branch', 'lender', 'lender_state'));
-
-// FDIC
-const cands = (d.data || []).map(item => formatCandidate(item, 'fdic'));
-
-// NCUA
-const cands = (d || []).map(item => formatCandidate(item, 'ncua'));
-      
-    
-    return {
-      label: `${item.lender} (${suffix})`,
-      value: item.lender_id,
-      score: similarity(orgName, item.lender),
-    };
-  });
+      const formatLocal = (list, sourceType) =>
+        list.map((item) => {
+          const regulator = item.regulator || '?';
+          const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
+          return {
+            label: `${item.lender} (${suffix})`,
+            value: item.lender_id,
+            score: similarity(orgName, item.lender),
+          };
+        });
 
       let newCandidates = {};
       let newMatches = {};
       let newSelected = {};
 
-      // Local lists (always available)
-if (activeSources.includes('hmda')) {
-  const cands = formatLocal(filteredHmdaList, 'hmda');
-  newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-  newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
-  newSelected.hmda = newMatches.hmda?.value || null;
-}
+      if (activeSources.includes('hmda')) {
+        const cands = formatLocal(filteredHmdaList, 'hmda');
+        newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.hmda = newMatches.hmda?.value || null;
+      }
 
-if (activeSources.includes('cra')) {
-  const cands = formatLocal(filteredCraList, 'cra');
-  newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-  newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
-  newSelected.cra = newMatches.cra?.value || null;
-}
+      if (activeSources.includes('cra')) {
+        const cands = formatLocal(filteredCraList, 'cra');
+        newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.cra = newMatches.cra?.value || null;
+      }
 
-if (activeSources.includes('branch')) {
-  const cands = formatLocal(filteredBranchList, 'branch');
-  newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-  newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
-  newSelected.branch = newMatches.branch?.value || null;
-}
+      if (activeSources.includes('branch')) {
+        const cands = formatLocal(filteredBranchList, 'branch');
+        newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.branch = newMatches.branch?.value || null;
+      }
 
-      // FDIC API
       if (activeSources.includes('fdic')) {
         try {
           const r = await fetch(
-            `https://banks.data.fdic.gov/api/institutions?filters=NAME LIKE "${encodeURIComponent(
-              orgName
-            )}"&fields=NAME,RSSD,CITY,STALP&limit=30`
+            `https://banks.data.fdic.gov/api/institutions?filters=NAME LIKE "${encodeURIComponent(orgName)}"&fields=NAME,RSSD,CITY,STALP&limit=30`
           );
           const d = await r.json();
-          const cands = (d.data || []).map((i) => ({
-            label: `${i.data.NAME} (RSSD ${i.data.RSSD}, ${i.data.CITY}, ${i.data.STALP})`,
-            value: i.data.RSSD,
-            score: similarity(orgName, i.data.NAME),
-          }));
+          const cands = (d.data || []).map((i) => {
+            const suffix = `${i.data.STALP || '?'}–FDIC–FDIC`;
+            return {
+              label: `${i.data.NAME} (${suffix})`,
+              value: i.data.RSSD,
+              score: similarity(orgName, i.data.NAME),
+            };
+          });
           newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
           newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
           newSelected.fdic = newMatches.fdic?.value || null;
@@ -229,18 +186,20 @@ if (activeSources.includes('branch')) {
         }
       }
 
-      // NCUA API
       if (activeSources.includes('ncua')) {
         try {
           const r = await fetch(
             `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=30`
           );
           const d = await r.json();
-          const cands = (d || []).map((i) => ({
-            label: `${i.CU_Name} (Charter ${i.CU_Number}, ${i.City}, ${i.State})`,
-            value: i.CU_Number,
-            score: similarity(orgName, i.CU_Name),
-          }));
+          const cands = (d || []).map((i) => {
+            const suffix = `${i.State || '?'}–NCUA–NCUA`;
+            return {
+              label: `${i.CU_Name} (${suffix})`,
+              value: i.CU_Number,
+              score: similarity(orgName, i.CU_Name),
+            };
+          });
           newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
           newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
           newSelected.ncua = newMatches.ncua?.value || null;
@@ -363,9 +322,7 @@ if (activeSources.includes('branch')) {
                 <div key={key}>
                   <strong>{config.labels[key]} Match</strong> -{' '}
                   {orgMatches[key]
-                    ? `${orgMatches[key].label.split(' (')[0] || orgMatches[key].label} (${Math.round(
-                        orgMatches[key].score * 100
-                      )}%)`
+                    ? `${orgMatches[key].label.split(' (')[0]} (${Math.round(orgMatches[key].score * 100)}%)`
                     : 'No strong match found'}
                 </div>
               ))}
