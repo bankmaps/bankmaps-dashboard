@@ -114,108 +114,131 @@ export default function Page() {
     [selectedStates, branchList]
   );
 
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
-        setOrgMatches({});
-        setCandidates({});
-        setSelectedLenderPerSource({});
-        return;
-      }
+useEffect(() => {
+  const timer = setTimeout(async () => {
+    if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
+      setOrgMatches({});
+      setCandidates({});
+      setSelectedLenderPerSource({});
+      return;
+    }
 
-      const config = SOURCE_CONFIG[selectedOrgType];
-      if (!config) return;
+    const config = SOURCE_CONFIG[selectedOrgType];
+    if (!config) return;
 
-      const activeSources = config.sources;
+    const activeSources = config.sources;
 
-      const formatLocal = (list, sourceType) =>
-        list.map((item) => {
-          const regulator = item.regulator || '?';
-          const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
+    const formatLocal = (list, sourceType) =>
+      list.map((item) => {
+        const regulator = item.regulator || '?';
+        const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
+        return {
+          label: `${item.lender} (${suffix})`,
+          value: item.lender_id,
+          score: similarity(orgName, item.lender),
+        };
+      });
+
+    let newCandidates = {};
+    let newMatches = {};
+    let newSelected = {};
+
+    // ── Local lists ────────────────────────────────────────
+    if (activeSources.includes('hmda')) {
+      const cands = formatLocal(filteredHmdaList, 'hmda');
+      newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+      newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
+      newSelected.hmda = newMatches.hmda?.value || null;
+    }
+
+    if (activeSources.includes('cra')) {
+      const cands = formatLocal(filteredCraList, 'cra');
+      newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+      newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
+      newSelected.cra = newMatches.cra?.value || null;
+    }
+
+    if (activeSources.includes('branch')) {
+      const cands = formatLocal(filteredBranchList, 'branch');
+      newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+      newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
+      newSelected.branch = newMatches.branch?.value || null;
+    }
+
+    // ── FDIC ───────────────────────────────────────────────
+    if (activeSources.includes('fdic')) {
+      try {
+        const r = await fetch(
+          `https://banks.data.fdic.gov/api/institutions?filters=NAME LIKE "${encodeURIComponent(orgName)}"&fields=NAME,RSSD,CITY,STALP&limit=30`
+        );
+        if (!r.ok) throw new Error(`FDIC HTTP ${r.status}`);
+        const d = await r.json();
+
+        const apiItems = d.data || [];
+        const cands = apiItems.map((i) => {
+          const name = i.data.NAME;
+          const state = i.data.STALP || '?';
+          const suffix = `${state}–FDIC–FDIC`;
           return {
-            label: `${item.lender} (${suffix})`,
-            value: item.lender_id,
-            score: similarity(orgName, item.lender),
+            label: `${name} (${suffix})`,
+            value: i.data.RSSD,
+            score: similarity(orgName, name),
           };
         });
 
-      let newCandidates = {};
-      let newMatches = {};
-      let newSelected = {};
-
-      if (activeSources.includes('hmda')) {
-        const cands = formatLocal(filteredHmdaList, 'hmda');
-        newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
-        newSelected.hmda = newMatches.hmda?.value || null;
+        newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.fdic = newMatches.fdic?.value || null;
+      } catch (e) {
+        console.error('FDIC fetch failed:', e);
+        // Optional: still allow empty dropdown instead of crashing
+        newCandidates.fdic = [];
+        newMatches.fdic = null;
+        newSelected.fdic = null;
       }
+    }
 
-      if (activeSources.includes('cra')) {
-        const cands = formatLocal(filteredCraList, 'cra');
-        newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
-        newSelected.cra = newMatches.cra?.value || null;
+    // ── NCUA (same pattern) ────────────────────────────────
+    if (activeSources.includes('ncua')) {
+      try {
+        const r = await fetch(
+          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=30`
+        );
+        if (!r.ok) throw new Error(`NCUA HTTP ${r.status}`);
+        const d = await r.json();
+
+        const apiItems = d || [];
+        const cands = apiItems.map((i) => {
+          const name = i.CU_Name;
+          const state = i.State || '?';
+          const suffix = `${state}–NCUA–NCUA`;
+          return {
+            label: `${name} (${suffix})`,
+            value: i.CU_Number,
+            score: similarity(orgName, name),
+          };
+        });
+
+        newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.ncua = newMatches.ncua?.value || null;
+      } catch (e) {
+        console.error('NCUA fetch failed:', e);
+        newCandidates.ncua = [];
+        newMatches.ncua = null;
+        newSelected.ncua = null;
       }
+    }
 
-      if (activeSources.includes('branch')) {
-        const cands = formatLocal(filteredBranchList, 'branch');
-        newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
-        newSelected.branch = newMatches.branch?.value || null;
-      }
+    setCandidates(newCandidates);
+    setOrgMatches(newMatches);
+    setSelectedLenderPerSource(newSelected);
+  }, 700);
 
-      if (activeSources.includes('fdic')) {
-        try {
-          const r = await fetch(
-            `https://banks.data.fdic.gov/api/institutions?filters=NAME LIKE "${encodeURIComponent(orgName)}"&fields=NAME,RSSD,CITY,STALP&limit=30`
-          );
-          const d = await r.json();
-          const cands = (d.data || []).map((i) => {
-            const suffix = `${i.data.STALP || '?'}–FDIC–FDIC`;
-            return {
-              label: `${i.data.NAME} (${suffix})`,
-              value: i.data.RSSD,
-              score: similarity(orgName, i.data.NAME),
-            };
-          });
-          newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-          newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
-          newSelected.fdic = newMatches.fdic?.value || null;
-        } catch (e) {
-          console.error('FDIC fetch failed:', e);
-        }
-      }
+  return () => clearTimeout(timer);
+}, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
 
-      if (activeSources.includes('ncua')) {
-        try {
-          const r = await fetch(
-            `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=30`
-          );
-          const d = await r.json();
-          const cands = (d || []).map((i) => {
-            const suffix = `${i.State || '?'}–NCUA–NCUA`;
-            return {
-              label: `${i.CU_Name} (${suffix})`,
-              value: i.CU_Number,
-              score: similarity(orgName, i.CU_Name),
-            };
-          });
-          newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-          newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
-          newSelected.ncua = newMatches.ncua?.value || null;
-        } catch (e) {
-          console.error('NCUA fetch failed:', e);
-        }
-      }
-
-      setCandidates(newCandidates);
-      setOrgMatches(newMatches);
-      setSelectedLenderPerSource(newSelected);
-    }, 700);
-
-    return () => clearTimeout(timer);
-  }, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
-
+  
   const uniqueStates = useMemo(
     () => [...new Set(geoData.map((i) => i.st || i.state))].filter(Boolean).sort(),
     [geoData]
