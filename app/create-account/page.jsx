@@ -1,6 +1,5 @@
 'use client';
 
-
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
 
@@ -73,6 +72,10 @@ export default function Page() {
   const [branchList, setBranchList] = useState([]);
   const [geoData, setGeoData] = useState([]);
 
+  // New: error states for external APIs
+  const [fdicError, setFdicError] = useState(null);
+  const [ncuaError, setNcuaError] = useState(null);
+
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((r) => r.json())
@@ -115,131 +118,143 @@ export default function Page() {
     [selectedStates, branchList]
   );
 
-useEffect(() => {
-  const timer = setTimeout(async () => {
-    if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
-      setOrgMatches({});
-      setCandidates({});
-      setSelectedLenderPerSource({});
-      return;
-    }
+  useEffect(() => {
+    const timer = setTimeout(async () => {
+      if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
+        setOrgMatches({});
+        setCandidates({});
+        setSelectedLenderPerSource({});
+        setFdicError(null);
+        setNcuaError(null);
+        return;
+      }
 
-    const config = SOURCE_CONFIG[selectedOrgType];
-    if (!config) return;
+      const config = SOURCE_CONFIG[selectedOrgType];
+      if (!config) return;
 
-    const activeSources = config.sources;
+      const activeSources = config.sources;
 
-    const formatLocal = (list, sourceType) =>
-      list.map((item) => {
-        const regulator = item.regulator || '?';
-        const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
-        return {
-          label: `${item.lender} (${suffix})`,
-          value: item.lender_id,
-          score: similarity(orgName, item.lender),
-        };
-      });
-
-    let newCandidates = {};
-    let newMatches = {};
-    let newSelected = {};
-
-    // ── Local lists ────────────────────────────────────────
-    if (activeSources.includes('hmda')) {
-      const cands = formatLocal(filteredHmdaList, 'hmda');
-      newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-      newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
-      newSelected.hmda = newMatches.hmda?.value || null;
-    }
-
-    if (activeSources.includes('cra')) {
-      const cands = formatLocal(filteredCraList, 'cra');
-      newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-      newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
-      newSelected.cra = newMatches.cra?.value || null;
-    }
-
-    if (activeSources.includes('branch')) {
-      const cands = formatLocal(filteredBranchList, 'branch');
-      newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-      newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
-      newSelected.branch = newMatches.branch?.value || null;
-    }
-
-    // ── FDIC ───────────────────────────────────────────────
-    if (activeSources.includes('fdic')) {
-      try {
-        const r = await fetch(
-          `https://banks.data.fdic.gov/api/institutions?filters=NAME LIKE "${encodeURIComponent(orgName)}"&fields=NAME,RSSD,CITY,STALP&limit=30`
-        );
-        if (!r.ok) throw new Error(`FDIC HTTP ${r.status}`);
-        const d = await r.json();
-
-        const apiItems = d.data || [];
-        const cands = apiItems.map((i) => {
-          const name = i.data.NAME;
-          const state = i.data.STALP || '?';
-          const suffix = `${state}–FDIC–FDIC`;
+      const formatLocal = (list, sourceType) =>
+        list.map((item) => {
+          const regulator = item.regulator || '?';
+          const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
           return {
-            label: `${name} (${suffix})`,
-            value: i.data.RSSD,
-            score: similarity(orgName, name),
+            label: `${item.lender} (${suffix})`,
+            value: item.lender_id,
+            score: similarity(orgName, item.lender),
           };
         });
 
-        newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
-        newSelected.fdic = newMatches.fdic?.value || null;
-      } catch (e) {
-        console.error('FDIC fetch failed:', e);
-        // Optional: still allow empty dropdown instead of crashing
-        newCandidates.fdic = [];
-        newMatches.fdic = null;
-        newSelected.fdic = null;
+      let newCandidates = {};
+      let newMatches = {};
+      let newSelected = {};
+
+      // ── Local lists ────────────────────────────────────────
+      if (activeSources.includes('hmda')) {
+        const cands = formatLocal(filteredHmdaList, 'hmda');
+        newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.hmda = newMatches.hmda?.value || null;
       }
-    }
 
-    // ── NCUA (same pattern) ────────────────────────────────
-    if (activeSources.includes('ncua')) {
-      try {
-        const r = await fetch(
-          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=30`
-        );
-        if (!r.ok) throw new Error(`NCUA HTTP ${r.status}`);
-        const d = await r.json();
-
-        const apiItems = d || [];
-        const cands = apiItems.map((i) => {
-          const name = i.CU_Name;
-          const state = i.State || '?';
-          const suffix = `${state}–NCUA–NCUA`;
-          return {
-            label: `${name} (${suffix})`,
-            value: i.CU_Number,
-            score: similarity(orgName, name),
-          };
-        });
-
-        newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
-        newSelected.ncua = newMatches.ncua?.value || null;
-      } catch (e) {
-        console.error('NCUA fetch failed:', e);
-        newCandidates.ncua = [];
-        newMatches.ncua = null;
-        newSelected.ncua = null;
+      if (activeSources.includes('cra')) {
+        const cands = formatLocal(filteredCraList, 'cra');
+        newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.cra = newMatches.cra?.value || null;
       }
-    }
 
-    setCandidates(newCandidates);
-    setOrgMatches(newMatches);
-    setSelectedLenderPerSource(newSelected);
-  }, 700);
+      if (activeSources.includes('branch')) {
+        const cands = formatLocal(filteredBranchList, 'branch');
+        newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.branch = newMatches.branch?.value || null;
+      }
 
-  return () => clearTimeout(timer);
-}, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
+      // ── FDIC ───────────────────────────────────────────────
+      if (activeSources.includes('fdic')) {
+        setFdicError(null);
+        try {
+          const cleanName = orgName.trim();
+          if (cleanName.length < 3) throw new Error('Name too short');
 
-  
+          const url = `https://banks.data.fdic.gov/api/institutions?filters=NAME:"${encodeURIComponent(cleanName)}"&fields=NAME,RSSD,CITY,STALP&limit=30&offset=0`;
+          
+          const r = await fetch(url);
+          if (!r.ok) {
+            throw new Error(`FDIC HTTP ${r.status}`);
+          }
+          const d = await r.json();
+
+          const apiItems = d.data || [];
+          const cands = apiItems.map((i) => {
+            const name = i.data.NAME;
+            const state = i.data.STALP || '?';
+            const suffix = `${state}–FDIC–FDIC`;
+            return {
+              label: `${name} (${suffix})`,
+              value: i.data.RSSD,
+              score: similarity(cleanName, name),
+            };
+          });
+
+          newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+          newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
+          newSelected.fdic = newMatches.fdic?.value || null;
+        } catch (e) {
+          console.error('FDIC fetch failed:', e);
+          setFdicError('Could not load FDIC matches – check name or try later');
+          newCandidates.fdic = [];
+          newMatches.fdic = null;
+          newSelected.fdic = null;
+        }
+      }
+
+      // ── NCUA ───────────────────────────────────────────────
+      if (activeSources.includes('ncua')) {
+        setNcuaError(null);
+        try {
+          const cleanName = orgName.trim();
+          if (cleanName.length < 3) throw new Error('Name too short');
+
+          const r = await fetch(
+            `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(cleanName)}&limit=30`
+          );
+          if (!r.ok) throw new Error(`NCUA HTTP ${r.status}`);
+          const d = await r.json();
+
+          const apiItems = d || [];
+          const cands = apiItems.map((i) => {
+            const name = i.CU_Name;
+            const state = i.State || '?';
+            const suffix = `${state}–NCUA–NCUA`;
+            return {
+              label: `${name} (${suffix})`,
+              value: i.CU_Number,
+              score: similarity(cleanName, name),
+            };
+          });
+
+          newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+          newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
+          newSelected.ncua = newMatches.ncua?.value || null;
+        } catch (e) {
+          console.error('NCUA fetch failed:', e);
+          setNcuaError('Could not load NCUA matches – check name or try later');
+          newCandidates.ncua = [];
+          newMatches.ncua = null;
+          newSelected.ncua = null;
+        }
+      }
+
+      setCandidates(newCandidates);
+      setOrgMatches(newMatches);
+      setSelectedLenderPerSource(newSelected);
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
+
   const uniqueStates = useMemo(
     () => [...new Set(geoData.map((i) => i.st || i.state))].filter(Boolean).sort(),
     [geoData]
@@ -368,6 +383,19 @@ useEffect(() => {
                 >
                   {config.labels[key]}
                 </label>
+
+                {/* Error feedback for external APIs */}
+                {key === 'fdic' && fdicError && (
+                  <div style={{ color: '#dc3545', marginBottom: '8px', fontSize: '0.9em' }}>
+                    {fdicError}
+                  </div>
+                )}
+                {key === 'ncua' && ncuaError && (
+                  <div style={{ color: '#dc3545', marginBottom: '8px', fontSize: '0.9em' }}>
+                    {ncuaError}
+                  </div>
+                )}
+
                 <select
                   value={selectedLenderPerSource[key] || ''}
                   onChange={(e) =>
@@ -440,7 +468,6 @@ useEffect(() => {
           </button>
         )}
 
-        
         {currentStep < 4 ? (
           <button
             onClick={nextStep}
