@@ -58,7 +58,7 @@ const SOURCE_CONFIG = {
 };
 
 export default function Page() {
-  const [currentStep, setCurrentStep] = useState(1); // 1 = info, 2 = database connections
+  const [currentStep, setCurrentStep] = useState(1);
   const [orgName, setOrgName] = useState('');
   const [selectedOrgType, setSelectedOrgType] = useState('');
   const [selectedRegulator, setSelectedRegulator] = useState('');
@@ -71,7 +71,7 @@ export default function Page() {
   const [hmdaList, setHmdaList] = useState([]);
   const [craList, setCraList] = useState([]);
   const [branchList, setBranchList] = useState([]);
-  const [hqStates, setHqStates] = useState([]); // ← new
+  const [hqStates, setHqStates] = useState([]);
 
   useEffect(() => {
     fetch('/data/hmda_list.json')
@@ -86,13 +86,10 @@ export default function Page() {
       .then((r) => r.json())
       .then((j) => setBranchList(j.data || []));
 
-    // Replaced geographies.json with hqstate_list.json
     fetch('/data/hqstate_list.json')
       .then((r) => r.json())
       .then((j) => {
-        // Assuming flat array of strings like ["MA", "NY", ...]
-        // If your file has { data: [...] } or different shape, adjust here
-        setHqStates(Array.isArray(j) ? j : j.data || []);
+        setHqStates(j.data || []);
       });
   }, []);
 
@@ -121,7 +118,7 @@ export default function Page() {
   );
 
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       if (!orgName.trim() || !selectedOrgType || !selectedRegulator || selectedStates.length === 0) {
         setOrgMatches({});
         setCandidates({});
@@ -170,8 +167,6 @@ export default function Page() {
         newSelected.branch = newMatches.branch?.value || null;
       }
 
-      // Add FDIC/NCUA static list logic here when ready
-
       setCandidates(newCandidates);
       setOrgMatches(newMatches);
       setSelectedLenderPerSource(newSelected);
@@ -180,13 +175,22 @@ export default function Page() {
     return () => clearTimeout(timer);
   }, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
 
-  // Updated: use hqStates instead of geoData
-  const uniqueStates = useMemo(
-    () => [...new Set(hqStates)].filter(Boolean).sort(),
-    [hqStates]
-  );
+  const stateOptions = useMemo(() => {
+    if (!hqStates.length) return [];
 
-  const stateOptions = uniqueStates.map((s) => ({ value: s, label: s }));
+    const uniqueAbbrevs = [...new Set(
+      hqStates.map(item => item.state_abbrev?.trim()).filter(Boolean)
+    )].sort();
+
+    return uniqueAbbrevs.map(abbrev => {
+      const entry = hqStates.find(item => item.state_abbrev === abbrev);
+      const fullName = entry?.state_name || abbrev;
+      return {
+        value: abbrev,
+        label: fullName
+      };
+    });
+  }, [hqStates]);
 
   const regulatorOptions = [
     { value: 'FDIC', label: 'FDIC' },
@@ -196,8 +200,7 @@ export default function Page() {
     { value: 'Non-Bank', label: 'Non-Bank' },
   ];
 
-  // Validation for Step 1
-  const canProceed = 
+  const canProceed =
     orgName.trim().length >= 3 &&
     !!selectedOrgType &&
     !!selectedRegulator &&
@@ -286,6 +289,7 @@ export default function Page() {
           placeholder="Select one or more states..."
           className="basic-multi-select"
           classNamePrefix="select"
+          isSearchable={true}
         />
       </div>
     </div>
