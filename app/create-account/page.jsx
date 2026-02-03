@@ -127,23 +127,52 @@ export default function Page() {
 
       const config = SOURCE_CONFIG[selectedOrgType];
       if (!config) return;
-
       const activeSources = config.sources;
+      
+const formatCandidate = (item, sourceType, nameKey = 'lender', stateKey = 'lender_state', regulator = null) => {
+  let name, state;
 
-      const formatLocal = (list, sourceType) =>
-  list.map((item) => {
-    // Use different suffix depending on which list we're formatting
-    let suffix = '';
-    if (sourceType === 'hmda') {
-      suffix = `${item.lender_state || '?'}–${item.regulator || '?'}–HMDA`;
-    } else if (sourceType === 'cra') {
-      suffix = `${item.lender_state || '?'}–${item.regulator || '?'}–CRA`;
-    } else if (sourceType === 'branch') {
-      suffix = `${item.lender_state || '?'}–${item.regulator || '?'}–Branch`;
-    } else {
-      suffix = `${item.lender_state || '?'}–${item.regulator || '?'}–${sourceType.toUpperCase()}`;
-    }
+  if (sourceType === 'fdic') {
+    name  = item.data.NAME;
+    state = item.data.STALP;
+    regulator = 'FDIC';
+  } else if (sourceType === 'ncua') {
+    name  = item.CU_Name;
+    state = item.State;
+    regulator = 'NCUA';
+  } else {
+    // local lists
+    name  = item[nameKey];
+    state = item[stateKey];
+    regulator = item.regulator || '?';
+  }
 
+  const suffix = `${state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
+
+  return {
+    label: `${name} (${suffix})`,
+    value: item.value || item.lender_id || item.data?.RSSD || item.CU_Number,
+    score: similarity(orgName, name),
+  };
+};
+
+
+// HMDA
+const cands = filteredHmdaList.map(item => formatCandidate(item, 'hmda', 'lender', 'lender_state'));
+
+// CRA
+const cands = filteredCraList.map(item => formatCandidate(item, 'cra', 'lender', 'lender_state'));
+
+// Branch
+const cands = filteredBranchList.map(item => formatCandidate(item, 'branch', 'lender', 'lender_state'));
+
+// FDIC
+const cands = (d.data || []).map(item => formatCandidate(item, 'fdic'));
+
+// NCUA
+const cands = (d || []).map(item => formatCandidate(item, 'ncua'));
+      
+    
     return {
       label: `${item.lender} (${suffix})`,
       value: item.lender_id,
