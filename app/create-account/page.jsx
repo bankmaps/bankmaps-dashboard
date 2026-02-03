@@ -206,7 +206,7 @@ export default function Page() {
 
   const renderCombinedStep1 = () => (
     <div>
-      <h2>Step 1 – Organization Information</h2>
+      <h2>Step 1 – Your Organization Information</h2>
 
       <div style={{ marginBottom: '32px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
