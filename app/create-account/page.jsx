@@ -5,27 +5,31 @@ import Select from 'react-select';
 
 export const dynamic = 'force-dynamic';
 
-/* ---------------- similarity helper ---------------- */
 const similarity = (a, b) => {
-  a = a.toLowerCase(); b = b.toLowerCase();
-  if (!a || !b) return 0;
-  const m = Array(b.length + 1).fill(null).map(() => Array(a.length + 1).fill(0));
-  for (let i = 0; i <= a.length; i++) m[0][i] = i;
-  for (let j = 0; j <= b.length; j++) m[j][0] = j;
+  a = a.toLowerCase();
+  b = b.toLowerCase();
+  if (a.length === 0 || b.length === 0) return 0;
+
+  const matrix = Array(b.length + 1)
+    .fill(null)
+    .map(() => Array(a.length + 1).fill(null));
+
+  for (let i = 0; i <= a.length; i++) matrix[0][i] = i;
+  for (let j = 0; j <= b.length; j++) matrix[j][0] = j;
+
   for (let j = 1; j <= b.length; j++) {
     for (let i = 1; i <= a.length; i++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      m[j][i] = Math.min(
-        m[j][i - 1] + 1,
-        m[j - 1][i] + 1,
-        m[j - 1][i - 1] + cost
+      const indicator = a[i - 1] === b[j - 1] ? 0 : 1;
+      matrix[j][i] = Math.min(
+        matrix[j][i - 1] + 1,
+        matrix[j - 1][i] + 1,
+        matrix[j - 1][i - 1] + indicator
       );
     }
   }
-  return 1 - m[b.length][a.length] / Math.max(a.length, b.length);
-};
 
-/* =================================================== */
+  return 1 - matrix[b.length][a.length] / Math.max(a.length, b.length);
+};
 
 export default function Page() {
   const [currentStep, setCurrentStep] = useState(1);
@@ -33,189 +37,412 @@ export default function Page() {
   const [selectedOrgType, setSelectedOrgType] = useState('');
   const [selectedStates, setSelectedStates] = useState([]);
 
+  const [orgMatches, setOrgMatches] = useState({
+    hmda: null,
+    cra: null,
+    branch: null,
+    fdic: null,
+    ncua: null,
+  });
+  const [candidates, setCandidates] = useState({
+    hmda: [],
+    cra: [],
+    branch: [],
+    fdic: [],
+    ncua: [],
+  });
+  const [selectedLenderPerSource, setSelectedLenderPerSource] = useState({
+    hmda: null,
+    cra: null,
+    branch: null,
+    fdic: null,
+    ncua: null,
+  });
+
   const [hmdaList, setHmdaList] = useState([]);
   const [craList, setCraList] = useState([]);
   const [branchList, setBranchList] = useState([]);
   const [geoData, setGeoData] = useState([]);
 
-  const [candidates, setCandidates] = useState({});
-  const [orgMatches, setOrgMatches] = useState({});
-  const [selectedLenderPerSource, setSelectedLenderPerSource] = useState({});
-
-  /* ---------------- fetch static data ---------------- */
   useEffect(() => {
-    fetch('/data/hmda_list.json').then(r => r.json()).then(j => setHmdaList(j.data || []));
-    fetch('/data/cra_list.json').then(r => r.json()).then(j => setCraList(j.data || []));
-    fetch('/data/branch_list.json').then(r => r.json()).then(j => setBranchList(j.data || []));
-    fetch('/data/geographies.json').then(r => r.json()).then(j => setGeoData(j.data || []));
+    fetch('/data/hmda_list.json')
+      .then((r) => r.json())
+      .then((j) => setHmdaList(j.data || []));
+
+    fetch('/data/cra_list.json')
+      .then((r) => r.json())
+      .then((j) => setCraList(j.data || []));
+
+    fetch('/data/branch_list.json')
+      .then((r) => r.json())
+      .then((j) => setBranchList(j.data || []));
+
+    fetch('/data/geographies.json')
+      .then((r) => r.json())
+      .then((j) => setGeoData(j.data || []));
   }, []);
 
-  /* ---------------- org-type rules ---------------- */
-  const sourceConfig = useMemo(() => {
-    switch (selectedOrgType) {
-      case 'Bank':
-        return { hmda: true, cra: true, branch: true, fdic: true };
-      case 'Credit Union':
-        return { hmda: true, branch: true, ncua: true };
-      case 'Mortgage Company':
-        return { hmda: true };
-      default:
-        return {};
-    }
-  }, [selectedOrgType]);
+  const filteredHmdaList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? hmdaList
+        : hmdaList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, hmdaList]
+  );
 
-  /* ---------------- state filters ---------------- */
-  const byState = list =>
-    selectedStates.length === 0 ? list : list.filter(i => selectedStates.includes(i.lender_state));
+  const filteredCraList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? craList
+        : craList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, craList]
+  );
 
-  /* ---------------- matching engine ---------------- */
+  const filteredBranchList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? branchList
+        : branchList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, branchList]
+  );
+
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (!orgName || !selectedOrgType || selectedStates.length === 0) {
-        setCandidates({});
-        setOrgMatches({});
-        setSelectedLenderPerSource({});
+      if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
+        setOrgMatches({ hmda: null, cra: null, branch: null, fdic: null, ncua: null });
+        setCandidates({ hmda: [], cra: [], branch: [], fdic: [], ncua: [] });
         return;
       }
 
-      const buildLocal = list =>
-        list.map(i => ({
-          label: `${i.lender} (${i.lender_state} – ${i.regulator || '?'})`,
-          value: i.lender_id,
-          score: similarity(orgName, i.lender),
+      const formatLocal = (list) =>
+        list.map((item) => ({
+          label: `${item.lender} (${item.lender_state} – ${item.regulator || '?'})`,
+          value: item.lender_id,
+          score: similarity(orgName, item.lender),
         }));
 
-      const nextCandidates = {};
-      const nextMatches = {};
-      const nextSelected = {};
+      let hmdaCands = formatLocal(filteredHmdaList);
+      let craCands = formatLocal(filteredCraList);
+      let branchCands = formatLocal(filteredBranchList);
 
-      if (sourceConfig.hmda) {
-        const arr = buildLocal(byState(hmdaList));
-        nextCandidates.hmda = arr;
-        nextMatches.hmda = arr.sort((a,b)=>b.score-a.score)[0] || null;
-        nextSelected.hmda = nextMatches.hmda?.value || null;
+      let fdicCands = [];
+      try {
+        const r = await fetch(
+          `https://banks.data.fdic.gov/api/institutions?filters=NAME LIKE "${encodeURIComponent(
+            orgName
+          )}"&fields=NAME,RSSD,CITY,STALP&limit=30`
+        );
+        const d = await r.json();
+        fdicCands = (d.data || []).map((i) => ({
+          label: `${i.data.NAME} (RSSD ${i.data.RSSD}, ${i.data.CITY}, ${i.data.STALP})`,
+          value: i.data.RSSD,
+          score: similarity(orgName, i.data.NAME),
+        }));
+      } catch (e) {
+        console.error('FDIC:', e);
       }
 
-      if (sourceConfig.cra) {
-        const arr = buildLocal(byState(craList));
-        nextCandidates.cra = arr;
-        nextMatches.cra = arr.sort((a,b)=>b.score-a.score)[0] || null;
-        nextSelected.cra = nextMatches.cra?.value || null;
+      let ncuaCands = [];
+      try {
+        const r = await fetch(
+          `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=30`
+        );
+        const d = await r.json();
+        ncuaCands = (d || []).map((i) => ({
+          label: `${i.CU_Name} (Charter ${i.CU_Number}, ${i.City}, ${i.State})`,
+          value: i.CU_Number,
+          score: similarity(orgName, i.CU_Name),
+        }));
+      } catch (e) {
+        console.error('NCUA:', e);
       }
 
-      if (sourceConfig.branch) {
-        const arr = buildLocal(byState(branchList));
-        nextCandidates.branch = arr;
-        nextMatches.branch = arr.sort((a,b)=>b.score-a.score)[0] || null;
-        nextSelected.branch = nextMatches.branch?.value || null;
-      }
+      const sortAlpha = (arr) =>
+        arr.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
 
-      if (sourceConfig.fdic) {
-        try {
-          const r = await fetch(
-            `https://banks.data.fdic.gov/api/institutions?filters=NAME%20LIKE%20%22${encodeURIComponent(orgName)}%22&limit=25`
-          );
-          const d = await r.json();
-          const arr = (d.data || []).map(i => ({
-            label: i.data.NAME,
-            value: i.data.RSSD,
-            score: similarity(orgName, i.data.NAME),
-          }));
-          nextCandidates.fdic = arr;
-          nextMatches.fdic = arr.sort((a,b)=>b.score-a.score)[0] || null;
-          nextSelected.fdic = nextMatches.fdic?.value || null;
-        } catch {}
-      }
+      setCandidates({
+        hmda: sortAlpha(hmdaCands),
+        cra: sortAlpha(craCands),
+        branch: sortAlpha(branchCands),
+        fdic: sortAlpha(fdicCands),
+        ncua: sortAlpha(ncuaCands),
+      });
 
-      if (sourceConfig.ncua) {
-        try {
-          const r = await fetch(
-            `https://mapping.ncua.gov/api/cudata?name=like:${encodeURIComponent(orgName)}&limit=25`
-          );
-          const d = await r.json();
-          const arr = (d || []).map(i => ({
-            label: i.CU_Name,
-            value: i.CU_Number,
-            score: similarity(orgName, i.CU_Name),
-          }));
-          nextCandidates.ncua = arr;
-          nextMatches.ncua = arr.sort((a,b)=>b.score-a.score)[0] || null;
-          nextSelected.ncua = nextMatches.ncua?.value || null;
-        } catch {}
-      }
+      const getBest = (arr) => arr.sort((a, b) => b.score - a.score)[0] || null;
 
-      setCandidates(nextCandidates);
-      setOrgMatches(nextMatches);
-      setSelectedLenderPerSource(nextSelected);
-    }, 600);
+      setOrgMatches({
+        hmda: getBest(hmdaCands),
+        cra: getBest(craCands),
+        branch: getBest(branchCands),
+        fdic: getBest(fdicCands),
+        ncua: getBest(ncuaCands),
+      });
+
+      setSelectedLenderPerSource({
+        hmda: getBest(hmdaCands)?.value || null,
+        cra: getBest(craCands)?.value || null,
+        branch: getBest(branchCands)?.value || null,
+        fdic: getBest(fdicCands)?.value || null,
+        ncua: getBest(ncuaCands)?.value || null,
+      });
+    }, 700);
 
     return () => clearTimeout(timer);
-  }, [orgName, selectedOrgType, selectedStates, sourceConfig]);
+  }, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
 
-  /* ---------------- UI helpers ---------------- */
-  const uniqueStates = [...new Set(geoData.map(i => i.st || i.state))].filter(Boolean).sort();
-  const stateOptions = uniqueStates.map(s => ({ value: s, label: s }));
+  const uniqueStates = useMemo(
+    () => [...new Set(geoData.map((i) => i.st || i.state))].filter(Boolean).sort(),
+    [geoData]
+  );
 
-  /* ---------------- Step 4 UI ---------------- */
-  const renderConnections = () => (
-    <>
-      <h2>Step 4 – Database Connections</h2>
+  const stateOptions = uniqueStates.map((s) => ({ value: s, label: s }));
 
-      <div style={{padding:16, background:'#f8f9fa', border:'1px solid #ddd', borderRadius:8}}>
-        {Object.keys(sourceConfig).map(k => (
-          <div key={k}>
-            <strong>{k.toUpperCase()} Match</strong> —{' '}
-            {orgMatches[k]
-              ? `${orgMatches[k].label} ${Math.round(orgMatches[k].score * 100)}%`
-              : 'No strong match'}
+  const canAdvance = () => {
+    if (currentStep === 1) return orgName.trim().length >= 3;
+    if (currentStep === 2) return !!selectedOrgType;
+    if (currentStep === 3) return selectedStates.length > 0;
+    return true;
+  };
+
+  const nextStep = () => {
+    if (!canAdvance()) return alert('Please complete the current step.');
+    setCurrentStep((p) => Math.min(p + 1, 4));
+  };
+
+  const prevStep = () => setCurrentStep((p) => Math.max(p - 1, 1));
+
+  const handleSave = () => {
+    console.log({
+      name: orgName.trim(),
+      type: selectedOrgType,
+      states: selectedStates,
+      linked: selectedLenderPerSource,
+    });
+    alert('Saved! (TODO: send to backend)');
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 1:
+        return (
+          <div>
+            <h2>Step 1 – Organization Name</h2>
+            <input
+              type="text"
+              value={orgName}
+              onChange={(e) => setOrgName(e.target.value)}
+              placeholder="e.g. XYZ Savings Bank"
+              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+            />
+          </div>
+        );
+
+      case 2:
+        return (
+          <div>
+            <h2>Step 2 – Organization Type</h2>
+            <select
+              value={selectedOrgType}
+              onChange={(e) => setSelectedOrgType(e.target.value)}
+              style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+            >
+              <option value="">-- Select Type --</option>
+              <option value="Bank">Bank</option>
+              <option value="Credit Union">Credit Union</option>
+              <option value="Mortgage Company">Mortgage Company</option>
+            </select>
+          </div>
+        );
+
+      case 3:
+        return (
+          <div>
+            <h2>Step 3 – Organization Headquarters State(s)</h2>
+            <Select
+              isMulti
+              options={stateOptions}
+              value={stateOptions.filter((opt) => selectedStates.includes(opt.value))}
+              onChange={(opts) => setSelectedStates(opts ? opts.map((o) => o.value) : [])}
+              placeholder="Select state(s)..."
+              className="basic-multi-select"
+              classNamePrefix="select"
+            />
+          </div>
+        );
+
+      case 4:
+        return (
+          <div>
+            <h2>Step 4 – Database Connections</h2>
+
+            <p style={{ marginBottom: '16px' }}>
+              Best matches found for <strong>{orgName.trim() || 'your organization'}</strong>:
+            </p>
+
+            <div
+              style={{
+                padding: '16px',
+                background: '#f8f9fa',
+                borderRadius: '8px',
+                border: '1px solid #dee2e6',
+                marginBottom: '32px',
+                fontSize: '15px',
+                lineHeight: '1.6',
+              }}
+            >
+              <div>
+                <strong>HMDA Match</strong> -{' '}
+                {orgMatches.hmda
+                  ? `${orgMatches.hmda.label.split(' – ')[0]} (${Math.round(orgMatches.hmda.score * 100)}%)`
+                  : 'No strong match found'}
+              </div>
+              <div>
+                <strong>CRA Match</strong> -{' '}
+                {orgMatches.cra
+                  ? `${orgMatches.cra.label.split(' – ')[0]} (${Math.round(orgMatches.cra.score * 100)}%)`
+                  : 'No strong match found'}
+              </div>
+              <div>
+                <strong>Branch Match</strong> -{' '}
+                {orgMatches.branch
+                  ? `${orgMatches.branch.label.split(' – ')[0]} (${Math.round(orgMatches.branch.score * 100)}%)`
+                  : 'No strong match found'}
+              </div>
+              <div>
+                <strong>FDIC Match</strong> -{' '}
+                {orgMatches.fdic
+                  ? `${orgMatches.fdic.label.split(' (RSSD')[0]} (${Math.round(orgMatches.fdic.score * 100)}%)`
+                  : 'No strong match found'}
+              </div>
+              <div>
+                <strong>NCUA Match</strong> -{' '}
+                {orgMatches.ncua
+                  ? `${orgMatches.ncua.label.split(' (Charter')[0]} (${Math.round(orgMatches.ncua.score * 100)}%)`
+                  : 'No strong match found'}
+              </div>
+            </div>
+
+            <p style={{ fontWeight: '500', margin: '0 0 20px 0' }}>
+              Use the drop down lists below to override the matches
+            </p>
+
+            {['hmda', 'cra', 'branch', 'fdic', 'ncua'].map((key) => (
+              <div key={key} style={{ marginBottom: '24px' }}>
+                <label
+                  style={{
+                    display: 'block',
+                    marginBottom: '8px',
+                    fontWeight: '500',
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {key.toUpperCase()}
+                </label>
+                <select
+                  value={selectedLenderPerSource[key] || ''}
+                  onChange={(e) =>
+                    setSelectedLenderPerSource((prev) => ({
+                      ...prev,
+                      [key]: e.target.value || null,
+                    }))
+                  }
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+                >
+                  <option value="">— Do not link / None —</option>
+                  {candidates[key].map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ))}
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px' }}>
+      <h1>Create Account</h1>
+
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '32px 0' }}>
+        {[1, 2, 3, 4].map((s) => (
+          <div
+            key={s}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: currentStep >= s ? '#0066cc' : '#e0e0e0',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: '1.2rem',
+            }}
+          >
+            {s}
           </div>
         ))}
       </div>
 
-      {Object.keys(sourceConfig).map(k => (
-        <div key={k} style={{marginTop:20}}>
-          <label style={{fontWeight:600}}>{k.toUpperCase()}</label>
-          <select
-            value={selectedLenderPerSource[k] || ''}
-            onChange={e =>
-              setSelectedLenderPerSource(p => ({ ...p, [k]: e.target.value || null }))
-            }
-            style={{width:'100%', padding:10}}
+      {renderStep()}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
+        {currentStep > 1 && (
+          <button
+            onClick={prevStep}
+            style={{
+              padding: '12px 28px',
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+            }}
           >
-            <option value="">— Do not link / None —</option>
-            {(candidates[k] || []).map(o => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-      ))}
-    </>
-  );
+            Back
+          </button>
+        )}
 
-  /* ---------------- main render ---------------- */
-  return (
-    <div style={{maxWidth:720, margin:'0 auto', padding:40}}>
-      {currentStep === 1 && (
-        <input value={orgName} onChange={e=>setOrgName(e.target.value)} placeholder="Organization name" />
-      )}
-
-      {currentStep === 2 && (
-        <select value={selectedOrgType} onChange={e=>setSelectedOrgType(e.target.value)}>
-          <option value="">Select type</option>
-          <option>Bank</option>
-          <option>Credit Union</option>
-          <option>Mortgage Company</option>
-        </select>
-      )}
-
-      {currentStep === 3 && (
-        <Select isMulti options={stateOptions}
-          value={stateOptions.filter(o=>selectedStates.includes(o.value))}
-          onChange={o=>setSelectedStates(o?o.map(x=>x.value):[])}
-        />
-      )}
-
-      {currentStep === 4 && renderConnections()}
+        {currentStep < 4 ? (
+          <button
+            onClick={nextStep}
+            disabled={!canAdvance()}
+            style={{
+              padding: '12px 28px',
+              background: canAdvance() ? '#0066cc' : '#ccc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              marginLeft: 'auto',
+              cursor: canAdvance() ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Next
+          </button>
+        ) : (
+          <button
+            onClick={handleSave}
+            style={{
+              padding: '12px 28px',
+              background: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              marginLeft: 'auto',
+              cursor: 'pointer',
+            }}
+          >
+            Save & Continue
+          </button>
+        )}
+      </div>
     </div>
   );
 }
