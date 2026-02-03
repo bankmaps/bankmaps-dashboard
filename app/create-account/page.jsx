@@ -58,9 +58,10 @@ const SOURCE_CONFIG = {
 };
 
 export default function Page() {
-  const [currentStep, setCurrentStep] = useState(1); // 1 = combined info, 2 = database connections
+  const [currentStep, setCurrentStep] = useState(1); // 1 = info, 2 = database connections
   const [orgName, setOrgName] = useState('');
   const [selectedOrgType, setSelectedOrgType] = useState('');
+  const [selectedRegulator, setSelectedRegulator] = useState('');
   const [selectedStates, setSelectedStates] = useState([]);
 
   const [orgMatches, setOrgMatches] = useState({});
@@ -116,7 +117,7 @@ export default function Page() {
 
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (!orgName.trim() || !selectedOrgType || selectedStates.length === 0) {
+      if (!orgName.trim() || !selectedOrgType || !selectedRegulator || selectedStates.length === 0) {
         setOrgMatches({});
         setCandidates({});
         setSelectedLenderPerSource({});
@@ -164,7 +165,7 @@ export default function Page() {
         newSelected.branch = newMatches.branch?.value || null;
       }
 
-      // FDIC & NCUA would go here if you add static lists later
+      // Add FDIC/NCUA static list logic here when ready
 
       setCandidates(newCandidates);
       setOrgMatches(newMatches);
@@ -181,8 +182,20 @@ export default function Page() {
 
   const stateOptions = uniqueStates.map((s) => ({ value: s, label: s }));
 
-  // Validation for the combined Step 1
-  const canProceed = orgName.trim().length >= 3 && !!selectedOrgType && selectedStates.length > 0;
+  const regulatorOptions = [
+    { value: 'FDIC', label: 'FDIC' },
+    { value: 'FED', label: 'FED' },
+    { value: 'OCC', label: 'OCC' },
+    { value: 'NCUA', label: 'NCUA' },
+    { value: 'Non-Bank', label: 'Non-Bank' },
+  ];
+
+  // Validation for Step 1
+  const canProceed = 
+    orgName.trim().length >= 3 &&
+    !!selectedOrgType &&
+    !!selectedRegulator &&
+    selectedStates.length > 0;
 
   const nextStep = () => {
     if (!canProceed) return;
@@ -195,6 +208,7 @@ export default function Page() {
     console.log({
       name: orgName.trim(),
       type: selectedOrgType,
+      regulator: selectedRegulator,
       states: selectedStates,
       linked: selectedLenderPerSource,
     });
@@ -203,9 +217,9 @@ export default function Page() {
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
 
-  const renderCombinedStep1 = () => (
+  const renderStep1 = () => (
     <div>
-      <h2>Step 1 – Your Organization Information</h2>
+      <h2>Step 1 – Organization Information</h2>
 
       <div style={{ marginBottom: '32px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
@@ -236,6 +250,24 @@ export default function Page() {
         </select>
       </div>
 
+      <div style={{ marginBottom: '32px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Primary Federal Regulator
+        </label>
+        <select
+          value={selectedRegulator}
+          onChange={(e) => setSelectedRegulator(e.target.value)}
+          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">-- Select Regulator --</option>
+          {regulatorOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
       <div>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
           Headquarters State(s)
@@ -253,7 +285,7 @@ export default function Page() {
     </div>
   );
 
-  const renderDatabaseConnections = () => (
+  const renderStep2 = () => (
     <div>
       <h2>Step 2 – Database Connections</h2>
 
@@ -346,7 +378,7 @@ export default function Page() {
         ))}
       </div>
 
-      {currentStep === 1 ? renderCombinedStep1() : renderDatabaseConnections()}
+      {currentStep === 1 ? renderStep1() : renderStep2()}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
         {currentStep === 2 && (
