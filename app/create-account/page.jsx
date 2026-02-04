@@ -183,9 +183,141 @@ export default function Page() {
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
 
-  const renderStep1 = () => (/* unchanged from previous version */);
+  const renderStep1 = () => (
+    <div>
+      <h2>Step 1 – Organization Information</h2>
 
-  const renderStep2 = () => (/* unchanged from previous version */);
+      <div style={{ marginBottom: '32px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Organization Name
+        </label>
+        <input
+          type="text"
+          value={orgName}
+          onChange={(e) => setOrgName(e.target.value)}
+          placeholder="e.g. East Cambridge Savings Bank"
+          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+        />
+      </div>
+
+      <div style={{ marginBottom: '32px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Organization Type
+        </label>
+        <select
+          value={selectedOrgType}
+          onChange={(e) => setSelectedOrgType(e.target.value)}
+          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">-- Select Type --</option>
+          <option value="Bank">Bank</option>
+          <option value="Credit Union">Credit Union</option>
+          <option value="Mortgage Company">Mortgage Company</option>
+        </select>
+      </div>
+
+      <div style={{ marginBottom: '32px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Primary Federal Regulator
+        </label>
+        <select
+          value={selectedRegulator}
+          onChange={(e) => setSelectedRegulator(e.target.value)}
+          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">-- Select Regulator --</option>
+          {regulatorOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Headquarters State(s)
+        </label>
+        <Select
+          isMulti
+          options={stateOptions}
+          value={stateOptions.filter((opt) => selectedStates.includes(opt.value))}
+          onChange={(opts) => setSelectedStates(opts ? opts.map((o) => o.value) : [])}
+          placeholder="Select one or more states..."
+          className="basic-multi-select"
+          classNamePrefix="select"
+          isSearchable={true}
+        />
+      </div>
+    </div>
+  );
+
+  const renderStep2 = () => (
+    <div>
+      <h2>Step 2 – Database Connections</h2>
+
+      <p style={{ marginBottom: '16px' }}>
+        Best matches found for <strong>{orgName.trim() || 'your organization'}</strong>:
+      </p>
+
+      <div
+        style={{
+          padding: '16px',
+          background: '#f8f9fa',
+          borderRadius: '8px',
+          border: '1px solid #dee2e6',
+          marginBottom: '32px',
+          fontSize: '15px',
+          lineHeight: '1.6',
+        }}
+      >
+        {config.sources.map((key) => (
+          <div key={key}>
+            <strong>{config.labels[key]} Match</strong> -{' '}
+            {orgMatches[key]
+              ? `${orgMatches[key].label.split(' (')[0]} (${Math.round(orgMatches[key].score * 100)}%)`
+              : 'No strong match found'}
+          </div>
+        ))}
+      </div>
+
+      <p style={{ fontWeight: '500', margin: '0 0 20px 0' }}>
+        Use the drop down lists below to override the matches
+      </p>
+
+      {config.sources.map((key) => (
+        <div key={key} style={{ marginBottom: '24px' }}>
+          <label
+            style={{
+              display: 'block',
+              marginBottom: '8px',
+              fontWeight: '500',
+              textTransform: 'uppercase',
+            }}
+          >
+            {config.labels[key]}
+          </label>
+          <select
+            value={selectedLenderPerSource[key] || ''}
+            onChange={(e) =>
+              setSelectedLenderPerSource((prev) => ({
+                ...prev,
+                [key]: e.target.value || null,
+              }))
+            }
+            style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+          >
+            <option value="">— Do not link / None —</option>
+            {(candidates[key] || []).map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      ))}
+    </div>
+  );
 
   const renderStep3 = () => (
     <div>
