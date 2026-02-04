@@ -165,39 +165,90 @@ const [selectedGeographies, setSelectedGeographies] = useState([]);   // array o
     [selectedStates, ncuaList]
   );
 
-const geographyStateOptions = useMemo(() => {
-  if (!geographiesList.length) return [];
-  const unique = [...new Set(geographiesList.map(i => i.state?.trim()).filter(Boolean))].sort();
-  return unique.map(s => ({ value: s, label: s }));
-}, [geographiesList]);
+  const geographyStateOptions = useMemo(() => {
+    if (!geographiesList.length) return [];
+    const unique = [...new Set(geographiesList.map(i => i.state?.trim()).filter(Boolean))].sort();
+    return unique.map(s => ({ value: s, label: s }));
+  }, [geographiesList]);
 
-const geographyCountyOptions = useMemo(() => {
-  if (!currentGeography.state.length) return [];
-  const filtered = geographiesList.filter(i => currentGeography.state.includes(i.state));
-  const unique = [...new Set(filtered.map(i => i.county?.trim()).filter(Boolean))].sort();
-  return unique.map(c => ({ value: c, label: c }));
-}, [geographiesList, currentGeography.state]);
+  const geographyCountyOptions = useMemo(() => {
+    if (!currentGeography.state.length) return [];
+    const filtered = geographiesList.filter(i => currentGeography.state.includes(i.state));
+    const unique = [...new Set(filtered.map(i => i.county?.trim()).filter(Boolean))].sort();
+    return [
+      { value: '__ALL__', label: 'All Counties (in selected states)' },
+      ...unique.map(c => ({ value: c, label: c })),
+    ];
+  }, [geographiesList, currentGeography.state]);
 
-const geographyTownOptions = useMemo(() => {
-  if (!currentGeography.state.length || !currentGeography.county.length) return [];
-  const filtered = geographiesList.filter(
-    i => currentGeography.state.includes(i.state) && currentGeography.county.includes(i.county)
-  );
-  const unique = [...new Set(filtered.map(i => i.town?.trim()).filter(Boolean))].sort();
-  return unique.map(t => ({ value: t, label: t }));
-}, [geographiesList, currentGeography.state, currentGeography.county]);
+  const geographyTownOptions = useMemo(() => {
+    console.log('--- Town options debug ---');
+    console.log('Selected states:', currentGeography.state);
+    console.log('Selected counties:', currentGeography.county);
 
-const geographyTractOptions = useMemo(() => {
-  if (!currentGeography.state.length || !currentGeography.county.length || !currentGeography.town.length) return [];
-  const filtered = geographiesList.filter(
-    i =>
-      currentGeography.state.includes(i.state) &&
-      currentGeography.county.includes(i.county) &&
-      currentGeography.town.includes(i.town)
-  );
-  const unique = [...new Set(filtered.map(i => i.tract_number?.trim()).filter(Boolean))].sort();
-  return unique.map(tr => ({ value: tr, label: tr }));
-}, [geographiesList, currentGeography.state, currentGeography.county, currentGeography.town]);
+    if (!currentGeography.state.length || !currentGeography.county.length) {
+      console.log('No upstream selections → returning empty');
+      return [];
+    }
+
+    let filtered = geographiesList;
+
+    // Handle 'All' for counties
+    const counties = currentGeography.county.includes('__ALL__')
+      ? [...new Set(geographiesList.map(i => i.county?.trim()).filter(Boolean))]
+      : currentGeography.county;
+
+    filtered = filtered.filter(item => {
+      const matchesState = currentGeography.state.includes(item.state?.trim() || '');
+      const matchesCounty = counties.includes(item.county?.trim() || '');
+      return matchesState && matchesCounty;
+    });
+
+    console.log('After state+county filter → items left:', filtered.length);
+
+    const towns = filtered.map(item => item.town?.trim() || '').filter(Boolean);
+    console.log('Raw town values found:', towns.slice(0, 10)); // first 10 for visibility
+
+    const uniqueTowns = [...new Set(towns)].sort();
+
+    const options = [
+      { value: '__ALL__', label: 'All Towns (in selected counties)' },
+      ...uniqueTowns.map(t => ({ value: t, label: t })),
+    ];
+
+    console.log('Final town options count:', options.length - 1); // exclude All
+    console.log('First few options:', options.slice(1, 6));
+
+    return options;
+  }, [geographiesList, currentGeography.state, currentGeography.county]);
+
+  const geographyTractOptions = useMemo(() => {
+    if (!currentGeography.state.length || !currentGeography.county.length || !currentGeography.town.length) return [];
+
+    let filtered = geographiesList;
+
+    const counties = currentGeography.county.includes('__ALL__')
+      ? [...new Set(geographiesList.map(i => i.county?.trim()).filter(Boolean))]
+      : currentGeography.county;
+
+    const towns = currentGeography.town.includes('__ALL__')
+      ? [...new Set(geographiesList.map(i => i.town?.trim()).filter(Boolean))]
+      : currentGeography.town;
+
+    filtered = filtered.filter(
+      i =>
+        currentGeography.state.includes(i.state) &&
+        counties.includes(i.county) &&
+        towns.includes(i.town)
+    );
+
+    const unique = [...new Set(filtered.map(i => i.tract_number?.trim()).filter(Boolean))].sort();
+
+    return [
+      { value: '__ALL__', label: 'All Tracts (in selected towns)' },
+      ...unique.map(tr => ({ value: tr, label: tr })),
+    ];
+  }, [geographiesList, currentGeography.state, currentGeography.county, currentGeography.town]);
   
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -501,13 +552,16 @@ const renderStep3 = () => (
           isMulti
           options={geographyStateOptions}
           value={geographyStateOptions.filter(opt => currentGeography.state.includes(opt.value))}
-          onChange={(opts) => setCurrentGeography(prev => ({
-            ...prev,
-            state: opts ? opts.map(o => o.value) : [],
-            county: [],
-            town: [],
-            tract_number: [],
-          }))}
+          onChange={(opts) => {
+            const newValues = opts ? opts.map(o => o.value) : [];
+            setCurrentGeography(prev => ({
+              ...prev,
+              state: newValues,
+              county: [],
+              town: [],
+              tract_number: [],
+            }));
+          }}
           placeholder="Select one or more states..."
           className="basic-multi-select"
           classNamePrefix="select"
@@ -522,12 +576,20 @@ const renderStep3 = () => (
           isMulti
           options={geographyCountyOptions}
           value={geographyCountyOptions.filter(opt => currentGeography.county.includes(opt.value))}
-          onChange={(opts) => setCurrentGeography(prev => ({
-            ...prev,
-            county: opts ? opts.map(o => o.value) : [],
-            town: [],
-            tract_number: [],
-          }))}
+          onChange={(opts) => {
+            let newValues = opts ? opts.map(o => o.value) : [];
+            if (newValues.includes('__ALL__')) {
+              newValues = ['__ALL__'];
+            } else {
+              newValues = newValues.filter(v => v !== '__ALL__');
+            }
+            setCurrentGeography(prev => ({
+              ...prev,
+              county: newValues,
+              town: [],
+              tract_number: [],
+            }));
+          }}
           placeholder="Select one or more counties..."
           className="basic-multi-select"
           classNamePrefix="select"
@@ -543,11 +605,19 @@ const renderStep3 = () => (
           isMulti
           options={geographyTownOptions}
           value={geographyTownOptions.filter(opt => currentGeography.town.includes(opt.value))}
-          onChange={(opts) => setCurrentGeography(prev => ({
-            ...prev,
-            town: opts ? opts.map(o => o.value) : [],
-            tract_number: [],
-          }))}
+          onChange={(opts) => {
+            let newValues = opts ? opts.map(o => o.value) : [];
+            if (newValues.includes('__ALL__')) {
+              newValues = ['__ALL__'];
+            } else {
+              newValues = newValues.filter(v => v !== '__ALL__');
+            }
+            setCurrentGeography(prev => ({
+              ...prev,
+              town: newValues,
+              tract_number: [],
+            }));
+          }}
           placeholder="Select one or more towns..."
           className="basic-multi-select"
           classNamePrefix="select"
@@ -563,10 +633,18 @@ const renderStep3 = () => (
           isMulti
           options={geographyTractOptions}
           value={geographyTractOptions.filter(opt => currentGeography.tract_number.includes(opt.value))}
-          onChange={(opts) => setCurrentGeography(prev => ({
-            ...prev,
-            tract_number: opts ? opts.map(o => o.value) : [],
-          }))}
+          onChange={(opts) => {
+            let newValues = opts ? opts.map(o => o.value) : [];
+            if (newValues.includes('__ALL__')) {
+              newValues = ['__ALL__'];
+            } else {
+              newValues = newValues.filter(v => v !== '__ALL__');
+            }
+            setCurrentGeography(prev => ({
+              ...prev,
+              tract_number: newValues,
+            }));
+          }}
           placeholder="Select one or more tracts..."
           className="basic-multi-select"
           classNamePrefix="select"
@@ -580,11 +658,15 @@ const renderStep3 = () => (
     <button
       type="button"
       onClick={() => {
+        const hasAllCounty = currentGeography.county.includes('__ALL__');
+        const hasAllTown = currentGeography.town.includes('__ALL__');
+        const hasAllTract = currentGeography.tract_number.includes('__ALL__');
+
         if (
           currentGeography.state.length &&
-          currentGeography.county.length &&
-          currentGeography.town.length &&
-          currentGeography.tract_number.length
+          (currentGeography.county.length || hasAllCounty) &&
+          (currentGeography.town.length || hasAllTown) &&
+          (currentGeography.tract_number.length || hasAllTract)
         ) {
           console.log('Adding geography:', currentGeography);  // debug
           setSelectedGeographies(prev => [...prev, { ...currentGeography }]);
@@ -593,9 +675,9 @@ const renderStep3 = () => (
       }}
       disabled={
         !currentGeography.state.length ||
-        !currentGeography.county.length ||
-        !currentGeography.town.length ||
-        !currentGeography.tract_number.length
+        (!currentGeography.county.length && !currentGeography.county.includes('__ALL__')) ||
+        (!currentGeography.town.length && !currentGeography.town.includes('__ALL__')) ||
+        (!currentGeography.tract_number.length && !currentGeography.tract_number.includes('__ALL__'))
       }
       style={{
         padding: '10px 20px',
@@ -629,7 +711,7 @@ const renderStep3 = () => (
               }}
             >
               <span>
-                States: {geo.state.join(', ')} → Counties: {geo.county.join(', ')} → Towns: {geo.town.join(', ')} → Tracts: {geo.tract_number.join(', ')}
+                States: {geo.state.join(', ')} → Counties: {geo.county.includes('__ALL__') ? 'All' : geo.county.join(', ')} → Towns: {geo.town.includes('__ALL__') ? 'All' : geo.town.join(', ')} → Tracts: {geo.tract_number.includes('__ALL__') ? 'All' : geo.tract_number.join(', ')}
               </span>
               <button
                 type="button"
