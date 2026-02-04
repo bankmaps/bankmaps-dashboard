@@ -79,19 +79,19 @@ export default function Page() {
   const [geographies, setGeographies] = useState([]);       // e.g. selected counties, MSAs, etc.
   const [customContext, setCustomContext] = useState('');   // notes, tags, free text
 
-const [geographiesList, setGeographiesList] = useState([]);
+  const [geographiesList, setGeographiesList] = useState([]);
 
-const [currentGeography, setCurrentGeography] = useState({
-  state: [],  // now array
-  county: [],
-  town: [],
-  tract_number: [],
-});
+  const [currentGeography, setCurrentGeography] = useState({
+    state: [],  // now array
+    county: [],
+    town: [],
+    tract_number: [],
+  });
 
   const [geographyType, setGeographyType] = useState('');      // "Assessment Area" | "REMA" | "Other" | ""
-const [geographyName, setGeographyName] = useState('');      // free text
+  const [geographyName, setGeographyName] = useState('');      // free text
   
-const [selectedGeographies, setSelectedGeographies] = useState([]);   // array of complete geographies added
+  const [selectedGeographies, setSelectedGeographies] = useState([]);   // array of complete geographies added
   
   useEffect(() => {
     fetch('/data/hmda_list.json')
@@ -389,7 +389,7 @@ const [selectedGeographies, setSelectedGeographies] = useState([]);   // array o
   };
 
   const handleSave = () => {
-    console.log({
+    const payload = {
       name: orgName.trim(),
       type: selectedOrgType,
       regulator: selectedRegulator,
@@ -397,7 +397,9 @@ const [selectedGeographies, setSelectedGeographies] = useState([]);   // array o
       linked: selectedLenderPerSource,
       geographies: selectedGeographies,  // now array of {state: [], county: [], ...},
       customContext,
-    });
+    };
+
+    console.log('Saved! Payload:', payload);
     alert('Saved! (TODO: send to backend)');
   };
 
@@ -578,7 +580,7 @@ const renderStep3 = () => (
         />
       </div>
     </div>
-    
+
     <div style={{ display: 'grid', gap: '20px', marginBottom: '32px' }}>
       {/* State */}
       <div>
@@ -692,47 +694,45 @@ const renderStep3 = () => (
     {/* Add button */}
     <button
       type="button"
+      onClick={() => {
+        const hasAllCounty = currentGeography.county.includes('__ALL__');
+        const hasAllTown = currentGeography.town.includes('__ALL__');
+        const hasAllTract = currentGeography.tract_number.includes('__ALL__');
 
-onClick={() => {
-  const hasAllCounty = currentGeography.county.includes('__ALL__');
-  const hasAllTown   = currentGeography.town.includes('__ALL__');
-  const hasAllTract  = currentGeography.tract_number.includes('__ALL__');
+        if (
+          geographyType &&
+          geographyName.trim() &&
+          currentGeography.state.length &&
+          (currentGeography.county.length || hasAllCounty) &&
+          (currentGeography.town.length || hasAllTown) &&
+          (currentGeography.tract_number.length || hasAllTract)
+        ) {
+          const newGeo = {
+            type: geographyType,
+            name: geographyName.trim(),
+            state: [...currentGeography.state],
+            county: [...currentGeography.county],
+            town: [...currentGeography.town],
+            tract_number: [...currentGeography.tract_number],
+          };
 
-  if (
-    geographyType &&  // require type
-    geographyName.trim() &&  // require name
-    currentGeography.state.length &&
-    (currentGeography.county.length || hasAllCounty) &&
-    (currentGeography.town.length || hasAllTown) &&
-    (currentGeography.tract_number.length || hasAllTract)
-  ) {
-    const newGeo = {
-      type: geographyType,
-      name: geographyName.trim(),
-      state: [...currentGeography.state],
-      county: [...currentGeography.county],
-      town: [...currentGeography.town],
-      tract_number: [...currentGeography.tract_number],
-    };
+          console.log('Adding geography:', newGeo);
+          setSelectedGeographies(prev => [...prev, newGeo]);
 
-    console.log('Adding geography:', newGeo);
-    setSelectedGeographies(prev => [...prev, newGeo]);
-
-    // Reset everything
-    setGeographyType('');
-    setGeographyName('');
-    setCurrentGeography({ state: [], county: [], town: [], tract_number: [] });
-  }
-}}
-      
-disabled={
-  !geographyType ||
-  !geographyName.trim() ||
-  !currentGeography.state.length ||
-  (!currentGeography.county.length && !currentGeography.county.includes('__ALL__')) ||
-  (!currentGeography.town.length && !currentGeography.town.includes('__ALL__')) ||
-  (!currentGeography.tract_number.length && !currentGeography.tract_number.includes('__ALL__'))
-}
+          // Reset everything
+          setGeographyType('');
+          setGeographyName('');
+          setCurrentGeography({ state: [], county: [], town: [], tract_number: [] });
+        }
+      }}
+      disabled={
+        !geographyType ||
+        !geographyName.trim() ||
+        !currentGeography.state.length ||
+        (!currentGeography.county.length && !currentGeography.county.includes('__ALL__')) ||
+        (!currentGeography.town.length && !currentGeography.town.includes('__ALL__')) ||
+        (!currentGeography.tract_number.length && !currentGeography.tract_number.includes('__ALL__'))
+      }
       style={{
         padding: '10px 20px',
         background: '#0066cc',
@@ -764,13 +764,13 @@ disabled={
                 marginBottom: '8px',
               }}
             >
-<span>
-  <strong>{geo.type}</strong>: {geo.name}  
-  → States: {geo.state.join(', ')}  
-  → Counties: {geo.county.includes('__ALL__') ? 'All' : geo.county.join(', ')}  
-  → Towns: {geo.town.includes('__ALL__') ? 'All' : geo.town.join(', ')}  
-  → Tracts: {geo.tract_number.includes('__ALL__') ? 'All' : geo.tract_number.join(', ')}
-</span>
+              <span>
+                <strong>{geo.type}</strong>: {geo.name}  
+                → States: {geo.state.join(', ')}  
+                → Counties: {geo.county.includes('__ALL__') ? 'All' : geo.county.join(', ')}  
+                → Towns: {geo.town.includes('__ALL__') ? 'All' : geo.town.join(', ')}  
+                → Tracts: {geo.tract_number.includes('__ALL__') ? 'All' : geo.tract_number.join(', ')}
+              </span>
               <button
                 type="button"
                 onClick={() => setSelectedGeographies(prev => prev.filter((_, i) => i !== index))}
