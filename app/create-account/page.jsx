@@ -75,83 +75,17 @@ export default function Page() {
   const [ncuaList, setNcuaList] = useState([]);
   const [hqStates, setHqStates] = useState([]);
 
-  useEffect(() => {
-    fetch('/data/hmda_list.json')
-      .then((r) => r.json())
-      .then((j) => setHmdaList(j.data || []));
+useEffect(() => {
+  const timer = setTimeout(() => {
+    if (!orgName.trim() || !selectedOrgType || !selectedRegulator || selectedStates.length === 0) {
+      setOrgMatches({});
+      setCandidates({});
+      setSelectedLenderPerSource({});
+      return;
+    }
 
-    fetch('/data/cra_list.json')
-      .then((r) => r.json())
-      .then((j) => setCraList(j.data || []));
-
-    fetch('/data/branch_list.json')
-      .then((r) => r.json())
-      .then((j) => setBranchList(j.data || []));
-
-    fetch('/data/fdic_list.json')
-      .then((r) => r.json())
-      .then((j) => setFdicList(j.data || []));
-
-    fetch('/data/ncua_list.json')
-      .then((r) => r.json())
-      .then((j) => setNcuaList(j.data || []));
-
-    fetch('/data/hqstate_list.json')
-      .then((r) => r.json())
-      .then((j) => setHqStates(j.data || []));
-  }, []);
-
-  const filteredHmdaList = useMemo(
-    () =>
-      selectedStates.length === 0
-        ? hmdaList
-        : hmdaList.filter((i) => selectedStates.includes(i.lender_state)),
-    [selectedStates, hmdaList]
-  );
-
-  const filteredCraList = useMemo(
-    () =>
-      selectedStates.length === 0
-        ? craList
-        : craList.filter((i) => selectedStates.includes(i.lender_state)),
-    [selectedStates, craList]
-  );
-
-  const filteredBranchList = useMemo(
-    () =>
-      selectedStates.length === 0
-        ? branchList
-        : branchList.filter((i) => selectedStates.includes(i.lender_state)),
-    [selectedStates, branchList]
-  );
-
-  const filteredFdicList = useMemo(
-    () =>
-      selectedStates.length === 0
-        ? fdicList
-        : fdicList.filter((i) => selectedStates.includes(i.lender_state)),
-    [selectedStates, fdicList]
-  );
-
-  const filteredNcuaList = useMemo(
-    () =>
-      selectedStates.length === 0
-        ? ncuaList
-        : ncuaList.filter((i) => selectedStates.includes(i.lender_state)),
-    [selectedStates, ncuaList]
-  );
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!orgName.trim() || !selectedOrgType || !selectedRegulator || selectedStates.length === 0) {
-        setOrgMatches({});
-        setCandidates({});
-        setSelectedLenderPerSource({});
-        return;
-      }
-
-      const config = SOURCE_CONFIG[selectedOrgType];
-      if (!config) return;
+    const config = SOURCE_CONFIG[selectedOrgType];
+    if (!config) return;
 
     const newCandidates = {};
     const newMatches = {};
@@ -168,7 +102,7 @@ export default function Page() {
         };
       });
 
-      // This line ensures alphabetical order in the dropdown
+      // Alphabetical sort for dropdown
       return items.sort((a, b) =>
         a.label.localeCompare(b.label, 'en', { sensitivity: 'base' })
       );
@@ -203,20 +137,26 @@ export default function Page() {
       newMatches.ncua    = [...newCandidates.ncua].sort((a, b) => b.score - a.score)[0] || null;
       newSelected.ncua   = newMatches.ncua?.value || null;
     }
-    }, 700);
 
-    return () => clearTimeout(timer);
-  }, [
-    orgName,
-    selectedOrgType,
-    selectedRegulator,
-    selectedStates,
-    filteredHmdaList,
-    filteredCraList,
-    filteredBranchList,
-    filteredFdicList,
-    filteredNcuaList,
-  ]);
+    // These four lines were missing inside the callback
+    setCandidates(newCandidates);
+    setOrgMatches(newMatches);
+    setSelectedLenderPerSource(newSelected);
+
+  }, 700);
+
+  return () => clearTimeout(timer);
+}, [
+  orgName,
+  selectedOrgType,
+  selectedRegulator,
+  selectedStates,
+  filteredHmdaList,
+  filteredCraList,
+  filteredBranchList,
+  filteredFdicList,
+  filteredNcuaList,
+]);
 
   const stateOptions = useMemo(() => {
     if (!hqStates.length) return [];
