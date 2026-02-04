@@ -88,6 +88,9 @@ const [currentGeography, setCurrentGeography] = useState({
   tract_number: [],
 });
 
+  const [geographyType, setGeographyType] = useState('');      // "Assessment Area" | "REMA" | "Other" | ""
+const [geographyName, setGeographyName] = useState('');      // free text
+  
 const [selectedGeographies, setSelectedGeographies] = useState([]);   // array of complete geographies added
   
   useEffect(() => {
@@ -544,6 +547,38 @@ const renderStep3 = () => (
       These are independent of headquarters states selected in Step 1. You can select multiple at each level.
     </p>
 
+    {/* New fields */}
+    <div style={{ display: 'grid', gap: '20px', marginBottom: '32px' }}>
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Geography Type <span style={{ color: '#dc3545' }}>*</span>
+        </label>
+        <select
+          value={geographyType}
+          onChange={(e) => setGeographyType(e.target.value)}
+          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">— Select Type —</option>
+          <option value="Assessment Area">Assessment Area</option>
+          <option value="REMA">REMA</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Geography Name <span style={{ color: '#dc3545' }}>*</span>
+        </label>
+        <input
+          type="text"
+          value={geographyName}
+          onChange={(e) => setGeographyName(e.target.value)}
+          placeholder="e.g. Boston Metro Area, Cape Cod Assessment Area, Custom Rural Zone"
+          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+        />
+      </div>
+    </div>
+    
     <div style={{ display: 'grid', gap: '20px', marginBottom: '32px' }}>
       {/* State */}
       <div>
@@ -657,28 +692,47 @@ const renderStep3 = () => (
     {/* Add button */}
     <button
       type="button"
-      onClick={() => {
-        const hasAllCounty = currentGeography.county.includes('__ALL__');
-        const hasAllTown = currentGeography.town.includes('__ALL__');
-        const hasAllTract = currentGeography.tract_number.includes('__ALL__');
 
-        if (
-          currentGeography.state.length &&
-          (currentGeography.county.length || hasAllCounty) &&
-          (currentGeography.town.length || hasAllTown) &&
-          (currentGeography.tract_number.length || hasAllTract)
-        ) {
-          console.log('Adding geography:', currentGeography);  // debug
-          setSelectedGeographies(prev => [...prev, { ...currentGeography }]);
-          setCurrentGeography({ state: [], county: [], town: [], tract_number: [] });  // reset
-        }
-      }}
-      disabled={
-        !currentGeography.state.length ||
-        (!currentGeography.county.length && !currentGeography.county.includes('__ALL__')) ||
-        (!currentGeography.town.length && !currentGeography.town.includes('__ALL__')) ||
-        (!currentGeography.tract_number.length && !currentGeography.tract_number.includes('__ALL__'))
-      }
+onClick={() => {
+  const hasAllCounty = currentGeography.county.includes('__ALL__');
+  const hasAllTown   = currentGeography.town.includes('__ALL__');
+  const hasAllTract  = currentGeography.tract_number.includes('__ALL__');
+
+  if (
+    geographyType &&  // require type
+    geographyName.trim() &&  // require name
+    currentGeography.state.length &&
+    (currentGeography.county.length || hasAllCounty) &&
+    (currentGeography.town.length || hasAllTown) &&
+    (currentGeography.tract_number.length || hasAllTract)
+  ) {
+    const newGeo = {
+      type: geographyType,
+      name: geographyName.trim(),
+      state: [...currentGeography.state],
+      county: [...currentGeography.county],
+      town: [...currentGeography.town],
+      tract_number: [...currentGeography.tract_number],
+    };
+
+    console.log('Adding geography:', newGeo);
+    setSelectedGeographies(prev => [...prev, newGeo]);
+
+    // Reset everything
+    setGeographyType('');
+    setGeographyName('');
+    setCurrentGeography({ state: [], county: [], town: [], tract_number: [] });
+  }
+}}
+      
+disabled={
+  !geographyType ||
+  !geographyName.trim() ||
+  !currentGeography.state.length ||
+  (!currentGeography.county.length && !currentGeography.county.includes('__ALL__')) ||
+  (!currentGeography.town.length && !currentGeography.town.includes('__ALL__')) ||
+  (!currentGeography.tract_number.length && !currentGeography.tract_number.includes('__ALL__'))
+}
       style={{
         padding: '10px 20px',
         background: '#0066cc',
@@ -710,9 +764,13 @@ const renderStep3 = () => (
                 marginBottom: '8px',
               }}
             >
-              <span>
-                States: {geo.state.join(', ')} → Counties: {geo.county.includes('__ALL__') ? 'All' : geo.county.join(', ')} → Towns: {geo.town.includes('__ALL__') ? 'All' : geo.town.join(', ')} → Tracts: {geo.tract_number.includes('__ALL__') ? 'All' : geo.tract_number.join(', ')}
-              </span>
+<span>
+  <strong>{geo.type}</strong>: {geo.name}  
+  → States: {geo.state.join(', ')}  
+  → Counties: {geo.county.includes('__ALL__') ? 'All' : geo.county.join(', ')}  
+  → Towns: {geo.town.includes('__ALL__') ? 'All' : geo.town.join(', ')}  
+  → Tracts: {geo.tract_number.includes('__ALL__') ? 'All' : geo.tract_number.join(', ')}
+</span>
               <button
                 type="button"
                 onClick={() => setSelectedGeographies(prev => prev.filter((_, i) => i !== index))}
