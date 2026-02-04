@@ -75,6 +75,10 @@ export default function Page() {
   const [ncuaList, setNcuaList] = useState([]);
   const [hqStates, setHqStates] = useState([]);
 
+  // ── New state for Step 3 & 4 ─────────────────────────────
+  const [geographies, setGeographies] = useState([]);       // e.g. selected counties, MSAs, etc.
+  const [customContext, setCustomContext] = useState('');   // notes, tags, free text
+
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((r) => r.json())
@@ -248,18 +252,33 @@ export default function Page() {
     { value: 'Non-Bank', label: 'Non-Bank' },
   ];
 
-  const canProceed =
+  // ── Per-step validation ─────────────────────────────────
+  const canProceedStep1 =
     orgName.trim().length >= 3 &&
     !!selectedOrgType &&
     !!selectedRegulator &&
     selectedStates.length > 0;
 
+  const canProceedStep2 = true; // optional: could require at least one selectedLenderPerSource later
+
+  const canProceedStep3 = true; // placeholder — tighten later if geographies required
+  const canProceedStep4 = true; // placeholder
+
+  const canProceed =
+    currentStep === 1 ? canProceedStep1 :
+    currentStep === 2 ? canProceedStep2 :
+    currentStep === 3 ? canProceedStep3 :
+    canProceedStep4;
+
   const nextStep = () => {
-    if (!canProceed) return;
-    setCurrentStep(2);
+    if (currentStep < 4 && canProceed) {
+      setCurrentStep(currentStep + 1);
+    }
   };
 
-  const prevStep = () => setCurrentStep(1);
+  const prevStep = () => {
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
 
   const handleSave = () => {
     console.log({
@@ -268,6 +287,8 @@ export default function Page() {
       regulator: selectedRegulator,
       states: selectedStates,
       linked: selectedLenderPerSource,
+      geographies,
+      customContext,
     });
     alert('Saved! (TODO: send to backend)');
   };
@@ -410,12 +431,61 @@ export default function Page() {
     </div>
   );
 
+  const renderStep3 = () => (
+    <div>
+      <h2>Step 3 – Organization Geographies</h2>
+      <p style={{ color: '#666', marginBottom: '24px' }}>
+        Define the primary markets, counties, MSAs, or custom areas this organization serves or is focused on.
+      </p>
+
+      <div style={{
+        padding: '32px',
+        background: '#f8f9fa',
+        borderRadius: '8px',
+        border: '1px dashed #adb5bd',
+        textAlign: 'center',
+        color: '#6c757d',
+      }}>
+        <p>(Geographies selection coming soon – multi-select counties / MSAs / custom upload?)</p>
+        <p>Current selection: {geographies.length} area{geographies.length !== 1 ? 's' : ''}</p>
+      </div>
+    </div>
+  );
+
+  const renderStep4 = () => (
+    <div>
+      <h2>Step 4 – Custom Context</h2>
+      <p style={{ color: '#666', marginBottom: '16px' }}>
+        Add any additional notes, tags, or context that helps describe this organization (optional).
+      </p>
+
+      <textarea
+        value={customContext}
+        onChange={(e) => setCustomContext(e.target.value)}
+        placeholder="Examples: • Focus on affordable housing in rural areas\n• Recently acquired XYZ Credit Union\n• Specializes in commercial real estate in Boston metro..."
+        style={{
+          width: '100%',
+          minHeight: '160px',
+          padding: '12px',
+          borderRadius: '6px',
+          border: '1px solid #ccc',
+          resize: 'vertical',
+          fontFamily: 'inherit',
+        }}
+      />
+
+      <p style={{ fontSize: '0.9rem', color: '#6c757d', marginTop: '8px' }}>
+        This information can be used to improve matching accuracy and reporting later.
+      </p>
+    </div>
+  );
+
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px' }}>
       <h1>Create Account</h1>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '32px 0' }}>
-        {[1, 2].map((s) => (
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', margin: '32px 0' }}>
+        {[1, 2, 3, 4].map((s) => (
           <div
             key={s}
             style={{
@@ -436,10 +506,13 @@ export default function Page() {
         ))}
       </div>
 
-      {currentStep === 1 ? renderStep1() : renderStep2()}
+      {currentStep === 1 ? renderStep1() :
+       currentStep === 2 ? renderStep2() :
+       currentStep === 3 ? renderStep3() :
+       renderStep4()}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
-        {currentStep === 2 && (
+        {currentStep > 1 && (
           <button
             onClick={prevStep}
             style={{
@@ -455,7 +528,7 @@ export default function Page() {
           </button>
         )}
 
-        {currentStep === 1 ? (
+        {currentStep < 4 ? (
           <button
             onClick={nextStep}
             disabled={!canProceed}
