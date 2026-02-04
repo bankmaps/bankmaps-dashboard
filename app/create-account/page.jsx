@@ -153,56 +153,61 @@ export default function Page() {
       const config = SOURCE_CONFIG[selectedOrgType];
       if (!config) return;
 
-    const newCandidates = {};
-    const newMatches = {};
-    const newSelected = {};
+      const activeSources = config.sources;
 
-    const formatAndSortAlpha = (list, sourceType) => {
-      const items = list.map((item) => {
-        const regulator = item.regulator || selectedRegulator || '?';
-        const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
-        return {
-          label: `${item.lender} (${suffix})`,
-          value: item.lender_id,
-          score: similarity(orgName, item.lender),
-        };
-      });
+      const formatLocal = (list, sourceType) =>
+        list.map((item) => {
+          const regulator = item.regulator || selectedRegulator || '?';
+          const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
+          return {
+            label: `${item.lender} (${suffix})`,
+            value: item.lender_id,
+            score: similarity(orgName, item.lender),
+          };
+        });
 
-      // This line ensures alphabetical order in the dropdown
-      return items.sort((a, b) =>
-        a.label.localeCompare(b.label, 'en', { sensitivity: 'base' })
-      );
-    };
+      let newCandidates = {};
+      let newMatches = {};
+      let newSelected = {};
 
-    if (config.sources.includes('hmda')) {
-      newCandidates.hmda = formatAndSortAlpha(filteredHmdaList, 'hmda');
-      newMatches.hmda    = [...newCandidates.hmda].sort((a, b) => b.score - a.score)[0] || null;
-      newSelected.hmda   = newMatches.hmda?.value || null;
-    }
+      if (activeSources.includes('hmda')) {
+        const cands = formatLocal(filteredHmdaList, 'hmda');
+        newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.hmda = newMatches.hmda?.value || null;
+      }
 
-    if (config.sources.includes('cra')) {
-      newCandidates.cra = formatAndSortAlpha(filteredCraList, 'cra');
-      newMatches.cra    = [...newCandidates.cra].sort((a, b) => b.score - a.score)[0] || null;
-      newSelected.cra   = newMatches.cra?.value || null;
-    }
+      if (activeSources.includes('cra')) {
+        const cands = formatLocal(filteredCraList, 'cra');
+        newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.cra = newMatches.cra?.value || null;
+      }
 
-    if (config.sources.includes('branch')) {
-      newCandidates.branch = formatAndSortAlpha(filteredBranchList, 'branch');
-      newMatches.branch    = [...newCandidates.branch].sort((a, b) => b.score - a.score)[0] || null;
-      newSelected.branch   = newMatches.branch?.value || null;
-    }
+      if (activeSources.includes('branch')) {
+        const cands = formatLocal(filteredBranchList, 'branch');
+        newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.branch = newMatches.branch?.value || null;
+      }
 
-    if (config.sources.includes('fdic')) {
-      newCandidates.fdic = formatAndSortAlpha(filteredFdicList, 'fdic');
-      newMatches.fdic    = [...newCandidates.fdic].sort((a, b) => b.score - a.score)[0] || null;
-      newSelected.fdic   = newMatches.fdic?.value || null;
-    }
+      if (activeSources.includes('fdic')) {
+        const cands = formatLocal(filteredFdicList, 'fdic');
+        newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.fdic = newMatches.fdic?.value || null;
+      }
 
-    if (config.sources.includes('ncua')) {
-      newCandidates.ncua = formatAndSortAlpha(filteredNcuaList, 'ncua');
-      newMatches.ncua    = [...newCandidates.ncua].sort((a, b) => b.score - a.score)[0] || null;
-      newSelected.ncua   = newMatches.ncua?.value || null;
-    }
+      if (activeSources.includes('ncua')) {
+        const cands = formatLocal(filteredNcuaList, 'ncua');
+        newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.ncua = newMatches.ncua?.value || null;
+      }
+
+      setCandidates(newCandidates);
+      setOrgMatches(newMatches);
+      setSelectedLenderPerSource(newSelected);
     }, 700);
 
     return () => clearTimeout(timer);
