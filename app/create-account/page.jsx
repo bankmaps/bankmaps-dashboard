@@ -75,13 +75,6 @@ export default function Page() {
   const [ncuaList, setNcuaList] = useState([]);
   const [hqStates, setHqStates] = useState([]);
 
-  // New state for Step 3 geographies (independent from Step 1)
-  const [geographies, setGeographies] = useState([]);
-  const [geoState, setGeoState] = useState('');
-  const [geoCounty, setGeoCounty] = useState('');
-  const [geoTown, setGeoTown] = useState('');
-  const [geoTractNumber, setGeoTractNumber] = useState('');
-
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((r) => r.json())
@@ -106,14 +99,47 @@ export default function Page() {
     fetch('/data/hqstate_list.json')
       .then((r) => r.json())
       .then((j) => setHqStates(j.data || []));
-
-    // Fetch geographies.json (adjust path if your GitHub-sourced file is elsewhere)
-    fetch('/data/geographies.json')
-      .then((r) => r.json())
-      .then((j) => setGeographies(j.data || j || []));
   }, []);
 
-  // ... (filtered*List memos remain unchanged)
+  const filteredHmdaList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? hmdaList
+        : hmdaList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, hmdaList]
+  );
+
+  const filteredCraList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? craList
+        : craList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, craList]
+  );
+
+  const filteredBranchList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? branchList
+        : branchList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, branchList]
+  );
+
+  const filteredFdicList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? fdicList
+        : fdicList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, fdicList]
+  );
+
+  const filteredNcuaList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? ncuaList
+        : ncuaList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, ncuaList]
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -214,46 +240,6 @@ export default function Page() {
     });
   }, [hqStates]);
 
-  // New: Options for Step 3 geographies (hierarchical filtering)
-  // Assuming geographies.json is an array like: [{ state: 'NY', county: 'Kings', town: 'Brooklyn', tract_number: '000100' }, ...]
-  const geoStateOptions = useMemo(() => {
-    const states = [...new Set(geographies.map(item => item.state).filter(Boolean))].sort();
-    return states.map(s => ({ value: s, label: s }));
-  }, [geographies]);
-
-  const geoCountyOptions = useMemo(() => {
-    if (!geoState) return [];
-    const counties = [...new Set(
-      geographies
-        .filter(item => item.state === geoState)
-        .map(item => item.county)
-        .filter(Boolean)
-    )].sort();
-    return counties.map(c => ({ value: c, label: c }));
-  }, [geographies, geoState]);
-
-  const geoTownOptions = useMemo(() => {
-    if (!geoState || !geoCounty) return [];
-    const towns = [...new Set(
-      geographies
-        .filter(item => item.state === geoState && item.county === geoCounty)
-        .map(item => item.town)
-        .filter(Boolean)
-    )].sort();
-    return towns.map(t => ({ value: t, label: t }));
-  }, [geographies, geoState, geoCounty]);
-
-  const geoTractOptions = useMemo(() => {
-    if (!geoState || !geoCounty || !geoTown) return [];
-    const tracts = [...new Set(
-      geographies
-        .filter(item => item.state === geoState && item.county === geoCounty && item.town === geoTown)
-        .map(item => item.tract_number)
-        .filter(Boolean)
-    )].sort();
-    return tracts.map(tr => ({ value: tr, label: tr }));
-  }, [geographies, geoState, geoCounty, geoTown]);
-
   const regulatorOptions = [
     { value: 'FDIC', label: 'FDIC' },
     { value: 'FED', label: 'FED' },
@@ -273,7 +259,7 @@ export default function Page() {
     setCurrentStep(2);
   };
 
-  const prevStep = () => setCurrentStep(currentStep - 1);
+  const prevStep = () => setCurrentStep(1);
 
   const handleSave = () => {
     console.log({
@@ -283,19 +269,7 @@ export default function Page() {
       states: selectedStates,
       linked: selectedLenderPerSource,
     });
-    alert('Organization & connections saved! (TODO: send to backend)');
-  };
-
-  const handleSaveGeographies = () => {
-    console.log({
-      geographies: {
-        state: geoState,
-        county: geoCounty,
-        town: geoTown,
-        tract_number: geoTractNumber,
-      },
-    });
-    alert('Geographies saved! (TODO: send to backend)');
+    alert('Saved! (TODO: send to backend)');
   };
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
@@ -303,7 +277,7 @@ export default function Page() {
   const renderStep1 = () => (
     <div>
       <h2>Step 1 – Organization Information</h2>
-      {/* ... (unchanged Step 1 content) */}
+
       <div style={{ marginBottom: '32px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
           Organization Name
@@ -372,7 +346,7 @@ export default function Page() {
   const renderStep2 = () => (
     <div>
       <h2>Step 2 – Database Connections</h2>
-      {/* ... (unchanged Step 2 content) */}
+
       <p style={{ marginBottom: '16px' }}>
         Best matches found for <strong>{orgName.trim() || 'your organization'}</strong>:
       </p>
@@ -436,105 +410,12 @@ export default function Page() {
     </div>
   );
 
-  const renderStep3 = () => (
-    <div>
-      <h2>Step 3 – Organization Geographies</h2>
-
-      <div style={{ marginBottom: '32px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-          State
-        </label>
-        <select
-          value={geoState}
-          onChange={(e) => {
-            setGeoState(e.target.value);
-            setGeoCounty('');
-            setGeoTown('');
-            setGeoTractNumber('');
-          }}
-          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
-        >
-          <option value="">-- Select State --</option>
-          {geoStateOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ marginBottom: '32px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-          County
-        </label>
-        <select
-          value={geoCounty}
-          onChange={(e) => {
-            setGeoCounty(e.target.value);
-            setGeoTown('');
-            setGeoTractNumber('');
-          }}
-          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
-          disabled={!geoState}
-        >
-          <option value="">-- Select County --</option>
-          {geoCountyOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ marginBottom: '32px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-          Town
-        </label>
-        <select
-          value={geoTown}
-          onChange={(e) => {
-            setGeoTown(e.target.value);
-            setGeoTractNumber('');
-          }}
-          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
-          disabled={!geoCounty}
-        >
-          <option value="">-- Select Town --</option>
-          {geoTownOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div style={{ marginBottom: '32px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-          Tract Number
-        </label>
-        <select
-          value={geoTractNumber}
-          onChange={(e) => setGeoTractNumber(e.target.value)}
-          style={{ width: '100%', padding: '12px', borderRadius: '6px', border: '1px solid #ccc' }}
-          disabled={!geoTown}
-        >
-          <option value="">-- Select Tract Number --</option>
-          {geoTractOptions.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
-      </div>
-    </div>
-  );
-
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px' }}>
       <h1>Create Account</h1>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '32px 0' }}>
-        {[1, 2, 3].map((s) => (
+        {[1, 2].map((s) => (
           <div
             key={s}
             style={{
@@ -555,25 +436,10 @@ export default function Page() {
         ))}
       </div>
 
-      {currentStep === 1 ? renderStep1() : currentStep === 2 ? renderStep2() : renderStep3()}
+      {currentStep === 1 ? renderStep1() : renderStep2()}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
         {currentStep === 2 && (
-          <button
-            onClick={prevStep}
-            style={{
-              padding: '12px 28px',
-              background: '#6c757d',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-            }}
-          >
-            Back
-          </button>
-        )}
-        {currentStep === 3 && (
           <button
             onClick={prevStep}
             style={{
@@ -605,12 +471,9 @@ export default function Page() {
           >
             Next
           </button>
-        ) : currentStep === 2 ? (
+        ) : (
           <button
-            onClick={() => {
-              handleSave();
-              setCurrentStep(3);
-            }}
+            onClick={handleSave}
             style={{
               padding: '12px 28px',
               background: '#28a745',
@@ -622,21 +485,6 @@ export default function Page() {
             }}
           >
             Save & Continue
-          </button>
-        ) : (
-          <button
-            onClick={handleSaveGeographies}
-            style={{
-              padding: '12px 28px',
-              background: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              marginLeft: 'auto',
-              cursor: 'pointer',
-            }}
-          >
-            Save Geographies
           </button>
         )}
       </div>
