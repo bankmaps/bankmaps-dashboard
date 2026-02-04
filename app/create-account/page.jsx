@@ -79,6 +79,17 @@ export default function Page() {
   const [geographies, setGeographies] = useState([]);       // e.g. selected counties, MSAs, etc.
   const [customContext, setCustomContext] = useState('');   // notes, tags, free text
 
+  const [geographiesList, setGeographiesList] = useState([]);           // full raw data from json
+
+const [currentGeography, setCurrentGeography] = useState({            // what user is currently picking
+  state: '',
+  county: '',
+  town: '',
+  tract_number: '',
+});
+
+const [selectedGeographies, setSelectedGeographies] = useState([]);   // array of complete geographies added
+  
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((r) => r.json())
@@ -103,6 +114,11 @@ export default function Page() {
     fetch('/data/hqstate_list.json')
       .then((r) => r.json())
       .then((j) => setHqStates(j.data || []));
+
+    fetch('/data/geographies.json')
+    .then(r => r.json())
+    .then(j => setGeographiesList(j.data || j || []))   // handles both flat array and {data: [...]} shapes
+    .catch(err => console.error('Failed to load geographies:', err));
   }, []);
 
   const filteredHmdaList = useMemo(
@@ -144,6 +160,40 @@ export default function Page() {
         : ncuaList.filter((i) => selectedStates.includes(i.lender_state)),
     [selectedStates, ncuaList]
   );
+
+  const geographyStateOptions = useMemo(() => {
+  if (!geographiesList.length) return [];
+  const unique = [...new Set(geographiesList.map(i => i.state?.trim()).filter(Boolean))].sort();
+  return unique.map(s => ({ value: s, label: s }));
+}, [geographiesList]);
+
+const geographyCountyOptions = useMemo(() => {
+  if (!currentGeography.state) return [];
+  const filtered = geographiesList.filter(i => i.state === currentGeography.state);
+  const unique = [...new Set(filtered.map(i => i.county?.trim()).filter(Boolean))].sort();
+  return unique.map(c => ({ value: c, label: c }));
+}, [geographiesList, currentGeography.state]);
+
+const geographyTownOptions = useMemo(() => {
+  if (!currentGeography.state || !currentGeography.county) return [];
+  const filtered = geographiesList.filter(
+    i => i.state === currentGeography.state && i.county === currentGeography.county
+  );
+  const unique = [...new Set(filtered.map(i => i.town?.trim()).filter(Boolean))].sort();
+  return unique.map(t => ({ value: t, label: t }));
+}, [geographiesList, currentGeography.state, currentGeography.county]);
+
+const geographyTractOptions = useMemo(() => {
+  if (!currentGeography.state || !currentGeography.county || !currentGeography.town) return [];
+  const filtered = geographiesList.filter(
+    i =>
+      i.state === currentGeography.state &&
+      i.county === currentGeography.county &&
+      i.town === currentGeography.town
+  );
+  const unique = [...new Set(filtered.map(i => i.tract_number?.trim()).filter(Boolean))].sort();
+  return unique.map(tr => ({ value: tr, label: tr }));
+}, [geographiesList, currentGeography.state, currentGeography.county, currentGeography.town]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -261,7 +311,7 @@ export default function Page() {
 
   const canProceedStep2 = true; // optional: could require at least one selectedLenderPerSource later
 
-  const canProceedStep3 = true; // placeholder — tighten later if geographies required
+  const canProceedStep3 = selectedGeographies.length > 0; // placeholder — tighten later if geographies required
   const canProceedStep4 = true; // placeholder
 
   const canProceed =
@@ -432,25 +482,172 @@ export default function Page() {
   );
 
   const renderStep3 = () => (
-    <div>
-      <h2>Step 3 – Organization Geographies</h2>
-      <p style={{ color: '#666', marginBottom: '24px' }}>
-        Define the primary markets, counties, MSAs, or custom areas this organization serves or is focused on.
-      </p>
+  <div>
+    <h2>Step 3 – Organization Geographies</h2>
+    <p style={{ color: '#666', marginBottom: '24px' }}>
+      Add the geographic areas (state → county → town → tract) this organization serves or focuses on.
+      These are independent of headquarters states selected in Step 1.
+    </p>
 
-      <div style={{
-        padding: '32px',
-        background: '#f8f9fa',
-        borderRadius: '8px',
-        border: '1px dashed #adb5bd',
-        textAlign: 'center',
-        color: '#6c757d',
-      }}>
-        <p>(Geographies selection coming soon – multi-select counties / MSAs / custom upload?)</p>
-        <p>Current selection: {geographies.length} area{geographies.length !== 1 ? 's' : ''}</p>
+    <div style={{ display: 'grid', gap: '20px', marginBottom: '32px' }}>
+      {/* State */}
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>State</label>
+        <select
+          value={currentGeography.state}
+          onChange={e => setCurrentGeography(prev => ({
+            ...prev,
+            state: e.target.value,
+            county: '',
+            town: '',
+            tract_number: '',
+          }))}
+          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">— Select State —</option>
+          {geographyStateOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* County */}
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>County</label>
+        <select
+          value={currentGeography.county}
+          onChange={e => setCurrentGeography(prev => ({
+            ...prev,
+            county: e.target.value,
+            town: '',
+            tract_number: '',
+          }))}
+          disabled={!currentGeography.state}
+          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">— Select County —</option>
+          {geographyCountyOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Town */}
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Town / City</label>
+        <select
+          value={currentGeography.town}
+          onChange={e => setCurrentGeography(prev => ({
+            ...prev,
+            town: e.target.value,
+            tract_number: '',
+          }))}
+          disabled={!currentGeography.county}
+          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">— Select Town —</option>
+          {geographyTownOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      </div>
+
+      {/* Tract */}
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Census Tract Number</label>
+        <select
+          value={currentGeography.tract_number}
+          onChange={e => setCurrentGeography(prev => ({
+            ...prev,
+            tract_number: e.target.value,
+          }))}
+          disabled={!currentGeography.town}
+          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">— Select Tract —</option>
+          {geographyTractOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
     </div>
-  );
+
+    {/* Add button */}
+    <button
+      type="button"
+      onClick={() => {
+        if (currentGeography.state && currentGeography.county && currentGeography.town && currentGeography.tract_number) {
+          setSelectedGeographies(prev => [...prev, { ...currentGeography }]);
+          setCurrentGeography({ state: '', county: '', town: '', tract_number: '' }); // reset picker
+        }
+      }}
+      disabled={
+        !currentGeography.state ||
+        !currentGeography.county ||
+        !currentGeography.town ||
+        !currentGeography.tract_number
+      }
+      style={{
+        padding: '10px 20px',
+        background: '#0066cc',
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        marginBottom: '24px',
+      }}
+    >
+      + Add this geography
+    </button>
+
+    {/* List of added geographies */}
+    {selectedGeographies.length > 0 && (
+      <div style={{ marginTop: '16px' }}>
+        <h4 style={{ marginBottom: '12px' }}>Added geographies:</h4>
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {selectedGeographies.map((geo, index) => (
+            <li
+              key={index}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px',
+                background: '#f8f9fa',
+                borderRadius: '6px',
+                marginBottom: '8px',
+              }}
+            >
+              <span>
+                {geo.state} → {geo.county} → {geo.town} → Tract {geo.tract_number}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedGeographies(prev => prev.filter((_, i) => i !== index))}
+                style={{
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                }}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {selectedGeographies.length === 0 && (
+      <p style={{ color: '#6c757d', fontStyle: 'italic' }}>
+        No geographies added yet.
+      </p>
+    )}
+  </div>
+);
 
   const renderStep4 = () => (
     <div>
