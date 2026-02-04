@@ -172,36 +172,36 @@ export default function Page() {
 
       if (activeSources.includes('hmda')) {
         const cands = formatLocal(filteredHmdaList, 'hmda');
-        newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newCandidates.hmda = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.hmda = [...cands].sort((a, b) => b.score - a.score)[0] || null;
         newSelected.hmda = newMatches.hmda?.value || null;
       }
 
       if (activeSources.includes('cra')) {
         const cands = formatLocal(filteredCraList, 'cra');
-        newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newCandidates.cra = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.cra = [...cands].sort((a, b) => b.score - a.score)[0] || null;
         newSelected.cra = newMatches.cra?.value || null;
       }
 
       if (activeSources.includes('branch')) {
         const cands = formatLocal(filteredBranchList, 'branch');
-        newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newCandidates.branch = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.branch = [...cands].sort((a, b) => b.score - a.score)[0] || null;
         newSelected.branch = newMatches.branch?.value || null;
       }
 
       if (activeSources.includes('fdic')) {
         const cands = formatLocal(filteredFdicList, 'fdic');
-        newCandidates.fdic = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.fdic = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newCandidates.fdic = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.fdic = [...cands].sort((a, b) => b.score - a.score)[0] || null;
         newSelected.fdic = newMatches.fdic?.value || null;
       }
 
       if (activeSources.includes('ncua')) {
         const cands = formatLocal(filteredNcuaList, 'ncua');
-        newCandidates.ncua = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.ncua = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newCandidates.ncua = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.ncua = [...cands].sort((a, b) => b.score - a.score)[0] || null;
         newSelected.ncua = newMatches.ncua?.value || null;
       }
 
