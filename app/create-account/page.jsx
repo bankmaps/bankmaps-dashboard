@@ -74,70 +74,169 @@ export default function Page() {
   const [fdicList, setFdicList] = useState([]);
   const [ncuaList, setNcuaList] = useState([]);
   const [hqStates, setHqStates] = useState([]);
-  const [geographies, setGeographies] = useState([]); // NEW: geographies data
-
-  const [selectedCounties, setSelectedCounties] = useState([]);
-  const [selectedTowns, setSelectedTowns] = useState([]);
 
   useEffect(() => {
-    // Existing fetches...
-    fetch('/data/hmda_list.json').then(r => r.json()).then(j => setHmdaList(j.data || []));
-    fetch('/data/cra_list.json').then(r => r.json()).then(j => setCraList(j.data || []));
-    fetch('/data/branch_list.json').then(r => r.json()).then(j => setBranchList(j.data || []));
-    fetch('/data/fdic_list.json').then(r => r.json()).then(j => setFdicList(j.data || []));
-    fetch('/data/ncua_list.json').then(r => r.json()).then(j => setNcuaList(j.data || []));
-    fetch('/data/hqstate_list.json').then(r => r.json()).then(j => setHqStates(j.data || []));
+    fetch('/data/hmda_list.json')
+      .then((r) => r.json())
+      .then((j) => setHmdaList(j.data || []));
 
-    // NEW: Load geographies (most recent year data assumed included or filtered)
-    fetch('/data/geographies.json')
-      .then(r => r.json())
-      .then(j => setGeographies(j.data || j || [])) // adjust based on your JSON structure
-      .catch(err => console.error('Failed to load geographies:', err));
+    fetch('/data/cra_list.json')
+      .then((r) => r.json())
+      .then((j) => setCraList(j.data || []));
+
+    fetch('/data/branch_list.json')
+      .then((r) => r.json())
+      .then((j) => setBranchList(j.data || []));
+
+    fetch('/data/fdic_list.json')
+      .then((r) => r.json())
+      .then((j) => setFdicList(j.data || []));
+
+    fetch('/data/ncua_list.json')
+      .then((r) => r.json())
+      .then((j) => setNcuaList(j.data || []));
+
+    fetch('/data/hqstate_list.json')
+      .then((r) => r.json())
+      .then((j) => setHqStates(j.data || []));
   }, []);
 
-  // Existing filtered lists...
-
   const filteredHmdaList = useMemo(
-    () => selectedStates.length === 0 ? hmdaList : hmdaList.filter(i => selectedStates.includes(i.lender_state)),
+    () =>
+      selectedStates.length === 0
+        ? hmdaList
+        : hmdaList.filter((i) => selectedStates.includes(i.lender_state)),
     [selectedStates, hmdaList]
   );
-  // ... other filtered lists remain the same
 
-  // NEW: Geography options (unique counties and towns per selected states)
-  const countyOptions = useMemo(() => {
-    if (!geographies.length || selectedStates.length === 0) return [];
+  const filteredCraList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? craList
+        : craList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, craList]
+  );
 
-    const countiesSet = new Set();
-    geographies.forEach(item => {
-      if (selectedStates.includes(item.state)) {
-        if (item.county) countiesSet.add(item.county);
+  const filteredBranchList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? branchList
+        : branchList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, branchList]
+  );
+
+  const filteredFdicList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? fdicList
+        : fdicList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, fdicList]
+  );
+
+  const filteredNcuaList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? ncuaList
+        : ncuaList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, ncuaList]
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!orgName.trim() || !selectedOrgType || !selectedRegulator || selectedStates.length === 0) {
+        setOrgMatches({});
+        setCandidates({});
+        setSelectedLenderPerSource({});
+        return;
       }
-    });
 
-    return [...countiesSet].sort().map(c => ({ value: c, label: c }));
-  }, [geographies, selectedStates]);
+      const config = SOURCE_CONFIG[selectedOrgType];
+      if (!config) return;
 
-  const townOptions = useMemo(() => {
-    if (!geographies.length || selectedStates.length === 0) return [];
+      const activeSources = config.sources;
 
-    const townsSet = new Set();
-    geographies.forEach(item => {
-      if (selectedStates.includes(item.state) && selectedCounties.includes(item.county)) {
-        if (item.town) townsSet.add(item.town);
+      const formatLocal = (list, sourceType) =>
+        list.map((item) => {
+          const regulator = item.regulator || selectedRegulator || '?';
+          const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
+          return {
+            label: `${item.lender} (${suffix})`,
+            value: item.lender_id,
+            score: similarity(orgName, item.lender),
+          };
+        });
+
+      let newCandidates = {};
+      let newMatches = {};
+      let newSelected = {};
+
+      if (activeSources.includes('hmda')) {
+        const cands = formatLocal(filteredHmdaList, 'hmda');
+        newCandidates.hmda = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.hmda = [...cands].sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.hmda = newMatches.hmda?.value || null;
       }
-    });
 
-    return [...townsSet].sort().map(t => ({ value: t, label: t }));
-  }, [geographies, selectedStates, selectedCounties]);
+      if (activeSources.includes('cra')) {
+        const cands = formatLocal(filteredCraList, 'cra');
+        newCandidates.cra = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.cra = [...cands].sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.cra = newMatches.cra?.value || null;
+      }
 
-  // Existing useEffect for matching logic (unchanged, omitted for brevity)
+      if (activeSources.includes('branch')) {
+        const cands = formatLocal(filteredBranchList, 'branch');
+        newCandidates.branch = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.branch = [...cands].sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.branch = newMatches.branch?.value || null;
+      }
+
+      if (activeSources.includes('fdic')) {
+        const cands = formatLocal(filteredFdicList, 'fdic');
+        newCandidates.fdic = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.fdic = [...cands].sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.fdic = newMatches.fdic?.value || null;
+      }
+
+      if (activeSources.includes('ncua')) {
+        const cands = formatLocal(filteredNcuaList, 'ncua');
+        newCandidates.ncua = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.ncua = [...cands].sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.ncua = newMatches.ncua?.value || null;
+      }
+
+      setCandidates(newCandidates);
+      setOrgMatches(newMatches);
+      setSelectedLenderPerSource(newSelected);
+    }, 700);
+
+    return () => clearTimeout(timer);
+  }, [
+    orgName,
+    selectedOrgType,
+    selectedRegulator,
+    selectedStates,
+    filteredHmdaList,
+    filteredCraList,
+    filteredBranchList,
+    filteredFdicList,
+    filteredNcuaList,
+  ]);
 
   const stateOptions = useMemo(() => {
     if (!hqStates.length) return [];
-    const uniqueAbbrevs = [...new Set(hqStates.map(item => item.state_abbrev?.trim()).filter(Boolean))].sort();
+
+    const uniqueAbbrevs = [...new Set(
+      hqStates.map(item => item.state_abbrev?.trim()).filter(Boolean)
+    )].sort();
+
     return uniqueAbbrevs.map(abbrev => {
       const entry = hqStates.find(item => item.state_abbrev === abbrev);
-      return { value: abbrev, label: entry?.state_name || abbrev };
+      const fullName = entry?.state_name || abbrev;
+      return {
+        value: abbrev,
+        label: fullName
+      };
     });
   }, [hqStates]);
 
@@ -149,21 +248,18 @@ export default function Page() {
     { value: 'Non-Bank', label: 'Non-Bank' },
   ];
 
-  const canProceedStep1 =
+  const canProceed =
     orgName.trim().length >= 3 &&
     !!selectedOrgType &&
     !!selectedRegulator &&
     selectedStates.length > 0;
 
-  const canProceedStep2 = true; // or add validation if needed (e.g. at least one link selected)
-
   const nextStep = () => {
-    if (currentStep === 1 && !canProceedStep1) return;
-    if (currentStep === 2 && !canProceedStep2) return;
-    setCurrentStep(prev => prev + 1);
+    if (!canProceed) return;
+    setCurrentStep(2);
   };
 
-  const prevStep = () => setCurrentStep(prev => prev - 1);
+  const prevStep = () => setCurrentStep(1);
 
   const handleSave = () => {
     console.log({
@@ -172,13 +268,8 @@ export default function Page() {
       regulator: selectedRegulator,
       states: selectedStates,
       linked: selectedLenderPerSource,
-      geographies: {
-        counties: selectedCounties,
-        towns: selectedTowns,
-      },
     });
-    alert('Account created! (TODO: send to backend)');
-    // Optionally redirect or show success page
+    alert('Saved! (TODO: send to backend)');
   };
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
@@ -319,58 +410,12 @@ export default function Page() {
     </div>
   );
 
-  const renderStep3 = () => (
-    <div>
-      <h2>Step 3 – Organization Geographies</h2>
-      <p style={{ marginBottom: '24px' }}>
-        Select the counties and towns/cities where your organization operates or has a presence.
-        Options are filtered based on your selected headquarters state(s): <strong>{selectedStates.join(', ')}</strong>.
-      </p>
-
-      <div style={{ marginBottom: '32px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-          Counties
-        </label>
-        <Select
-          isMulti
-          options={countyOptions}
-          value={countyOptions.filter(opt => selectedCounties.includes(opt.value))}
-          onChange={opts => setSelectedCounties(opts ? opts.map(o => o.value) : [])}
-          placeholder="Select one or more counties..."
-          className="basic-multi-select"
-          classNamePrefix="select"
-          isSearchable={true}
-        />
-      </div>
-
-      <div>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
-          Towns / Cities
-        </label>
-        <Select
-          isMulti
-          options={townOptions}
-          value={townOptions.filter(opt => selectedTowns.includes(opt.value))}
-          onChange={opts => setSelectedTowns(opts ? opts.map(o => o.value) : [])}
-          placeholder="Select one or more towns/cities... (filtered by selected counties)"
-          className="basic-multi-select"
-          classNamePrefix="select"
-          isSearchable={true}
-          isDisabled={selectedCounties.length === 0}
-        />
-        {selectedCounties.length === 0 && (
-          <small style={{ color: '#666' }}>Select at least one county to see town options.</small>
-        )}
-      </div>
-    </div>
-  );
-
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px' }}>
       <h1>Create Account</h1>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '32px 0' }}>
-        {[1, 2, 3].map(s => (
+        {[1, 2].map((s) => (
           <div
             key={s}
             style={{
@@ -391,12 +436,10 @@ export default function Page() {
         ))}
       </div>
 
-      {currentStep === 1 && renderStep1()}
-      {currentStep === 2 && renderStep2()}
-      {currentStep === 3 && renderStep3()}
+      {currentStep === 1 ? renderStep1() : renderStep2()}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
-        {currentStep > 1 && (
+        {currentStep === 2 && (
           <button
             onClick={prevStep}
             style={{
@@ -412,19 +455,18 @@ export default function Page() {
           </button>
         )}
 
-        {currentStep < 3 ? (
+        {currentStep === 1 ? (
           <button
             onClick={nextStep}
-            disabled={(currentStep === 1 && !canProceedStep1) || (currentStep === 2 && !canProceedStep2)}
+            disabled={!canProceed}
             style={{
               padding: '12px 28px',
-              background: '#0066cc',
+              background: canProceed ? '#0066cc' : '#ccc',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
               marginLeft: 'auto',
-              cursor: 'pointer',
-              opacity: (currentStep === 1 && !canProceedStep1) || (currentStep === 2 && !canProceedStep2) ? 0.5 : 1,
+              cursor: canProceed ? 'pointer' : 'not-allowed',
             }}
           >
             Next
@@ -442,7 +484,7 @@ export default function Page() {
               cursor: 'pointer',
             }}
           >
-            Save & Finish
+            Save & Continue
           </button>
         )}
       </div>
