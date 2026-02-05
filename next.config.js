@@ -1,24 +1,14 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Remove or comment out the turbopack block to disable Turbopack
-  // turbopack: { ... }  ← delete or comment this entire object
+  reactStrictMode: true,
 
-  // If you still want the @data alias (works in both Webpack and Turbopack via tsconfig.json paths)
-  // Best: Add this to your tsconfig.json "compilerOptions" instead:
-  // "paths": {
-  //   "@data/*": ["./data/*"]
-  // }
-  // But if you prefer keeping it here for Turbopack compatibility later:
+  // 👇 This silences the error and tells Next you’re OK with Turbopack
+  turbopack: {},
+
+  // keep your existing webpack config if you have one
   webpack: (config) => {
-    config.resolve.alias['@data'] = './data';
     return config;
   },
-  // OR for Turbopack future-proofing (but since we're disabling now, optional):
-  // turbopack: {
-  //   resolveAlias: {
-  //     '@data': './data',
-  //   }
-  // }
 };
 
 module.exports = nextConfig;
