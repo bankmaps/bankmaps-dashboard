@@ -92,6 +92,27 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
+// ... your existing code ...
+
+} catch (error: any) {
+  console.error('Full save error:', error);  // Vercel logs this
+
+  let status = 500;
+  let message = 'Failed to save organization';
+
+  if (error instanceof jwt.JsonWebTokenError) {
+    status = 401;
+    message = 'Invalid or expired token';
+  } else if (error.message?.includes('database') || error.message?.includes('neon')) {
+    message = 'Database connection/query failed - check logs';
+  }
+
+  return NextResponse.json(
+    { success: false, error: message, details: error.message || 'No details' },
+    { status }
+  );
+}
+    
   } catch (error: any) {
     console.error('Save organization error:', error);
 
