@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 
+
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
