@@ -1,10 +1,9 @@
-
-// app/users/page.jsx
+// app/users/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-//import jwt from 'jsonwebtoken';
+// import jwt from 'jsonwebtoken';  // Removed - not safe/usable on client
 
 export default function UsersDashboard() {
   const searchParams = useSearchParams();
@@ -22,34 +21,50 @@ export default function UsersDashboard() {
       return;
     }
 
-    // Verify token (client-side for quick feedback; server-side verification is also good)
+    // Safe client-side decode (only reads payload - do NOT trust for security)
+    function decodeToken(t: string) {
+      try {
+        const base64Url = t.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        return JSON.parse(jsonPayload);
+      } catch {
+        return null;
+      }
+    }
 
-    //try {
-    //const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    //setUser(decoded);
+    const decoded = decodeToken(token);
 
-      // Fetch organizations for this user
-      fetch('/api/organizations', {
-        headers: { 'Authorization': `Bearer ${token}` },
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.success) {
-            setOrganizations(data.organizations || []);
-          } else {
-            setError(data.error || 'Failed to load organizations');
-          }
-          setLoading(false);
-        })
-        .catch(err => {
-          setError('Network error loading organizations');
-          setLoading(false);
-        });
-
-    } catch (err) {
+    if (!decoded || (decoded.exp && decoded.exp * 1000 < Date.now())) {
       setError('Invalid or expired token. Please log in again.');
       setLoading(false);
+      return;
     }
+
+    setUser(decoded);
+
+    // Fetch organizations (server will re-verify the token properly)
+    fetch('/api/organizations', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setOrganizations(data.organizations || []);
+        } else {
+          setError(data.error || 'Failed to load organizations');
+        }
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError('Network error loading organizations');
+        setLoading(false);
+      });
   }, [token]);
 
   if (loading) {
@@ -61,7 +76,11 @@ export default function UsersDashboard() {
       <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>
         <h1>Error</h1>
         <p>{error}</p>
-        <p><a href="https://bankmaps.com" style={{ color: '#0066cc' }}>Return to BankMaps member portal</a></p>
+        <p>
+          <a href="https://bankmaps.com" style={{ color: '#0066cc' }}>
+            Return to BankMaps member portal
+          </a>
+        </p>
       </div>
     );
   }
@@ -77,7 +96,7 @@ export default function UsersDashboard() {
         <div style={{ textAlign: 'center', padding: '60px 0', background: '#f8f9fa', borderRadius: '8px' }}>
           <h2>No organizations found</h2>
           <p>You don't have any organization profiles yet.</p>
-          <a 
+          <a
             href={`/create-account?token=${token}`}
             style={{
               display: 'inline-block',
@@ -122,7 +141,7 @@ export default function UsersDashboard() {
           </ul>
 
           <div style={{ marginTop: '32px' }}>
-            <a 
+            <a
               href={`/create-account?token=${token}`}
               style={{
                 padding: '10px 20px',
@@ -135,7 +154,9 @@ export default function UsersDashboard() {
             >
               Add New Organization
             </a>
-            <a href="#" style={{ color: '#0066cc' }}>Manage Subscription</a>
+            <a href="#" style={{ color: '#0066cc' }}>
+              Manage Subscription
+            </a>
           </div>
         </div>
       )}
