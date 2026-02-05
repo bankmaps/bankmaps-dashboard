@@ -389,49 +389,51 @@ export default function Page() {
   };
 
 const handleSave = async () => {
-  const payload = {
-    name: orgName.trim(),
-    type: selectedOrgType,
-    regulator: selectedRegulator,
-    states: selectedStates,
-    linked: selectedLenderPerSource,
-    geographies: selectedGeographies,
-    customContext,
-  };
-
+  // ... your data collection ...
   try {
-    // Get token from URL (?token=...)
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-
-    if (!token) {
-      alert('Authentication token missing. Please log in again from BankMaps member portal.');
-      return;
-    }
-
-    const res = await fetch('/api/organizations', {
+    const res = await fetch('/api/users', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `Bearer ${token}`  // ensure token is sent!
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({
+        name: orgName,
+        type: selectedOrgType,
+        regulator: selectedRegulator,
+        states: selectedStates,
+        geographies: selectedGeographies,
+        customContext,
+        // add email/name if needed for upsert
+      })
     });
 
     if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.error || 'Save failed');
+      const text = await res.text();  // get raw text first
+      console.error('API error status:', res.status, text);
+      alert(`Save failed (status ${res.status}): ${text || 'Server error'}`);
+      return;
     }
 
-    const data = await res.json();
-    console.log('Organization saved:', data);
+    let data;
+    try {
+      data = await res.json();
+    } catch (jsonErr) {
+      console.error('JSON parse failed:', jsonErr);
+      const text = await res.text();
+      alert('Server responded but not valid JSON: ' + text);
+      return;
+    }
 
-    alert('Organization created successfully!');
-    window.location.href = '/users';  // redirect to your new landing page
-
+    if (data.success) {
+      alert('Organization saved!');
+      router.push('/users');
+    } else {
+      alert('Save failed: ' + (data.error || 'Unknown'));
+    }
   } catch (err) {
-    console.error('Save error:', err);
-    alert('Error saving organization: ' + (err?.message || 'Unknown error'));
+    console.error('Fetch error:', err);
+    alert('Network/save error: ' + err.message);
   }
 };
   
