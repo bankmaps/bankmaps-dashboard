@@ -83,7 +83,46 @@ export default function Page() {
   const [geographiesList, setGeographiesList] = useState([]);
 
   const [currentGeography, setCurrentGeography] = useState({
-    state: [],  // now array
+// Token handling - place this after your other const declarations
+const searchParams = useSearchParams();
+const token = searchParams.get('token') || '';  // fallback to empty string
+
+// Early return if no token (simple and safe)
+if (!token) {
+  return (
+    <div style={{ 
+      padding: '60px 20px', 
+      textAlign: 'center', 
+      maxWidth: '600px', 
+      margin: '0 auto' 
+    }}>
+      <h1 style={{ color: '#dc3545' }}>Missing Token</h1>
+      <p style={{ fontSize: '1.1rem', margin: '20px 0' }}>
+        This page requires a valid authentication token from your member portal email.
+      </p>
+      <p style={{ color: '#6c757d' }}>
+        Please check your inbox (or spam folder) and use the link provided.
+      </p>
+      <a 
+        href="https://bankmaps.com"
+        style={{
+          display: 'inline-block',
+          marginTop: '30px',
+          padding: '12px 32px',
+          background: '#0066cc',
+          color: 'white',
+          borderRadius: '6px',
+          textDecoration: 'none',
+          fontWeight: 'bold'
+        }}
+      >
+        Go to Member Portal
+      </a>
+    </div>
+  );
+}
+
+// If you reach here → token exists → render the normal form    state: [],  // now array
     county: [],
     town: [],
     tract_number: [],
@@ -391,9 +430,26 @@ export default function Page() {
 
 const handleSave = async () => {
   if (!token) {
-    alert('No authentication token found. Please reload from the member portal with a valid ?token=...');
+    alert('No token available');
     return;
   }
+
+  // Your fetch...
+  fetch('/api/users', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ /* your data */ })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.success) router.push('/users');
+    else alert('Save failed: ' + data.error);
+  })
+  .catch(err => alert('Error: ' + err.message));
+};
 
   // Collect all your form data here – adjust field names to match what your API expects
   const payload = {
