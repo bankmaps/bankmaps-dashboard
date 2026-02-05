@@ -1,13 +1,9 @@
-
-
-// TEMP: Force new build on 2026-02-05 to confirm syntax fix
+'use client';
 
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
-import { useRouter } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
-export const runtime = 'nodejs';
 
 const similarity = (a, b) => {
   a = a.toLowerCase();
@@ -86,7 +82,7 @@ export default function Page() {
   const [geographiesList, setGeographiesList] = useState([]);
 
   const [currentGeography, setCurrentGeography] = useState({
-    state: [],
+    state: [],  // now array
     county: [],
     town: [],
     tract_number: [],
@@ -96,22 +92,7 @@ export default function Page() {
   const [geographyName, setGeographyName] = useState('');      // free text
   
   const [selectedGeographies, setSelectedGeographies] = useState([]);   // array of complete geographies added
-  const router = useRouter();
-const searchParams = useSearchParams();
-const token = searchParams.get('token');
-
-if (!token) {
-  return (
-    <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>
-      <h1>Missing Token</h1>
-      <p>Your account creation link is missing a required token.</p>
-      <p>Please check your email from the member portal and try again.</p>
-      <a href="https://bankmaps.com" style={{ color: '#0066cc', marginTop: '20px', display: 'inline-block' }}>
-        Back to BankMaps Portal
-      </a>
-    </div>
-  );
-}
+  
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((r) => r.json())
@@ -408,84 +389,51 @@ if (!token) {
   };
 
 const handleSave = async () => {
-  if (!token) {
-    alert('No token available');
-    return;
-  }
-
-  // Your fetch...
-  fetch('/api/users', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ /* your data */ })
-  })
-    .then(res => res.json())
-  .then(data => {
-    if (data.success) router.push('/users');
-    else alert('Save failed: ' + data.error);
-  })
-  .catch(err => alert('Error: ' + err.message));
-  // Collect all your form data here – adjust field names to match what your API expects
   const payload = {
     name: orgName.trim(),
     type: selectedOrgType,
     regulator: selectedRegulator,
     states: selectedStates,
-    geographies: selectedGeographies,     // your array of geo objects
-    customContext: customContext.trim(),
-    // If you have linked_sources or other fields:
-    // linked: selectedLenderPerSource,
-    // email: ... (if needed for user upsert)
+    linked: selectedLenderPerSource,
+    geographies: selectedGeographies,
+    customContext,
   };
 
-  console.log('Sending save payload:', payload);  // Debug in browser console
-
   try {
-    const response = await fetch('/api/users', {
+    // Get token from URL (?token=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+      alert('Authentication token missing. Please log in again from BankMaps member portal.');
+      return;
+    }
+
+    const res = await fetch('/api/organizations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`   // This is the critical line
+        'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
-    console.log('API response status:', response.status);
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('API error response:', errorText);
-      alert(`Server error (${response.status}): ${errorText || 'Unknown issue'}`);
-      return;
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Save failed');
     }
 
-    let data;
-    try {
-      data = await response.json();
-    } catch (parseErr) {
-      console.error('Failed to parse JSON from server:', parseErr);
-      const text = await response.text();
-      alert('Server sent invalid response: ' + text.substring(0, 200));
-      return;
-    }
+    const data = await res.json();
+    console.log('Organization saved:', data);
 
-    if (data.success) {
-      alert('Organization saved successfully!');
-      router.push('/users');  // Redirect to dashboard
-    } else {
-      alert('Save failed: ' + (data.error || 'Unknown server error'));
-    }
+    alert('Organization created successfully!');
+    window.location.href = '/users';  // redirect to your new landing page
+
   } catch (err) {
-    console.error('Fetch / save failed:', err);
-    alert('Network or save error: ' + err.message);
+    console.error('Save error:', err);
+    alert('Error saving organization: ' + (err?.message || 'Unknown error'));
   }
 };
-};
-
-
   
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
@@ -912,4 +860,87 @@ const renderStep3 = () => (
     </div>
   );
 
-  
+  return (
+    <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px' }}>
+      <h1>Create Account</h1>
+
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', margin: '32px 0' }}>
+        {[1, 2, 3, 4].map((s) => (
+          <div
+            key={s}
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              background: currentStep >= s ? '#0066cc' : '#e0e0e0',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 'bold',
+              fontSize: '1.2rem',
+            }}
+          >
+            {s}
+          </div>
+        ))}
+      </div>
+
+      {currentStep === 1 ? renderStep1() :
+       currentStep === 2 ? renderStep2() :
+       currentStep === 3 ? renderStep3() :
+       renderStep4()}
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
+        {currentStep > 1 && (
+          <button
+            onClick={prevStep}
+            style={{
+              padding: '12px 28px',
+              background: '#6c757d',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+            }}
+          >
+            Back
+          </button>
+        )}
+
+        {currentStep < 4 ? (
+          <button
+            onClick={nextStep}
+            disabled={!canProceed}
+            style={{
+              padding: '12px 28px',
+              background: canProceed ? '#0066cc' : '#ccc',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              marginLeft: 'auto',
+              cursor: canProceed ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Next
+          </button>
+        ) : (
+          <button
+            onClick={handleSave}
+            style={{
+              padding: '12px 28px',
+              background: '#28a745',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              marginLeft: 'auto',
+              cursor: 'pointer',
+            }}
+          >
+            Save & Continue
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
