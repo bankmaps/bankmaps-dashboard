@@ -388,20 +388,53 @@ export default function Page() {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
-  const handleSave = () => {
-    const payload = {
-      name: orgName.trim(),
-      type: selectedOrgType,
-      regulator: selectedRegulator,
-      states: selectedStates,
-      linked: selectedLenderPerSource,
-      geographies: selectedGeographies,  // now array of {state: [], county: [], ...},
-      customContext,
-    };
-
-    console.log('Saved! Payload:', payload);
-    alert('Saved! (TODO: send to backend)');
+  const handleSave = async () => {
+  const payload = {
+    name: orgName.trim(),
+    type: selectedOrgType,
+    regulator: selectedRegulator,
+    states: selectedStates,
+    linked: selectedLenderPerSource,
+    geographies: selectedGeographies,
+    customContext,
   };
+
+  try {
+    // Get token from URL (?token=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+      alert('Authentication token missing. Please log in again from BankMaps member portal.');
+      return;
+    }
+
+    const res = await fetch('/api/users', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Save failed');
+    }
+
+    const data = await res.json();
+    console.log('Organization saved:', data);
+
+    alert('Organization created successfully!');
+    window.location.href = '/ai-user';  // redirect to dashboard
+
+  } catch (err) {
+    console.error('Save error:', err);
+    alert('Error saving organization: ' + (err as Error).message);
+  }
+};
+  
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
 
