@@ -23,9 +23,10 @@ export default function UsersDashboard() {
     }
 
     // Verify token (client-side for quick feedback; server-side verification is also good)
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-      setUser(decoded);
+
+    //try {
+    //const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    //setUser(decoded);
 
       // Fetch organizations for this user
       fetch('/api/organizations', {
