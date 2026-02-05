@@ -7,8 +7,7 @@ import Select from 'react-select';
 import { useRouter } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;  // 0 = no static, dynamic on every request
-export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
 
 const similarity = (a, b) => {
   a = a.toLowerCase();
