@@ -1,5 +1,7 @@
 'use client';
 
+// TEMP: Force new build on 2026-02-05 to confirm syntax fix
+
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
 import { useRouter } from 'next/navigation';
