@@ -431,7 +431,7 @@ const handleSave = async () => {
 
   } catch (err) {
     console.error('Save error:', err);
-    alert('Error saving organization: ' + (err as Error).message);
+    alert('Error saving organization: ' + (err?.message || 'Unknown error'));
   }
 };
   
