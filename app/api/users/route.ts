@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: name, type, regulator' }, { status: 400 });
     }
 
-    // Connect to Neon (use the standard env var name)
+    // Connect to Neon
     const sql = neon(process.env.DATABASE_URL!);
 
     // Step 1: Upsert ai_users row
@@ -92,48 +92,30 @@ export async function POST(req: NextRequest) {
       },
       { status: 201 }
     );
-// ... your existing code ...
-
-} catch (error: any) {
-  console.error('Full save error:', error);  // Vercel logs this
-
-  let status = 500;
-  let message = 'Failed to save organization';
-
-  if (error instanceof jwt.JsonWebTokenError) {
-    status = 401;
-    message = 'Invalid or expired token';
-  } else if (error.message?.includes('database') || error.message?.includes('neon')) {
-    message = 'Database connection/query failed - check logs';
-  }
-
-  return NextResponse.json(
-    { success: false, error: message, details: error.message || 'No details' },
-    { status }
-  );
-}
-    
   } catch (error: any) {
-    console.error('Save organization error:', error);
+    console.error('Full save error:', error);
+
+    let status = 500;
+    let message = 'Failed to save organization';
 
     if (error instanceof jwt.JsonWebTokenError) {
-      return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 });
-    }
-
-    if (error.message?.includes('relation') || error.message?.includes('column')) {
-      return NextResponse.json(
-        { error: 'Database schema error - check table/column names' },
-        { status: 500 }
-      );
-    }
-
-    if (error.message?.includes('connection')) {
-      return NextResponse.json({ error: 'Database connection failed - check DATABASE_URL' }, { status: 500 });
+      status = 401;
+      message = 'Invalid or expired token';
+    } else if (error.message?.includes('database') || error.message?.includes('neon')) {
+      message = 'Database connection/query failed - check logs';
+    } else if (error.message?.includes('relation') || error.message?.includes('column')) {
+      message = 'Database schema error - check table/column names';
+    } else if (error.message?.includes('connection')) {
+      message = 'Database connection failed - check DATABASE_URL';
     }
 
     return NextResponse.json(
-      { error: 'Failed to save organization: ' + (error.message || 'Unknown error') },
-      { status: 500 }
+      {
+        success: false,
+        error: message,
+        details: error.message || 'No details',
+      },
+      { status }
     );
   }
 }
