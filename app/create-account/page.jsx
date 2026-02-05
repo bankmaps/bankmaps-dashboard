@@ -2,13 +2,11 @@
 
 import { useSearchParams } from 'next/navigation';
 
-//export default function CreateAccountPage() {
+export default function CreateAccountPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
   if (!token) {
-    console.error('Missing token in URL');
-
     return (
       <div style={{ padding: 24 }}>
         <h2>Invalid or missing link</h2>
@@ -19,6 +17,15 @@ import { useSearchParams } from 'next/navigation';
       </div>
     );
   }
+
+  return (
+    <div>
+      <h2>Create Your Account</h2>
+      {/* your existing step UI goes here */}
+    </div>
+  );
+}
+
 
   // ✅ normal page render continues here
   return (
