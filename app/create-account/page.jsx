@@ -389,51 +389,64 @@ export default function Page() {
   };
 
 const handleSave = async () => {
-  // ... your data collection ...
+  if (!token) {
+    alert('No authentication token found. Please reload from the member portal with a valid ?token=...');
+    return;
+  }
+
+  // Collect all your form data here – adjust field names to match what your API expects
+  const payload = {
+    name: orgName.trim(),
+    type: selectedOrgType,
+    regulator: selectedRegulator,
+    states: selectedStates,
+    geographies: selectedGeographies,     // your array of geo objects
+    customContext: customContext.trim(),
+    // If you have linked_sources or other fields:
+    // linked: selectedLenderPerSource,
+    // email: ... (if needed for user upsert)
+  };
+
+  console.log('Sending save payload:', payload);  // Debug in browser console
+
   try {
-    const res = await fetch('/api/users', {
+    const response = await fetch('/api/users', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`  // ensure token is sent!
+        'Authorization': `Bearer ${token}`   // This is the critical line
       },
-      body: JSON.stringify({
-        name: orgName,
-        type: selectedOrgType,
-        regulator: selectedRegulator,
-        states: selectedStates,
-        geographies: selectedGeographies,
-        customContext,
-        // add email/name if needed for upsert
-      })
+      body: JSON.stringify(payload)
     });
 
-    if (!res.ok) {
-      const text = await res.text();  // get raw text first
-      console.error('API error status:', res.status, text);
-      alert(`Save failed (status ${res.status}): ${text || 'Server error'}`);
+    console.log('API response status:', response.status);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('API error response:', errorText);
+      alert(`Server error (${response.status}): ${errorText || 'Unknown issue'}`);
       return;
     }
 
     let data;
     try {
-      data = await res.json();
-    } catch (jsonErr) {
-      console.error('JSON parse failed:', jsonErr);
-      const text = await res.text();
-      alert('Server responded but not valid JSON: ' + text);
+      data = await response.json();
+    } catch (parseErr) {
+      console.error('Failed to parse JSON from server:', parseErr);
+      const text = await response.text();
+      alert('Server sent invalid response: ' + text.substring(0, 200));
       return;
     }
 
     if (data.success) {
-      alert('Organization saved!');
-      router.push('/users');
+      alert('Organization saved successfully!');
+      router.push('/users');  // Redirect to dashboard
     } else {
-      alert('Save failed: ' + (data.error || 'Unknown'));
+      alert('Save failed: ' + (data.error || 'Unknown server error'));
     }
   } catch (err) {
-    console.error('Fetch error:', err);
-    alert('Network/save error: ' + err.message);
+    console.error('Fetch / save failed:', err);
+    alert('Network or save error: ' + err.message);
   }
 };
   
