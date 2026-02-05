@@ -1,4 +1,4 @@
-'use client';
+
 
 // TEMP: Force new build on 2026-02-05 to confirm syntax fix
 
@@ -7,7 +7,7 @@ import Select from 'react-select';
 import { useRouter } from 'next/navigation';
 
 export const dynamic = 'force-dynamic';
-export const revalidate = 0;
+export const revalidate = 0;  // 0 = no static, dynamic on every request
 export const fetchCache = 'force-no-store';
 
 const similarity = (a, b) => {
