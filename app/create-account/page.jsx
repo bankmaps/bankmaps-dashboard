@@ -83,46 +83,7 @@ export default function Page() {
   const [geographiesList, setGeographiesList] = useState([]);
 
   const [currentGeography, setCurrentGeography] = useState({
-// Token handling - place this after your other const declarations
-const searchParams = useSearchParams();
-const token = searchParams.get('token') || '';  // fallback to empty string
-
-// Early return if no token (simple and safe)
-if (!token) {
-  return (
-    <div style={{ 
-      padding: '60px 20px', 
-      textAlign: 'center', 
-      maxWidth: '600px', 
-      margin: '0 auto' 
-    }}>
-      <h1 style={{ color: '#dc3545' }}>Missing Token</h1>
-      <p style={{ fontSize: '1.1rem', margin: '20px 0' }}>
-        This page requires a valid authentication token from your member portal email.
-      </p>
-      <p style={{ color: '#6c757d' }}>
-        Please check your inbox (or spam folder) and use the link provided.
-      </p>
-      <a 
-        href="https://bankmaps.com"
-        style={{
-          display: 'inline-block',
-          marginTop: '30px',
-          padding: '12px 32px',
-          background: '#0066cc',
-          color: 'white',
-          borderRadius: '6px',
-          textDecoration: 'none',
-          fontWeight: 'bold'
-        }}
-      >
-        Go to Member Portal
-      </a>
-    </div>
-  );
-}
-
-// If you reach here → token exists → render the normal form    state: [],  // now array
+    state: [],
     county: [],
     town: [],
     tract_number: [],
@@ -132,7 +93,22 @@ if (!token) {
   const [geographyName, setGeographyName] = useState('');      // free text
   
   const [selectedGeographies, setSelectedGeographies] = useState([]);   // array of complete geographies added
-  
+  const router = useRouter();
+const searchParams = useSearchParams();
+const token = searchParams.get('token');
+
+if (!token) {
+  return (
+    <div style={{ padding: '40px', textAlign: 'center', color: 'red' }}>
+      <h1>Missing Token</h1>
+      <p>Your account creation link is missing a required token.</p>
+      <p>Please check your email from the member portal and try again.</p>
+      <a href="https://bankmaps.com" style={{ color: '#0066cc', marginTop: '20px', display: 'inline-block' }}>
+        Back to BankMaps Portal
+      </a>
+    </div>
+  );
+}
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((r) => r.json())
