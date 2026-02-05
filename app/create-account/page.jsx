@@ -1,13 +1,33 @@
 'use client';
 
 import { useSearchParams } from 'next/navigation';
-const searchParams = useSearchParams();
-const token = searchParams.get('token');
 
-if (!token) {
-  console.error('Missing token in URL');
-  return;
+export default function CreateAccountPage() {
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+
+  if (!token) {
+    console.error('Missing token in URL');
+
+    return (
+      <div style={{ padding: 24 }}>
+        <h2>Invalid or missing link</h2>
+        <p>
+          Your account creation link is missing a required token.
+          Please check your email and try again.
+        </p>
+      </div>
+    );
+  }
+
+  // ✅ normal page render continues here
+  return (
+    <div>
+      {/* your existing step UI */}
+    </div>
+  );
 }
+
 
 
 import { useState, useMemo, useEffect } from 'react';
