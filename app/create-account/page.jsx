@@ -2,7 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 
-export default function CreateAccountPage() {
+//export default function CreateAccountPage() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
 
