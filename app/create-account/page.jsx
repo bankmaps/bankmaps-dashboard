@@ -388,7 +388,7 @@ export default function Page() {
     if (currentStep > 1) setCurrentStep(currentStep - 1);
   };
 
-  const handleSave = async () => {
+const handleSave = async () => {
   const payload = {
     name: orgName.trim(),
     type: selectedOrgType,
@@ -409,7 +409,7 @@ export default function Page() {
       return;
     }
 
-    const res = await fetch('/api/users', {
+    const res = await fetch('/api/organizations', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -427,7 +427,7 @@ export default function Page() {
     console.log('Organization saved:', data);
 
     alert('Organization created successfully!');
-    window.location.href = '/ai-user';  // redirect to dashboard
+    window.location.href = '/users';  // redirect to your new landing page
 
   } catch (err) {
     console.error('Save error:', err);
