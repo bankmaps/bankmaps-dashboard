@@ -1,6 +1,5 @@
 'use client';
 
-
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
 
@@ -59,7 +58,7 @@ const SOURCE_CONFIG = {
 };
 
 export default function Page() {
-  const [currentStep, setCurrentStep] = useState(1); // 1 = info, 2 = database connections
+  const [currentStep, setCurrentStep] = useState(1);
   const [orgName, setOrgName] = useState('');
   const [selectedOrgType, setSelectedOrgType] = useState('');
   const [selectedRegulator, setSelectedRegulator] = useState('');
@@ -72,8 +71,28 @@ export default function Page() {
   const [hmdaList, setHmdaList] = useState([]);
   const [craList, setCraList] = useState([]);
   const [branchList, setBranchList] = useState([]);
-  const [geoData, setGeoData] = useState([]);
+  const [fdicList, setFdicList] = useState([]);
+  const [ncuaList, setNcuaList] = useState([]);
+  const [hqStates, setHqStates] = useState([]);
 
+  // ── New state for Step 3 & 4 ─────────────────────────────
+  const [geographies, setGeographies] = useState([]);       // e.g. selected counties, MSAs, etc.
+  const [customContext, setCustomContext] = useState('');   // notes, tags, free text
+
+  const [geographiesList, setGeographiesList] = useState([]);
+
+  const [currentGeography, setCurrentGeography] = useState({
+    state: [],  // now array
+    county: [],
+    town: [],
+    tract_number: [],
+  });
+
+  const [geographyType, setGeographyType] = useState('');      // "Assessment Area" | "REMA" | "Other" | ""
+  const [geographyName, setGeographyName] = useState('');      // free text
+  
+  const [selectedGeographies, setSelectedGeographies] = useState([]);   // array of complete geographies added
+  
   useEffect(() => {
     fetch('/data/hmda_list.json')
       .then((r) => r.json())
@@ -87,9 +106,26 @@ export default function Page() {
       .then((r) => r.json())
       .then((j) => setBranchList(j.data || []));
 
-    fetch('/data/geographies.json')
+    fetch('/data/fdic_list.json')
       .then((r) => r.json())
-      .then((j) => setGeoData(j.data || []));
+      .then((j) => setFdicList(j.data || []));
+
+    fetch('/data/ncua_list.json')
+      .then((r) => r.json())
+      .then((j) => setNcuaList(j.data || []));
+
+    fetch('/data/hqstate_list.json')
+      .then((r) => r.json())
+      .then((j) => setHqStates(j.data || []));
+
+    fetch('/data/geographies.json')
+  .then(r => r.json())
+  .then(j => {
+    const data = j.data || j || [];
+    setGeographiesList(data);
+    if (data.length > 0) console.log('Sample geography entry:', data[0]);  // debug here
+  })
+  .catch(err => console.error('Failed to load geographies:', err));
   }, []);
 
   const filteredHmdaList = useMemo(
@@ -116,8 +152,109 @@ export default function Page() {
     [selectedStates, branchList]
   );
 
+  const filteredFdicList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? fdicList
+        : fdicList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, fdicList]
+  );
+
+  const filteredNcuaList = useMemo(
+    () =>
+      selectedStates.length === 0
+        ? ncuaList
+        : ncuaList.filter((i) => selectedStates.includes(i.lender_state)),
+    [selectedStates, ncuaList]
+  );
+
+  const geographyStateOptions = useMemo(() => {
+    if (!geographiesList.length) return [];
+    const unique = [...new Set(geographiesList.map(i => i.state?.trim()).filter(Boolean))].sort();
+    return unique.map(s => ({ value: s, label: s }));
+  }, [geographiesList]);
+
+  const geographyCountyOptions = useMemo(() => {
+    if (!currentGeography.state.length) return [];
+    const filtered = geographiesList.filter(i => currentGeography.state.includes(i.state));
+    const unique = [...new Set(filtered.map(i => i.county?.trim()).filter(Boolean))].sort();
+    return [
+      { value: '__ALL__', label: 'All Counties (in selected states)' },
+      ...unique.map(c => ({ value: c, label: c })),
+    ];
+  }, [geographiesList, currentGeography.state]);
+
+  const geographyTownOptions = useMemo(() => {
+    console.log('--- Town options debug ---');
+    console.log('Selected states:', currentGeography.state);
+    console.log('Selected counties:', currentGeography.county);
+
+    if (!currentGeography.state.length || !currentGeography.county.length) {
+      console.log('No upstream selections → returning empty');
+      return [];
+    }
+
+    let filtered = geographiesList;
+
+    // Handle 'All' for counties
+    const counties = currentGeography.county.includes('__ALL__')
+      ? [...new Set(geographiesList.map(i => i.county?.trim()).filter(Boolean))]
+      : currentGeography.county;
+
+    filtered = filtered.filter(item => {
+      const matchesState = currentGeography.state.includes(item.state?.trim() || '');
+      const matchesCounty = counties.includes(item.county?.trim() || '');
+      return matchesState && matchesCounty;
+    });
+
+    console.log('After state+county filter → items left:', filtered.length);
+
+    const towns = filtered.map(item => item.town?.trim() || '').filter(Boolean);
+    console.log('Raw town values found:', towns.slice(0, 10)); // first 10 for visibility
+
+    const uniqueTowns = [...new Set(towns)].sort();
+
+    const options = [
+      { value: '__ALL__', label: 'All Towns (in selected counties)' },
+      ...uniqueTowns.map(t => ({ value: t, label: t })),
+    ];
+
+    console.log('Final town options count:', options.length - 1); // exclude All
+    console.log('First few options:', options.slice(1, 6));
+
+    return options;
+  }, [geographiesList, currentGeography.state, currentGeography.county]);
+
+  const geographyTractOptions = useMemo(() => {
+    if (!currentGeography.state.length || !currentGeography.county.length || !currentGeography.town.length) return [];
+
+    let filtered = geographiesList;
+
+    const counties = currentGeography.county.includes('__ALL__')
+      ? [...new Set(geographiesList.map(i => i.county?.trim()).filter(Boolean))]
+      : currentGeography.county;
+
+    const towns = currentGeography.town.includes('__ALL__')
+      ? [...new Set(geographiesList.map(i => i.town?.trim()).filter(Boolean))]
+      : currentGeography.town;
+
+    filtered = filtered.filter(
+      i =>
+        currentGeography.state.includes(i.state) &&
+        counties.includes(i.county) &&
+        towns.includes(i.town)
+    );
+
+    const unique = [...new Set(filtered.map(i => i.tract_number?.trim()).filter(Boolean))].sort();
+
+    return [
+      { value: '__ALL__', label: 'All Tracts (in selected towns)' },
+      ...unique.map(tr => ({ value: tr, label: tr })),
+    ];
+  }, [geographiesList, currentGeography.state, currentGeography.county, currentGeography.town]);
+  
   useEffect(() => {
-    const timer = setTimeout(async () => {
+    const timer = setTimeout(() => {
       if (!orgName.trim() || !selectedOrgType || !selectedRegulator || selectedStates.length === 0) {
         setOrgMatches({});
         setCandidates({});
@@ -132,7 +269,7 @@ export default function Page() {
 
       const formatLocal = (list, sourceType) =>
         list.map((item) => {
-          const regulator = item.regulator || '?';
+          const regulator = item.regulator || selectedRegulator || '?';
           const suffix = `${item.lender_state || '?'}–${regulator}–${sourceType.toUpperCase()}`;
           return {
             label: `${item.lender} (${suffix})`,
@@ -147,26 +284,38 @@ export default function Page() {
 
       if (activeSources.includes('hmda')) {
         const cands = formatLocal(filteredHmdaList, 'hmda');
-        newCandidates.hmda = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.hmda = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newCandidates.hmda = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.hmda = [...cands].sort((a, b) => b.score - a.score)[0] || null;
         newSelected.hmda = newMatches.hmda?.value || null;
       }
 
       if (activeSources.includes('cra')) {
         const cands = formatLocal(filteredCraList, 'cra');
-        newCandidates.cra = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.cra = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newCandidates.cra = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.cra = [...cands].sort((a, b) => b.score - a.score)[0] || null;
         newSelected.cra = newMatches.cra?.value || null;
       }
 
       if (activeSources.includes('branch')) {
         const cands = formatLocal(filteredBranchList, 'branch');
-        newCandidates.branch = cands.sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
-        newMatches.branch = cands.sort((a, b) => b.score - a.score)[0] || null;
+        newCandidates.branch = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.branch = [...cands].sort((a, b) => b.score - a.score)[0] || null;
         newSelected.branch = newMatches.branch?.value || null;
       }
 
-      // Add FDIC/NCUA static list logic here when ready
+      if (activeSources.includes('fdic')) {
+        const cands = formatLocal(filteredFdicList, 'fdic');
+        newCandidates.fdic = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.fdic = [...cands].sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.fdic = newMatches.fdic?.value || null;
+      }
+
+      if (activeSources.includes('ncua')) {
+        const cands = formatLocal(filteredNcuaList, 'ncua');
+        newCandidates.ncua = [...cands].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+        newMatches.ncua = [...cands].sort((a, b) => b.score - a.score)[0] || null;
+        newSelected.ncua = newMatches.ncua?.value || null;
+      }
 
       setCandidates(newCandidates);
       setOrgMatches(newMatches);
@@ -174,14 +323,34 @@ export default function Page() {
     }, 700);
 
     return () => clearTimeout(timer);
-  }, [orgName, selectedOrgType, selectedStates, filteredHmdaList, filteredCraList, filteredBranchList]);
+  }, [
+    orgName,
+    selectedOrgType,
+    selectedRegulator,
+    selectedStates,
+    filteredHmdaList,
+    filteredCraList,
+    filteredBranchList,
+    filteredFdicList,
+    filteredNcuaList,
+  ]);
 
-  const uniqueStates = useMemo(
-    () => [...new Set(geoData.map((i) => i.st || i.state))].filter(Boolean).sort(),
-    [geoData]
-  );
+  const stateOptions = useMemo(() => {
+    if (!hqStates.length) return [];
 
-  const stateOptions = uniqueStates.map((s) => ({ value: s, label: s }));
+    const uniqueAbbrevs = [...new Set(
+      hqStates.map(item => item.state_abbrev?.trim()).filter(Boolean)
+    )].sort();
+
+    return uniqueAbbrevs.map(abbrev => {
+      const entry = hqStates.find(item => item.state_abbrev === abbrev);
+      const fullName = entry?.state_name || abbrev;
+      return {
+        value: abbrev,
+        label: fullName
+      };
+    });
+  }, [hqStates]);
 
   const regulatorOptions = [
     { value: 'FDIC', label: 'FDIC' },
@@ -191,30 +360,81 @@ export default function Page() {
     { value: 'Non-Bank', label: 'Non-Bank' },
   ];
 
-  // Validation for Step 1
-  const canProceed = 
+  // ── Per-step validation ─────────────────────────────────
+  const canProceedStep1 =
     orgName.trim().length >= 3 &&
     !!selectedOrgType &&
     !!selectedRegulator &&
     selectedStates.length > 0;
 
+  const canProceedStep2 = true; // optional: could require at least one selectedLenderPerSource later
+
+  const canProceedStep3 = selectedGeographies.length > 0; // placeholder — tighten later if geographies required
+  const canProceedStep4 = true; // placeholder
+
+  const canProceed =
+    currentStep === 1 ? canProceedStep1 :
+    currentStep === 2 ? canProceedStep2 :
+    currentStep === 3 ? canProceedStep3 :
+    canProceedStep4;
+
   const nextStep = () => {
-    if (!canProceed) return;
-    setCurrentStep(2);
+    if (currentStep < 4 && canProceed) {
+      setCurrentStep(currentStep + 1);
+    }
   };
 
-  const prevStep = () => setCurrentStep(1);
+  const prevStep = () => {
+    if (currentStep > 1) setCurrentStep(currentStep - 1);
+  };
 
-  const handleSave = () => {
-    console.log({
-      name: orgName.trim(),
-      type: selectedOrgType,
-      regulator: selectedRegulator,
-      states: selectedStates,
-      linked: selectedLenderPerSource,
+const handleSave = async () => {
+  const payload = {
+    name: orgName.trim(),
+    type: selectedOrgType,
+    regulator: selectedRegulator,
+    states: selectedStates,
+    linked: selectedLenderPerSource,
+    geographies: selectedGeographies,
+    customContext,
+  };
+
+  try {
+    // Get token from URL (?token=...)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+
+    if (!token) {
+      alert('Authentication token missing. Please log in again from BankMaps member portal.');
+      return;
+    }
+
+    const res = await fetch('/api/organizations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
     });
-    alert('Saved! (TODO: send to backend)');
-  };
+
+    if (!res.ok) {
+      const errData = await res.json();
+      throw new Error(errData.error || 'Save failed');
+    }
+
+    const data = await res.json();
+    console.log('Organization saved:', data);
+
+    alert('Organization created successfully!');
+    window.location.href = '/users';  // redirect to your new landing page
+
+  } catch (err) {
+    console.error('Save error:', err);
+    alert('Error saving organization: ' + (err as Error).message);
+  }
+};
+  
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
 
@@ -281,6 +501,7 @@ export default function Page() {
           placeholder="Select one or more states..."
           className="basic-multi-select"
           classNamePrefix="select"
+          isSearchable={true}
         />
       </div>
     </div>
@@ -353,12 +574,298 @@ export default function Page() {
     </div>
   );
 
+const renderStep3 = () => (
+  <div>
+    <h2>Step 3 – Organization Geographies</h2>
+    <p style={{ color: '#666', marginBottom: '24px' }}>
+      Add the geographic areas (state → county → town → tract) this organization serves or focuses on.
+      These are independent of headquarters states selected in Step 1. You can select multiple at each level.
+    </p>
+
+    {/* New fields */}
+    <div style={{ display: 'grid', gap: '20px', marginBottom: '32px' }}>
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Geography Type <span style={{ color: '#dc3545' }}>*</span>
+        </label>
+        <select
+          value={geographyType}
+          onChange={(e) => setGeographyType(e.target.value)}
+          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+        >
+          <option value="">— Select Type —</option>
+          <option value="Assessment Area">Assessment Area</option>
+          <option value="REMA">REMA</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>
+          Geography Name <span style={{ color: '#dc3545' }}>*</span>
+        </label>
+        <input
+          type="text"
+          value={geographyName}
+          onChange={(e) => setGeographyName(e.target.value)}
+          placeholder="e.g. Boston Metro Area, Cape Cod Assessment Area, Custom Rural Zone"
+          style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+        />
+      </div>
+    </div>
+
+    <div style={{ display: 'grid', gap: '20px', marginBottom: '32px' }}>
+      {/* State */}
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>State</label>
+        <Select
+          isMulti
+          options={geographyStateOptions}
+          value={geographyStateOptions.filter(opt => currentGeography.state.includes(opt.value))}
+          onChange={(opts) => {
+            const newValues = opts ? opts.map(o => o.value) : [];
+            setCurrentGeography(prev => ({
+              ...prev,
+              state: newValues,
+              county: [],
+              town: [],
+              tract_number: [],
+            }));
+          }}
+          placeholder="Select one or more states..."
+          className="basic-multi-select"
+          classNamePrefix="select"
+          isSearchable={true}
+        />
+      </div>
+
+      {/* County */}
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>County</label>
+        <Select
+          isMulti
+          options={geographyCountyOptions}
+          value={geographyCountyOptions.filter(opt => currentGeography.county.includes(opt.value))}
+          onChange={(opts) => {
+            let newValues = opts ? opts.map(o => o.value) : [];
+            if (newValues.includes('__ALL__')) {
+              newValues = ['__ALL__'];
+            } else {
+              newValues = newValues.filter(v => v !== '__ALL__');
+            }
+            setCurrentGeography(prev => ({
+              ...prev,
+              county: newValues,
+              town: [],
+              tract_number: [],
+            }));
+          }}
+          placeholder="Select one or more counties..."
+          className="basic-multi-select"
+          classNamePrefix="select"
+          isSearchable={true}
+          isDisabled={!currentGeography.state.length}
+        />
+      </div>
+
+      {/* Town / City */}
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Town / City</label>
+        <Select
+          isMulti
+          options={geographyTownOptions}
+          value={geographyTownOptions.filter(opt => currentGeography.town.includes(opt.value))}
+          onChange={(opts) => {
+            let newValues = opts ? opts.map(o => o.value) : [];
+            if (newValues.includes('__ALL__')) {
+              newValues = ['__ALL__'];
+            } else {
+              newValues = newValues.filter(v => v !== '__ALL__');
+            }
+            setCurrentGeography(prev => ({
+              ...prev,
+              town: newValues,
+              tract_number: [],
+            }));
+          }}
+          placeholder="Select one or more towns..."
+          className="basic-multi-select"
+          classNamePrefix="select"
+          isSearchable={true}
+          isDisabled={!currentGeography.county.length}
+        />
+      </div>
+
+      {/* Tract */}
+      <div>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Census Tract Number</label>
+        <Select
+          isMulti
+          options={geographyTractOptions}
+          value={geographyTractOptions.filter(opt => currentGeography.tract_number.includes(opt.value))}
+          onChange={(opts) => {
+            let newValues = opts ? opts.map(o => o.value) : [];
+            if (newValues.includes('__ALL__')) {
+              newValues = ['__ALL__'];
+            } else {
+              newValues = newValues.filter(v => v !== '__ALL__');
+            }
+            setCurrentGeography(prev => ({
+              ...prev,
+              tract_number: newValues,
+            }));
+          }}
+          placeholder="Select one or more tracts..."
+          className="basic-multi-select"
+          classNamePrefix="select"
+          isSearchable={true}
+          isDisabled={!currentGeography.town.length}
+        />
+      </div>
+    </div>
+
+    {/* Add button */}
+    <button
+      type="button"
+      onClick={() => {
+        const hasAllCounty = currentGeography.county.includes('__ALL__');
+        const hasAllTown = currentGeography.town.includes('__ALL__');
+        const hasAllTract = currentGeography.tract_number.includes('__ALL__');
+
+        if (
+          geographyType &&
+          geographyName.trim() &&
+          currentGeography.state.length &&
+          (currentGeography.county.length || hasAllCounty) &&
+          (currentGeography.town.length || hasAllTown) &&
+          (currentGeography.tract_number.length || hasAllTract)
+        ) {
+          const newGeo = {
+            type: geographyType,
+            name: geographyName.trim(),
+            state: [...currentGeography.state],
+            county: [...currentGeography.county],
+            town: [...currentGeography.town],
+            tract_number: [...currentGeography.tract_number],
+          };
+
+          console.log('Adding geography:', newGeo);
+          setSelectedGeographies(prev => [...prev, newGeo]);
+
+          // Reset everything
+          setGeographyType('');
+          setGeographyName('');
+          setCurrentGeography({ state: [], county: [], town: [], tract_number: [] });
+        }
+      }}
+      disabled={
+        !geographyType ||
+        !geographyName.trim() ||
+        !currentGeography.state.length ||
+        (!currentGeography.county.length && !currentGeography.county.includes('__ALL__')) ||
+        (!currentGeography.town.length && !currentGeography.town.includes('__ALL__')) ||
+        (!currentGeography.tract_number.length && !currentGeography.tract_number.includes('__ALL__'))
+      }
+      style={{
+        padding: '10px 20px',
+        background: '#0066cc',
+        color: 'white',
+        border: 'none',
+        borderRadius: '6px',
+        cursor: 'pointer',
+        marginBottom: '24px',
+      }}
+    >
+      + Add this geography
+    </button>
+
+    {/* List of added geographies */}
+    {selectedGeographies.length > 0 && (
+      <div style={{ marginTop: '16px' }}>
+        <h4 style={{ marginBottom: '12px' }}>Added geographies:</h4>
+        <ul style={{ listStyle: 'none', padding: 0 }}>
+          {selectedGeographies.map((geo, index) => (
+            <li
+              key={index}
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                padding: '10px',
+                background: '#f8f9fa',
+                borderRadius: '6px',
+                marginBottom: '8px',
+              }}
+            >
+              <span>
+                <strong>{geo.type}</strong>: {geo.name}  
+                → States: {geo.state.join(', ')}  
+                → Counties: {geo.county.includes('__ALL__') ? 'All' : geo.county.join(', ')}  
+                → Towns: {geo.town.includes('__ALL__') ? 'All' : geo.town.join(', ')}  
+                → Tracts: {geo.tract_number.includes('__ALL__') ? 'All' : geo.tract_number.join(', ')}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedGeographies(prev => prev.filter((_, i) => i !== index))}
+                style={{
+                  background: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  padding: '4px 10px',
+                  cursor: 'pointer',
+                }}
+              >
+                Remove
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )}
+
+    {selectedGeographies.length === 0 && (
+      <p style={{ color: '#6c757d', fontStyle: 'italic' }}>
+        No geographies added yet.
+      </p>
+    )}
+  </div>
+);
+  
+  const renderStep4 = () => (
+    <div>
+      <h2>Step 4 – Custom Context</h2>
+      <p style={{ color: '#666', marginBottom: '16px' }}>
+        Add any additional notes, tags, or context that helps describe this organization (optional).
+      </p>
+
+      <textarea
+        value={customContext}
+        onChange={(e) => setCustomContext(e.target.value)}
+        placeholder="Examples: • Focus on affordable housing in rural areas\n• Recently acquired XYZ Credit Union\n• Specializes in commercial real estate in Boston metro..."
+        style={{
+          width: '100%',
+          minHeight: '160px',
+          padding: '12px',
+          borderRadius: '6px',
+          border: '1px solid #ccc',
+          resize: 'vertical',
+          fontFamily: 'inherit',
+        }}
+      />
+
+      <p style={{ fontSize: '0.9rem', color: '#6c757d', marginTop: '8px' }}>
+        This information can be used to improve matching accuracy and reporting later.
+      </p>
+    </div>
+  );
+
   return (
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px' }}>
       <h1>Create Account</h1>
 
-      <div style={{ display: 'flex', justifyContent: 'center', gap: '20px', margin: '32px 0' }}>
-        {[1, 2].map((s) => (
+      <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', margin: '32px 0' }}>
+        {[1, 2, 3, 4].map((s) => (
           <div
             key={s}
             style={{
@@ -379,10 +886,13 @@ export default function Page() {
         ))}
       </div>
 
-      {currentStep === 1 ? renderStep1() : renderStep2()}
+      {currentStep === 1 ? renderStep1() :
+       currentStep === 2 ? renderStep2() :
+       currentStep === 3 ? renderStep3() :
+       renderStep4()}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
-        {currentStep === 2 && (
+        {currentStep > 1 && (
           <button
             onClick={prevStep}
             style={{
@@ -398,7 +908,7 @@ export default function Page() {
           </button>
         )}
 
-        {currentStep === 1 ? (
+        {currentStep < 4 ? (
           <button
             onClick={nextStep}
             disabled={!canProceed}
