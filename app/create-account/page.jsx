@@ -409,7 +409,7 @@ const handleSave = async () => {
       return;
     }
 
-    const res = await fetch('/api/organizations', {
+    const res = await fetch('/api/users', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
