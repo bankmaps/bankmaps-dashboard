@@ -7,27 +7,42 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('POST /api/users - request received');
+
     // Get token from Authorization header (Bearer <token>)
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'No token provided in Authorization header' }, { status: 401 });
+      console.log('Missing or invalid Authorization header');
+      return NextResponse.json(
+        { success: false, error: 'No token provided in Authorization header' },
+        { status: 401 }
+      );
     }
+
     const token = authHeader.split(' ')[1];
+    console.log('Token received (first 10 chars):', token.substring(0, 10) + '...');
 
     // Verify JWT
     const decoded = jwt.verify(token, JWT_SECRET) as { sub: number; email?: string; name?: string };
     const bluehost_id = decoded.sub;
+    console.log('JWT verified - bluehost_id:', bluehost_id);
 
-    // Parse request body from create-account form
+    // Parse request body
     const body = await req.json();
+    console.log('Request body received:', body);
 
     // Basic validation
     if (!body.name || !body.type || !body.regulator) {
-      return NextResponse.json({ error: 'Missing required fields: name, type, regulator' }, { status: 400 });
+      console.log('Validation failed - missing required fields');
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields: name, type, regulator' },
+        { status: 400 }
+      );
     }
 
-    // Connect to Neon
-    const sql = neon(process.env.DATABASE_URL!);
+    // Connect to Neon using the name you confirmed
+    const sql = neon(process.env.NEON_DATABASE_URL!);
+    console.log('Neon connection initialized');
 
     // Step 1: Upsert ai_users row
     const [aiUser] = await sql`
@@ -57,6 +72,7 @@ export async function POST(req: NextRequest) {
     `;
 
     const ai_user_id = aiUser.id;
+    console.log('User upserted - ai_user_id:', ai_user_id);
 
     // Step 2: Insert new organization
     const [newOrg] = await sql`
@@ -84,6 +100,8 @@ export async function POST(req: NextRequest) {
       RETURNING id;
     `;
 
+    console.log('Organization inserted - id:', newOrg.id);
+
     return NextResponse.json(
       {
         success: true,
@@ -93,7 +111,7 @@ export async function POST(req: NextRequest) {
       { status: 201 }
     );
   } catch (error: any) {
-    console.error('Full save error:', error);
+    console.error('Full save error in /api/users:', error);
 
     let status = 500;
     let message = 'Failed to save organization';
@@ -106,14 +124,14 @@ export async function POST(req: NextRequest) {
     } else if (error.message?.includes('relation') || error.message?.includes('column')) {
       message = 'Database schema error - check table/column names';
     } else if (error.message?.includes('connection')) {
-      message = 'Database connection failed - check DATABASE_URL';
+      message = 'Database connection failed - check NEON_DATABASE_URL env var';
     }
 
     return NextResponse.json(
       {
         success: false,
         error: message,
-        details: error.message || 'No details',
+        details: error.message || 'No details available',
       },
       { status }
     );
