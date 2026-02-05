@@ -1,5 +1,15 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
+const searchParams = useSearchParams();
+const token = searchParams.get('token');
+
+if (!token) {
+  console.error('Missing token in URL');
+  return;
+}
+
+
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
 
