@@ -16,7 +16,9 @@ export async function POST(req: NextRequest) {
     // 2. Verify JWT
     const decoded = jwt.verify(token, JWT_SECRET) as { sub: number };
     const bluehost_id = decoded.sub;
-    console.log('CHECKING ORGS FOR bluehost_id:', bluehost_id);  // ← ADDED LOG
+
+    // LOG: Show the ID we're searching for
+    console.log('CHECKING ORGS FOR bluehost_id:', bluehost_id);
 
     if (!bluehost_id) {
       return NextResponse.json({ error: 'Invalid token payload' }, { status: 401 });
@@ -31,8 +33,10 @@ export async function POST(req: NextRequest) {
       FROM organizations
       WHERE bluehost_id = ${bluehost_id}
     `;
-    console.log('FOUND ORG COUNT:', Number(result[0].count));  // ← ADDED LOG
-    console.log('FULL RESULT ROW:', result[0]);  // ← ADDED LOG
+
+    // LOG: Show what the DB actually returned
+    console.log('FOUND ORG COUNT:', Number(result[0].count));
+    console.log('FULL RESULT ROW:', result[0]);
 
     const has_orgs = Number(result[0].count) > 0;
 
