@@ -1,126 +1,123 @@
-"use client";  // ← This line fixes the build error (required for useState)
+"use client";
 
-import { Suspense, useState } from 'react';
+import { useState } from 'react';
+import { Suspense } from 'react';
 
 export default function UsersPage() {
-  return (
-    <main className="p-8 max-w-4xl mx-auto font-sans">
-      <h1 className="text-3xl font-bold mb-6">BankMaps Organizations</h1>
+  const [activeSection, setActiveSection] = useState('dashboard');
 
-      {/* Placeholder org list section */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <h2 className="text-xl font-semibold mb-4">Your Organizations</h2>
-        <p className="text-gray-600">
-          Welcome back! This is where you would see your list of organizations.
-        </p>
-        <p className="text-gray-500 text-sm mt-2">(This is a test placeholder page)</p>
-      </div>
-
-      {/* Add Sub-User Section */}
-      <AddSubUserSection />
-
-      {/* Token display */}
-      <Suspense fallback={<p className="text-gray-500">Loading session info...</p>}>
-        <TokenDisplay />
-      </Suspense>
-
-      <div className="mt-8 text-gray-600 text-sm">
-        <a href="/" className="hover:underline">Home</a> •{' '}
-        <a href="/create-account" className="hover:underline">Create new organization</a>
-      </div>
-    </main>
-  );
-}
-
-// Expandable Add Sub-User form
-function AddSubUserSection() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [role, setRole] = useState('viewer');
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Invite sent:', { email, role });
-    // Later: POST to /api/sub-users/invite
-    setIsOpen(false);
-    setEmail('');
-    setRole('viewer');
-  };
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard' },
+    { id: 'add-users', label: 'Add Users' },
+    { id: 'edit-profile', label: 'Edit Profile' },
+    { id: 'upload-file', label: 'Upload File' },
+    { id: 'cra-reports', label: 'CRA Reports' },
+    { id: 'fair-lending', label: 'Fair Lending Reports' },
+    { id: 'outreach', label: 'Outreach Reports' },
+    { id: 'community-dev', label: 'Community Development' },
+  ];
 
   return (
-    <div className="bg-white rounded-lg shadow mb-8">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex justify-between items-center p-6 text-left hover:bg-gray-50"
-      >
-        <h3 className="text-lg font-medium">Add Sub-User</h3>
-        <span className="text-gray-500">{isOpen ? '−' : '+'}</span>
-      </button>
-
-      {isOpen && (
-        <div className="p-6 pt-0 border-t">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-                placeholder="subuser@example.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="role" className="block text-sm font-medium text-gray-700">
-                Role
-              </label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                className="mt-1 block w-full border border-gray-300 rounded-md p-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="viewer">Viewer (read/download only)</option>
-                <option value="editor">Editor (upload/edit files)</option>
-                <option value="admin">Admin (manage sub-users)</option>
-              </select>
-            </div>
-
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="mr-3 px-4 py-2 text-gray-600 hover:text-gray-900"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Send Invite
-              </button>
-            </div>
-          </form>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-gray-900 text-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+          <h1 className="text-2xl font-bold">BankMaps Dashboard</h1>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm">Welcome, User</span>
+            <button className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700 text-sm">
+              Logout
+            </button>
+          </div>
         </div>
-      )}
-    </div>
-  );
-}
+      </header>
 
-function TokenDisplay() {
-  const searchParams = new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '');
-  const token = searchParams.get('token');
+      <div className="flex max-w-7xl mx-auto">
+        {/* Sidebar */}
+        <aside className="w-64 bg-white border-r border-gray-200 min-h-[calc(100vh-64px)] p-6 hidden md:block">
+          <nav className="space-y-1">
+            {menuItems.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveSection(item.id)}
+                className={`w-full text-left px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
+                  activeSection === item.id
+                    ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-600'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+        </aside>
 
-  return (
-    <div className="mt-6 p-4 bg-gray-50 rounded border border-gray-200 font-mono text-sm break-all">
-      <strong>Launch token:</strong><br />
-      {token || '(no token provided in URL)'}
+        {/* Main content */}
+        <main className="flex-1 p-6 lg:p-8">
+          <h2 className="text-2xl font-bold mb-6">
+            {menuItems.find((i) => i.id === activeSection)?.label || 'Dashboard'}
+          </h2>
+
+          {/* Dynamic content based on selection */}
+          {activeSection === 'dashboard' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <p className="text-gray-600">
+                Welcome to your BankMaps dashboard. Select an option from the left menu.
+              </p>
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Placeholder cards */}
+                <div className="border rounded-lg p-6 bg-gray-50">
+                  <h3 className="font-semibold mb-2">Organizations</h3>
+                  <p className="text-sm text-gray-600">2 active organizations</p>
+                </div>
+                <div className="border rounded-lg p-6 bg-gray-50">
+                  <h3 className="font-semibold mb-2">Recent Activity</h3>
+                  <p className="text-sm text-gray-600">Last upload: 2 days ago</p>
+                </div>
+                <div className="border rounded-lg p-6 bg-gray-50">
+                  <h3 className="font-semibold mb-2">Quick Stats</h3>
+                  <p className="text-sm text-gray-600">Files: 47 • Users: 3</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'add-users' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h3 className="text-lg font-semibold mb-4">Add New Sub-User</h3>
+              <p className="text-gray-600 mb-6">
+                Enter the email and role for the new sub-user. They will receive an invitation.
+              </p>
+              {/* Form placeholder */}
+              <div className="space-y-4 max-w-md">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Email</label>
+                  <input type="email" className="w-full border rounded p-2" placeholder="user@example.com" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-1">Role</label>
+                  <select className="w-full border rounded p-2">
+                    <option>Viewer</option>
+                    <option>Editor</option>
+                    <option>Admin</option>
+                  </select>
+                </div>
+                <button className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+                  Send Invite
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Placeholder for other sections */}
+          {activeSection !== 'dashboard' && activeSection !== 'add-users' && (
+            <div className="bg-white rounded-lg shadow p-6 text-center text-gray-500">
+              <p>[Placeholder for {menuItems.find(i => i.id === activeSection)?.label} feature]</p>
+              <p className="mt-2 text-sm">Coming soon...</p>
+            </div>
+          )}
+        </main>
+      </div>
     </div>
   );
 }
