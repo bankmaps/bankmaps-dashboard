@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
 const [newOrg] = await sql`
   INSERT INTO organizations (
     ai_user_id,
-    bluehost_id,                    // ← ADDED THIS COLUMN
+    bluehost_id,                    // ← THIS WAS MISSING
     name,
     type,
     regulator,
@@ -89,7 +89,7 @@ const [newOrg] = await sql`
     created_at
   ) VALUES (
     ${ai_user_id},
-    ${bluehost_id},                 // ← ADDED THIS VALUE (from JWT sub)
+    ${bluehost_id},                 // ← THIS WAS MISSING (from JWT sub)
     ${body.name},
     ${body.type},
     ${body.regulator},
@@ -101,7 +101,6 @@ const [newOrg] = await sql`
   )
   RETURNING id;
 `;
-
     console.log('Organization inserted - id:', newOrg.id);
 
     return NextResponse.json(
