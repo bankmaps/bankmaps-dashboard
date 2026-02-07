@@ -1,10 +1,6 @@
-"use client";  // ← ADD THIS LINE AT THE ABSOLUTE TOP (before any imports)
+"use client";  // ← This line fixes the build error (required for useState)
 
 import { Suspense, useState } from 'react';
-
-export default function UsersPage() {
-  // ... rest of your code unchanged
-}
 
 export default function UsersPage() {
   return (
@@ -23,7 +19,7 @@ export default function UsersPage() {
       {/* Add Sub-User Section */}
       <AddSubUserSection />
 
-      {/* Token display (unchanged) */}
+      {/* Token display */}
       <Suspense fallback={<p className="text-gray-500">Loading session info...</p>}>
         <TokenDisplay />
       </Suspense>
@@ -36,7 +32,7 @@ export default function UsersPage() {
   );
 }
 
-// New component: Add Sub-User form (inline expandable)
+// Expandable Add Sub-User form
 function AddSubUserSection() {
   const [isOpen, setIsOpen] = useState(false);
   const [email, setEmail] = useState('');
