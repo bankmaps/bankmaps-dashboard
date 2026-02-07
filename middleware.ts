@@ -3,25 +3,30 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const searchParams = request.nextUrl.searchParams;
 
-  // Only protect these routes (add others if needed)
-  if (!pathname.startsWith('/users') && pathname !== '/create-account') {
+  // Protect these routes
+  const isProtected = pathname.startsWith('/users') || pathname === '/create-account';
+
+  if (!isProtected) {
     return NextResponse.next();
   }
 
-  // Check for the session cookie set by login.php / launch-ai.php
-  // Replace 'PHPSESSID' or 'bankmaps_session' with your ACTUAL cookie name
-  // (After logging in, check browser dev tools > Application > Cookies to see the name)
-  const sessionCookie = request.cookies.get('PHPSESSID') || request.cookies.get('bankmaps_session');
+  // Allow access if ?token= is present (coming from launch-ai.php)
+  if (searchParams.has('token')) {
+    return NextResponse.next();
+  }
 
-  if (!sessionCookie?.value) {
-    // No valid session → force back to login
-    const loginUrl = new URL('https://bankmaps.com/login.php');
-    loginUrl.searchParams.set('redirect', pathname); // optional: come back here after login
+  // For repeat visits: check for a local cookie set after token validation
+  // (We'll set this in the page after verifying token)
+  const authCookie = request.cookies.get('bankmaps_auth');
+
+  if (!authCookie?.value) {
+    const loginUrl = new URL('https://bankmaps.com/login.php', request.url);
+    loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // If cookie exists → let launch-ai.php (or whatever) handle subscription check
   return NextResponse.next();
 }
 
