@@ -111,23 +111,21 @@ const [newOrg] = await sql`
       },
       { status: 201 }
     );
-  } catch (error: any) {
-    console.error('Full save error in /api/users:', error);
+ } catch (error: any) {
+  console.error('SAVE ORGANIZATION FAILED:', {
+    message: error.message,
+    stack: error.stack,
+    code: error.code,  // Postgres error code if any
+    detail: error.detail,
+    hint: error.hint,
+    position: error.position
+  });
 
-    let status = 500;
-    let message = 'Failed to save organization';
-
-    if (error instanceof jwt.JsonWebTokenError) {
-      status = 401;
-      message = 'Invalid or expired token';
-    } else if (error.message?.includes('database') || error.message?.includes('neon')) {
-      message = 'Database connection/query failed - check logs';
-    } else if (error.message?.includes('relation') || error.message?.includes('column')) {
-      message = 'Database schema error - check table/column names';
-    } else if (error.message?.includes('connection')) {
-      message = 'Database connection failed - check NEON_DATABASE_URL env var';
-    }
-
+  return NextResponse.json(
+    { success: false, error: 'Failed to save organization', details: error.message || 'Unknown error' },
+    { status: 500 }
+  );
+}
     return NextResponse.json(
       {
         success: false,
