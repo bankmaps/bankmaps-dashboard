@@ -15,7 +15,6 @@ export async function POST(req: NextRequest) {
       console.log('Missing or invalid Authorization header');
       return NextResponse.json({ success: false, error: 'No token provided in Authorization header' }, { status: 401 });
     }
-
     const token = authHeader.split(' ')[1];
     console.log('Token received (first 10 chars):', token.substring(0, 10) + '...');
 
@@ -41,7 +40,7 @@ export async function POST(req: NextRequest) {
     const sql = neon(process.env.NEON_DATABASE_URL!);
     console.log('Neon connection initialized');
 
-    // Step 1: Upsert ai_users row (unchanged)
+    // Step 1: Upsert ai_users row
     const [aiUser] = await sql`
       INSERT INTO ai_users (
         bluehost_id,
@@ -71,11 +70,11 @@ export async function POST(req: NextRequest) {
     const ai_user_id = aiUser.id;
     console.log('User upserted - ai_user_id:', ai_user_id);
 
-    // Step 2: Insert new organization - NOW INCLUDING bluehost_id
+    // Step 2: Insert new organization - INCLUDING bluehost_id
     const [newOrg] = await sql`
       INSERT INTO organizations (
         ai_user_id,
-        bluehost_id,              // ← NEW: store Bluehost member ID directly
+        bluehost_id,
         name,
         type,
         regulator,
@@ -86,7 +85,7 @@ export async function POST(req: NextRequest) {
         created_at
       ) VALUES (
         ${ai_user_id},
-        ${bluehost_id},           // ← NEW: link to Bluehost ID
+        ${bluehost_id},
         ${body.name},
         ${body.type},
         ${body.regulator},
