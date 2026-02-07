@@ -1,5 +1,18 @@
 "use client";
 
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
+
+export default async function UsersPage() {
+  const cookieStore = cookies();
+  const searchParams = /* use useSearchParams if client, or pass from props */; // for server, read from request if using route handler pattern
+
+  const token = searchParams.get('token') || cookieStore.get('bankmaps_auth')?.value;
+
+  if (!token) {
+    redirect('https://bankmaps.com/login.php');
+  }
+
 import { useState } from "react";
 
 export default function UsersPage() {
