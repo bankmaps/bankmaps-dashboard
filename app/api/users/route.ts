@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Connect to Neon using the name you confirmed
+    // Connect to Neon
     const sql = neon(process.env.NEON_DATABASE_URL!);
     console.log('Neon connection initialized');
 
@@ -74,33 +74,34 @@ export async function POST(req: NextRequest) {
     const ai_user_id = aiUser.id;
     console.log('User upserted - ai_user_id:', ai_user_id);
 
-// Step 2: Insert new organization - NOW INCLUDING bluehost_id
-const [newOrg] = await sql`
-  INSERT INTO organizations (
-    ai_user_id,
-    bluehost_id,                    // ← THIS WAS MISSING
-    name,
-    type,
-    regulator,
-    states,
-    linked_sources,
-    geographies,
-    custom_context,
-    created_at
-  ) VALUES (
-    ${ai_user_id},
-    ${bluehost_id},                 // ← THIS WAS MISSING (from JWT sub)
-    ${body.name},
-    ${body.type},
-    ${body.regulator},
-    ${JSON.stringify(body.states || [])}::jsonb,
-    ${JSON.stringify(body.linked || {})}::jsonb,
-    ${JSON.stringify(body.geographies || [])}::jsonb,
-    ${body.customContext || null},
-    NOW()
-  )
-  RETURNING id;
-`;
+    // Step 2: Insert new organization - NOW INCLUDING bluehost_id
+    const [newOrg] = await sql`
+      INSERT INTO organizations (
+        ai_user_id,
+        bluehost_id,
+        name,
+        type,
+        regulator,
+        states,
+        linked_sources,
+        geographies,
+        custom_context,
+        created_at
+      ) VALUES (
+        ${ai_user_id},
+        ${bluehost_id},
+        ${body.name},
+        ${body.type},
+        ${body.regulator},
+        ${JSON.stringify(body.states || [])}::jsonb,
+        ${JSON.stringify(body.linked || {})}::jsonb,
+        ${JSON.stringify(body.geographies || [])}::jsonb,
+        ${body.customContext || null},
+        NOW()
+      )
+      RETURNING id;
+    `;
+
     console.log('Organization inserted - id:', newOrg.id);
 
     return NextResponse.json(
@@ -111,28 +112,19 @@ const [newOrg] = await sql`
       },
       { status: 201 }
     );
- } catch (error: any) {
-  console.error('SAVE ORGANIZATION FAILED:', {
-    message: error.message,
-    stack: error.stack,
-    code: error.code,  // Postgres error code if any
-    detail: error.detail,
-    hint: error.hint,
-    position: error.position
-  });
+  } catch (error: any) {
+    console.error('SAVE ORGANIZATION FAILED:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+      detail: error.detail,
+      hint: error.hint,
+      position: error.position
+    });
 
-  return NextResponse.json(
-    { success: false, error: 'Failed to save organization', details: error.message || 'Unknown error' },
-    { status: 500 }
-  );
-}
     return NextResponse.json(
-      {
-        success: false,
-        error: message,
-        details: error.message || 'No details available',
-      },
-      { status }
+      { success: false, error: 'Failed to save organization', details: error.message || 'Unknown error' },
+      { status: 500 }
     );
   }
 }
