@@ -1,4 +1,10 @@
+"use client";  // ← ADD THIS LINE AT THE ABSOLUTE TOP (before any imports)
+
 import { Suspense, useState } from 'react';
+
+export default function UsersPage() {
+  // ... rest of your code unchanged
+}
 
 export default function UsersPage() {
   return (
