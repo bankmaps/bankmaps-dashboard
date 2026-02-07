@@ -44,9 +44,9 @@ export async function POST(req: NextRequest) {
     const sql = neon(process.env.NEON_DATABASE_URL!);
     console.log('Neon connection initialized');
 
-    // Step 1: Upsert ai_users row
-    const [aiUser] = await sql`
-      INSERT INTO ai_users (
+    // Step 1: Upsert users row
+    const [User] = await sql`
+      INSERT INTO users (
         bluehost_id,
         email,
         name,
@@ -71,13 +71,13 @@ export async function POST(req: NextRequest) {
       RETURNING id;
     `;
 
-    const ai_user_id = aiUser.id;
-    console.log('User upserted - ai_user_id:', ai_user_id);
+    const user_id = User.id;
+    console.log('User upserted - user_id:', user_id);
 
     // Step 2: Insert new organization - NOW INCLUDING bluehost_id
     const [newOrg] = await sql`
       INSERT INTO organizations (
-        ai_user_id,
+        user_id,
         bluehost_id,
         name,
         type,
@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         custom_context,
         created_at
       ) VALUES (
-        ${ai_user_id},
+        ${user_id},
         ${bluehost_id},
         ${body.name},
         ${body.type},
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
       {
         success: true,
         organization_id: newOrg.id,
-        ai_user_id,
+        user_id,
       },
       { status: 201 }
     );
