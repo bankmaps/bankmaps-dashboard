@@ -14,6 +14,10 @@ export default function UsersPage() {
     { id: "fair-lending", label: "Fair Lending Reports" },
     { id: "outreach", label: "Outreach Reports" },
     { id: "community-dev", label: "Community Development" },
+    { id: "calendar", label: "Calendar" },
+    { id: "task-manager", label: "Task Manager" },
+    { id: "activity-logs", label: "Activity Logs" },
+    { id: "download-center", label: "Download Center" },
   ];
 
   return (
