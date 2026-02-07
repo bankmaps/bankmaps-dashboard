@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
 
   if (!sessionCookie?.value) {
     // No valid session → force back to login
-    const loginUrl = new URL('/login.php', request.url);
+    const loginUrl = new URL('https://bankmaps.com/login.php');
     loginUrl.searchParams.set('redirect', pathname); // optional: come back here after login
     return NextResponse.redirect(loginUrl);
   }
