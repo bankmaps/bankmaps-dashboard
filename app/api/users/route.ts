@@ -74,31 +74,33 @@ export async function POST(req: NextRequest) {
     const ai_user_id = aiUser.id;
     console.log('User upserted - ai_user_id:', ai_user_id);
 
-    // Step 2: Insert new organization
-    const [newOrg] = await sql`
-      INSERT INTO organizations (
-        ai_user_id,
-        name,
-        type,
-        regulator,
-        states,
-        linked_sources,
-        geographies,
-        custom_context,
-        created_at
-      ) VALUES (
-        ${ai_user_id},
-        ${body.name},
-        ${body.type},
-        ${body.regulator},
-        ${JSON.stringify(body.states || [])}::jsonb,
-        ${JSON.stringify(body.linked || {})}::jsonb,
-        ${JSON.stringify(body.geographies || [])}::jsonb,
-        ${body.customContext || null},
-        NOW()
-      )
-      RETURNING id;
-    `;
+// Step 2: Insert new organization - NOW INCLUDING bluehost_id
+const [newOrg] = await sql`
+  INSERT INTO organizations (
+    ai_user_id,
+    bluehost_id,                    // ← ADDED THIS COLUMN
+    name,
+    type,
+    regulator,
+    states,
+    linked_sources,
+    geographies,
+    custom_context,
+    created_at
+  ) VALUES (
+    ${ai_user_id},
+    ${bluehost_id},                 // ← ADDED THIS VALUE (from JWT sub)
+    ${body.name},
+    ${body.type},
+    ${body.regulator},
+    ${JSON.stringify(body.states || [])}::jsonb,
+    ${JSON.stringify(body.linked || {})}::jsonb,
+    ${JSON.stringify(body.geographies || [])}::jsonb,
+    ${body.customContext || null},
+    NOW()
+  )
+  RETURNING id;
+`;
 
     console.log('Organization inserted - id:', newOrg.id);
 
