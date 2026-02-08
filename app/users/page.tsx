@@ -3,7 +3,7 @@ import { useState } from "react";
 
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
-  const [activeItem, setActiveItem] = useState<string>("dashboard-home");
+  const [activeItem, setActiveItem] = useState<string>("dashboard");
 
   const menuGroups = [
     {
@@ -150,9 +150,9 @@ export default function UsersPage() {
         <main className="flex-1 p-8 overflow-auto">
           <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
             {/* Dashboard content */}
-            {activeItem === "dashboard-home" && (
+            {activeItem === "dashboard" && (
               <div>
-                <h2 className="text-2xl font-bold mb-6 text-gray-900">Dashboard Overview</h2>
+                <h2 className="text-2xl font-bold mb-6 text-gray-900">Overview</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="p-6 bg-blue-50 rounded-lg border border-blue-100">
                     <h3 className="font-medium text-blue-800">Active Organizations</h3>
@@ -202,7 +202,7 @@ export default function UsersPage() {
             )}
 
             {/* Placeholder for all other items */}
-            {activeItem !== "dashboard-home" && activeItem !== "manage-users" && (
+            {activeItem !== "dashboard" && activeItem !== "manage-users" && (
               <div className="text-center py-20 text-gray-500">
                 <p className="text-xl font-medium">
                   {activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
