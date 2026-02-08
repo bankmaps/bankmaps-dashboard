@@ -132,7 +132,7 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Main area */}
+
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="bg-white border-b px-8 py-4 flex justify-between items-center">
