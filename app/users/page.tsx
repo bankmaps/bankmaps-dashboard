@@ -46,7 +46,7 @@ export default function UsersPage() {
       title: "Resources",
       items: [
         { id: "how-to", label: "How to Guides" },
-        { id: "regulations", label: "Exam Guidelines" },
+        { id: "exam-guides", label: "Exam Guidelines" },
         { id: "regulations", label: "Regulations" },
         { id: "comm-dev-lists", label: "Community Development" },
         { id: "vendors", label: "Vendors" },
@@ -55,8 +55,8 @@ export default function UsersPage() {
     {
       title: "Download Center",
       items: [
-        { id: "cra-reportsx", label: "New Files" },
-        { id: "fair-lendingx", label: "Archives" },
+        { id: "new-files", label: "New Files" },
+        { id: "archives", label: "Archives" },
       ],
     },
   ];
