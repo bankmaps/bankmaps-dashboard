@@ -65,9 +65,9 @@ export default function UsersPage() {
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       
-      <div className="hidden md:block w-80 bg-teal-50 border-r border-gray-200 overflow-y-auto">
+      <div className="hidden md:block w-80 bg-teal-600 border-r border-gray-200 overflow-y-auto">
         <div className="p-6">
-         <h2 <img src="/favicon.ico" alt="Logo" className="w-10 h-6 mx-auto mb-6" /> className="text-2xl font-bold mb-8 text-gray-900">CRA Assistant</h2>
+         <h2 <img src="/logo.png" alt="Logo" className="w-10 h-6 mx-auto mb-6" /> className="text-2xl font-bold mb-8 text-gray-900">CRA Assistant</h2>
           <nav className="space-y-2">
             {menuGroups.map((group) => (
               <div key={group.title}>
