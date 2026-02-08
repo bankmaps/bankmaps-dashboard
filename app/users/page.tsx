@@ -64,9 +64,10 @@ export default function UsersPage() {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <img src="/logo.png" alt="Logo" className="w-16 h-16 mx-auto mb-6" />
+      
       <div className="hidden md:block w-80 bg-teal-50 border-r border-gray-200 overflow-y-auto">
         <div className="p-6">
+         <img src="/logo.png" alt="Logo" className="w-16 h-16 mx-auto mb-6" />
           <h2 className="text-2xl font-bold mb-8 text-gray-900">BankMaps</h2>
           <nav className="space-y-2">
             {menuGroups.map((group) => (
