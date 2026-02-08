@@ -7,42 +7,56 @@ export default function UsersPage() {
 
   const menuGroups = [
     {
-      title: "Dashboard & Overview",
+      title: "Dashboard",
       items: [
         { id: "dashboard-home", label: "Dashboard Home" },
-        { id: "quick-stats", label: "Quick Stats" },
-        { id: "recent-activity", label: "Recent Activity" },
+      ],
+    },
+    {
+      title: "Account",
+      items: [
+        { id: "manage-profile", label: "Manage Profile" },
+        { id: "manage-users", label: "Manage Users" },
         { id: "notifications", label: "Notifications" },
+        { id: "distrib-list", label: "Distribution Lists" },
+        { id: "logs", label: "Activity Logs" },
       ],
     },
     {
-      title: "User Management",
+      title: "Tools",
       items: [
-        { id: "add-users", label: "Add Users" },
-        { id: "edit-profile", label: "Edit Profile" },
-        { id: "manage-roles", label: "Manage Roles" },
-        { id: "user-list", label: "User List" },
-        { id: "invite-history", label: "Invite History" },
+        { id: "upload-file", label: "Upload Data" },
+        { id: "view-files", label: "Calendar" },
+        { id: "download-files", label: "Task Manager" },
+        { id: "file-history", label: "Geocoding" },
+        { id: "bulk-actions", label: "File Validation" },
       ],
     },
     {
-      title: "File & Upload Tools",
-      items: [
-        { id: "upload-file", label: "Upload File" },
-        { id: "view-files", label: "View Uploaded Files" },
-        { id: "download-files", label: "Download Files" },
-        { id: "file-history", label: "File History" },
-        { id: "bulk-actions", label: "Bulk Actions" },
-      ],
-    },
-    {
-      title: "Reports & Compliance",
+      title: "Live Reports",
       items: [
         { id: "cra-reports", label: "CRA Reports" },
         { id: "fair-lending", label: "Fair Lending Reports" },
-        { id: "outreach", label: "Outreach Reports" },
-        { id: "community-dev", label: "Community Development" },
-        { id: "export-reports", label: "Export Reports" },
+        { id: "outreach", label: "Outreach Activities" },
+        { id: "community-dev", label: "Community Development Lending" },
+        { id: "inv-donat", label: "Investments & Donations" },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        { id: "how-to", label: "How to Guides" },
+        { id: "regulations", label: "Exam Guidelines" },
+        { id: "regulations", label: "Regulations" },
+        { id: "vendors", label: "Vendors" },
+        { id: "comm-dev-lists", label: "Community Development Organizations" },
+      ],
+    },
+    {
+      title: "Download Center",
+      items: [
+        { id: "cra-reportsx", label: "New Auto-Generated Files" },
+        { id: "fair-lendingx", label: "Archives" },
       ],
     },
   ];
