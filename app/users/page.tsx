@@ -63,21 +63,72 @@ export default function UsersPage() {
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      
-<div className="p-6">
-  {/* Logo / Favicon */}
-  <div className="flex justify-center mb-6">
-    <img 
-      src="/logo.png" 
-      alt="BankMaps Logo" 
-      className="w-12 h-12 object-contain" 
-    />
-  </div>
+           {/* Sidebar */}
+      <div className="hidden md:block w-80 bg-teal-600 border-r border-teal-500 overflow-y-auto">
+        <div className="p-6">
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img
+              src="/logo.png"
+              alt="BankMaps Logo"
+              className="w-12 h-12 object-contain"
+            />
+          </div>
 
-  {/* Title */}
-  <h2 className="text-2xl font-bold mb-8 text-white text-center">CRA Assistant</h2>
+          <h2 className="text-2xl font-bold mb-8 text-white text-center">CRA Assistant</h2>
+
           <nav className="space-y-2">
+            {menuGroups.map((group) => (
+              <div key={group.title}>
+                <button
+                  onClick={() => setOpenSection(openSection === group.title ? null : group.title)}
+                  className={`
+                    w-full flex justify-between items-center px-4 py-3 rounded-lg text-base font-semibold
+                    transition-all duration-200
+                    ${openSection === group.title
+                      ? "bg-teal-700 text-white shadow-sm"
+                      : "text-teal-100 hover:bg-teal-500"}
+                  `}
+                >
+                  <span>{group.title}</span>
+                  <span
+                    className={`text-sm transition-transform duration-200 ${
+                      openSection === group.title ? "rotate-180" : "rotate-0"
+                    }`}
+                  >
+                    ▼
+                  </span>
+                </button>
+
+                <div
+                  className={`
+                    ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
+                    ${openSection === group.title ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}
+                  `}
+                >
+                  {group.items.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveItem(item.id)}
+                      className={`
+                        w-full text-left px-5 py-2.5 rounded-md text-sm font-medium
+                        transition-colors duration-150
+                        ${
+                          activeItem === item.id
+                            ? "bg-teal-800 text-white"
+                            : "text-teal-100 hover:bg-teal-700 hover:text-white"
+                        }
+                      `}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </nav>
+        </div>
+      </div>
             {menuGroups.map((group) => (
               <div key={group.title}>
                 {/* Main section header – clickable to toggle */}
