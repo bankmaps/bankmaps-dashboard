@@ -73,7 +73,7 @@ export default function UsersPage() {
               alt="BankMaps Logo" 
               className="w-14 h-14 object-contain rounded-full"
             />
-            <h2 className="text-2xl font-bold text-white">CRA Assistant</h2>
+            <h2 className="text-2xl font-bold text-black">CRA Assistant</h2>
           </div>
 
           <nav className="space-y-2">
