@@ -64,7 +64,11 @@ export default function UsersPage() {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="hidden md:block w-80 bg-[oklch(70.4%_0.14_182.503)] border-r border-[oklch(70.4%_0.14_182.503)/0.3] overflow-y-auto">
+
+      
+
+      
+      <div className="hidden md:block w-80 bg-[oklch(71.5% 0.143 215.221)] border-r border-[oklch(71.5% 0.143 215.221)/0.3] overflow-y-auto">
 <div className="p-6">
   {/* Logo + Title row */}
   <div className="flex items-center gap-3 mb-8">
@@ -86,8 +90,8 @@ export default function UsersPage() {
                     w-full flex justify-between items-center px-4 py-3 rounded-lg text-base font-semibold
                     transition-all duration-200
                     ${openSection === group.title
-                      ? "bg-teal-700 text-white shadow-sm"
-                      : "text-teal-100 hover:bg-teal-500"}
+                      ? "oklch(91.7% 0.08 205.041) text-black shadow-sm"
+                      : "text-black hover:oklch(91.7% 0.08 205.041)"}
                   `}
                 >
                   <span>{group.title}</span>
@@ -116,8 +120,8 @@ export default function UsersPage() {
                         transition-colors duration-150
                         ${
                           activeItem === item.id
-                            ? "bg-teal-800 text-white"
-                            : "text-teal-100 hover:bg-teal-700 hover:text-black"
+                            ? "oklch(91.7% 0.08 205.041) text-black"
+                            : "text-black hover:oklch(91.7% 0.08 205.041) hover:text-black"
                         }
                       `}
                     >
