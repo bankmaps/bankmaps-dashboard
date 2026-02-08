@@ -64,7 +64,7 @@ export default function UsersPage() {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
-      <div className="hidden md:block w-80 bg-teal-600 border-r border-teal-500 overflow-y-auto">
+      <div className="hidden md:block w-80 bg-[oklch(70.4%_0.14_182.503)] border-r border-[oklch(70.4%_0.14_182.503)/0.3] overflow-y-auto">
 <div className="p-6">
   {/* Logo + Title row */}
   <div className="flex items-center gap-3 mb-8">
@@ -73,7 +73,7 @@ export default function UsersPage() {
       alt="BankMaps Logo" 
       className="w-10 h-10 object-contain rounded-full"  // adjust size/shape as needed
     />
-    <h2 className="text-2xl font-bold text-white">CRA Assistant</h2>
+    <h2 className="text-2xl font-bold text-black">CRA Assistant</h2>
   </div>
 
   <nav className="space-y-2">
@@ -117,7 +117,7 @@ export default function UsersPage() {
                         ${
                           activeItem === item.id
                             ? "bg-teal-800 text-white"
-                            : "text-teal-100 hover:bg-teal-700 hover:text-white"
+                            : "text-teal-100 hover:bg-teal-700 hover:text-black"
                         }
                       `}
                     >
