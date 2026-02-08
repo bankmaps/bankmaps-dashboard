@@ -1,45 +1,107 @@
 "use client";
-
 import { useState } from "react";
 
 export default function UsersPage() {
-  const [active, setActive] = useState("dashboard");
+  const [openSection, setOpenSection] = useState<string | null>("Dashboard & Overview");
+  const [activeItem, setActiveItem] = useState<string>("Dashboard Home");
 
-  const menu = [
-    { id: "dashboard", label: "Dashboard" },
-    { id: "add-users", label: "Add Users" },
-    { id: "edit-profile", label: "Edit Profile" },
-    { id: "upload-file", label: "Upload File" },
-    { id: "cra-reports", label: "CRA Reports" },
-    { id: "fair-lending", label: "Fair Lending Reports" },
-    { id: "outreach", label: "Outreach Reports" },
-    { id: "community-dev", label: "Community Development" },
-    { id: "calendar", label: "Calendar" },
-    { id: "task-manager", label: "Task Manager" },
-    { id: "activity-logs", label: "Activity Logs" },
-    { id: "download-center", label: "Download Center" },
+  const menuGroups = [
+    {
+      title: "Dashboard & Overview",
+      items: [
+        { id: "dashboard-home", label: "Dashboard Home" },
+        { id: "quick-stats", label: "Quick Stats" },
+        { id: "recent-activity", label: "Recent Activity" },
+        { id: "notifications", label: "Notifications" },
+      ],
+    },
+    {
+      title: "User Management",
+      items: [
+        { id: "add-users", label: "Add Users" },
+        { id: "edit-profile", label: "Edit Profile" },
+        { id: "manage-roles", label: "Manage Roles" },
+        { id: "user-list", label: "User List" },
+        { id: "invite-history", label: "Invite History" },
+      ],
+    },
+    {
+      title: "File & Upload Tools",
+      items: [
+        { id: "upload-file", label: "Upload File" },
+        { id: "view-files", label: "View Uploaded Files" },
+        { id: "download-files", label: "Download Files" },
+        { id: "file-history", label: "File History" },
+        { id: "bulk-actions", label: "Bulk Actions" },
+      ],
+    },
+    {
+      title: "Reports & Compliance",
+      items: [
+        { id: "cra-reports", label: "CRA Reports" },
+        { id: "fair-lending", label: "Fair Lending Reports" },
+        { id: "outreach", label: "Outreach Reports" },
+        { id: "community-dev", label: "Community Development" },
+        { id: "export-reports", label: "Export Reports" },
+      ],
+    },
   ];
 
   return (
     <div className="flex h-screen bg-gray-100">
-      {/* Sidebar */}
-      <div className="hidden md:block w-64 bg-white border-r border-gray-200">
+      {/* Sidebar – wider for more items, scrollable if needed */}
+      <div className="hidden md:block w-80 bg-white border-r border-gray-200 overflow-y-auto">
         <div className="p-6">
-          <h2 className="text-xl font-bold mb-8">BankMaps</h2>
-          <nav className="space-y-1">
-            {menu.map(item => (
-              <button
-                key={item.id}
-                onClick={() => setActive(item.id)}
-                className={`
-                  w-full text-left px-4 py-3 rounded-lg text-sm font-medium
-                  ${active === item.id 
-                    ? "bg-blue-600 text-white" 
-                    : "text-gray-700 hover:bg-gray-100"}
-                `}
-              >
-                {item.label}
-              </button>
+          <h2 className="text-2xl font-bold mb-8 text-gray-900">BankMaps</h2>
+          <nav className="space-y-2">
+            {menuGroups.map((group) => (
+              <div key={group.title}>
+                {/* Main section button */}
+                <button
+                  onClick={() => setOpenSection(openSection === group.title ? null : group.title)}
+                  className={`
+                    w-full flex justify-between items-center px-4 py-3 rounded-lg text-base font-semibold
+                    transition-all duration-200
+                    ${openSection === group.title
+                      ? "bg-blue-50 text-blue-800 shadow-sm"
+                      : "text-gray-800 hover:bg-gray-50"}
+                  `}
+                >
+                  <span>{group.title}</span>
+                  <span
+                    className={`text-sm transition-transform duration-200 ${
+                      openSection === group.title ? "rotate-180" : "rotate-0"
+                    }`}
+                  >
+                    ▼
+                  </span>
+                </button>
+
+                {/* Sub-items – slide down with animation */}
+                <div
+                  className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${
+                    openSection === group.title ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+                  }`}
+                >
+                  {group.items.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveItem(item.id)}
+                      className={`
+                        w-full text-left px-5 py-2.5 rounded-md text-sm font-medium
+                        transition-colors duration-150
+                        ${
+                          activeItem === item.id
+                            ? "bg-blue-600 text-white"
+                            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                        }
+                      `}
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </nav>
         </div>
@@ -49,8 +111,8 @@ export default function UsersPage() {
       <div className="flex-1 flex flex-col">
         {/* Top bar */}
         <header className="bg-white border-b px-8 py-4 flex justify-between items-center">
-          <h1 className="text-xl font-semibold">
-            {menu.find(m => m.id === active)?.label || "Dashboard"}
+          <h1 className="text-xl font-semibold text-gray-900">
+            {activeItem.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ") || "Dashboard"}
           </h1>
           <div className="flex items-center gap-4">
             <span className="text-sm text-gray-600">Welcome, Stuart</span>
@@ -62,62 +124,11 @@ export default function UsersPage() {
 
         {/* Content */}
         <main className="flex-1 p-8 overflow-auto">
-          <div className="bg-white rounded-lg shadow p-8">
-            {active === "dashboard" && (
+          <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
+            {activeItem === "dashboard-home" && (
               <div>
-                <h2 className="text-2xl font-bold mb-6">Dashboard Overview</h2>
+                <h2 className="text-2xl font-bold mb-6 text-gray-900">Dashboard Overview</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="p-6 bg-blue-50 rounded-lg border border-blue-100">
                     <h3 className="font-medium text-blue-800">Active Organizations</h3>
-                    <div className="text-4xl font-bold mt-2">2</div>
-                  </div>
-                  <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 className="font-medium text-gray-700">Last Activity</h3>
-                    <div className="text-4xl font-bold mt-2">2 days ago</div>
-                  </div>
-                  <div className="p-6 bg-green-50 rounded-lg border border-green-100">
-                    <h3 className="font-medium text-green-800">Total Files</h3>
-                    <div className="text-4xl font-bold mt-2">47</div>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {active === "add-users" && (
-              <div className="max-w-lg">
-                <h2 className="text-2xl font-bold mb-6">Add User</h2>
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Email</label>
-                    <input
-                      type="email"
-                      className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="user@bank.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Role</label>
-                    <select className="w-full px-4 py-2 border rounded-lg">
-                      <option>Viewer</option>
-                      <option>Editor</option>
-                      <option>Admin</option>
-                    </select>
-                  </div>
-                  <button className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700">
-                    Send Invite
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {active !== "dashboard" && active !== "add-users" && (
-              <div className="text-center py-20 text-gray-500">
-                <p className="text-xl">{menu.find(m => m.id === active)?.label} – coming soon</p>
-              </div>
-            )}
-          </div>
-        </main>
-      </div>
-    </div>
-  );
-}
+                    <div class
