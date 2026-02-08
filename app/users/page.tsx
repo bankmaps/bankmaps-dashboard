@@ -2,8 +2,8 @@
 import { useState } from "react";
 
 export default function UsersPage() {
-  const [openSection, setOpenSection] = useState<string | null>("Dashboard & Overview");
-  const [activeItem, setActiveItem] = useState<string>("Dashboard Home");
+  const [openSection, setOpenSection] = useState<string | null>("Dashboard");
+  const [activeItem, setActiveItem] = useState<string>("dashboard-home");
 
   const menuGroups = [
     {
@@ -63,23 +63,25 @@ export default function UsersPage() {
 
   return (
     <div className="flex h-screen bg-gray-100">
-           {/* Sidebar */}
+      {/* Sidebar */}
       <div className="hidden md:block w-80 bg-teal-600 border-r border-teal-500 overflow-y-auto">
         <div className="p-6">
-          {/* Logo */}
+          {/* Logo / Favicon */}
           <div className="flex justify-center mb-6">
-            <img
-              src="/logo.png"
-              alt="BankMaps Logo"
-              className="w-12 h-12 object-contain"
+            <img 
+              src="/logo.png" 
+              alt="BankMaps Logo" 
+              className="w-12 h-12 object-contain" 
             />
           </div>
 
+          {/* Title */}
           <h2 className="text-2xl font-bold mb-8 text-white text-center">CRA Assistant</h2>
 
           <nav className="space-y-2">
             {menuGroups.map((group) => (
               <div key={group.title}>
+                {/* Main section header – clickable to toggle */}
                 <button
                   onClick={() => setOpenSection(openSection === group.title ? null : group.title)}
                   className={`
@@ -100,6 +102,7 @@ export default function UsersPage() {
                   </span>
                 </button>
 
+                {/* Collapsible sub-items */}
                 <div
                   className={`
                     ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
@@ -129,61 +132,8 @@ export default function UsersPage() {
           </nav>
         </div>
       </div>
-            {menuGroups.map((group) => (
-              <div key={group.title}>
-                {/* Main section header – clickable to toggle */}
-                <button
-                  onClick={() => setOpenSection(openSection === group.title ? null : group.title)}
-                  className={`
-                    w-full flex justify-between items-center px-4 py-3 rounded-lg text-base font-semibold
-                    transition-all duration-200
-                    ${openSection === group.title
-                      ? "bg-blue-50 text-blue-800 shadow-sm"
-                      : "text-gray-800 hover:bg-gray-50"}
-                  `}
-                >
-                  <span>{group.title}</span>
-                  <span
-                    className={`text-sm transition-transform duration-200 ${
-                      openSection === group.title ? "rotate-180" : "rotate-0"
-                    }`}
-                  >
-                    ▼
-                  </span>
-                </button>
 
-                {/* Collapsible sub-items */}
-                <div
-                  className={`
-                    ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
-                    ${openSection === group.title ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}
-                  `}
-                >
-                  {group.items.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => setActiveItem(item.id)}
-                      className={`
-                        w-full text-left px-5 py-2.5 rounded-md text-sm font-medium
-                        transition-colors duration-150
-                        ${
-                          activeItem === item.id
-                            ? "bg-blue-600 text-white"
-                            : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-                        }
-                      `}
-                    >
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </nav>
-        </div>
-      </div>
-
-
+      {/* Main area */}
       <div className="flex-1 flex flex-col">
         {/* Header */}
         <header className="bg-white border-b px-8 py-4 flex justify-between items-center">
@@ -226,7 +176,7 @@ export default function UsersPage() {
             )}
 
             {/* Add Users form */}
-            {activeItem === "add-users" && (
+            {activeItem === "manage-users" && (  // ← changed id to match your menu
               <div className="max-w-lg mx-auto">
                 <h2 className="text-2xl font-bold mb-6 text-gray-900">Add New User</h2>
                 <div className="space-y-6">
@@ -234,19 +184,19 @@ export default function UsersPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                     <input
                       type="email"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                       placeholder="user@example.com"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                    <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                    <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white">
                       <option>Viewer</option>
                       <option>Editor</option>
                       <option>Admin</option>
                     </select>
                   </div>
-                  <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition">
+                  <button className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 transition">
                     Send Invite
                   </button>
                 </div>
@@ -254,7 +204,7 @@ export default function UsersPage() {
             )}
 
             {/* Placeholder for all other items */}
-            {activeItem !== "dashboard-home" && activeItem !== "add-users" && (
+            {activeItem !== "dashboard-home" && activeItem !== "manage-users" && (
               <div className="text-center py-20 text-gray-500">
                 <p className="text-xl font-medium">
                   {activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
