@@ -65,20 +65,18 @@ export default function UsersPage() {
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="hidden md:block w-80 bg-teal-600 border-r border-teal-500 overflow-y-auto">
-        <div className="p-6">
-          {/* Logo / Favicon */}
-          <div className="flex justify-center mb-6">
-            <img 
-              src="/logo.png" 
-              alt="BankMaps Logo" 
-              className="w-12 h-12 object-contain" 
-            />
-          </div>
+<div className="p-6">
+  {/* Logo + Title row */}
+  <div className="flex items-center gap-3 mb-8">
+    <img 
+      src="/logo.png" 
+      alt="BankMaps Logo" 
+      className="w-10 h-10 object-contain rounded-full"  // adjust size/shape as needed
+    />
+    <h2 className="text-2xl font-bold text-white">CRA Assistant</h2>
+  </div>
 
-          {/* Title */}
-          <h2 className="text-2xl font-bold mb-8 text-white text-center">CRA Assistant</h2>
-
-          <nav className="space-y-2">
+  <nav className="space-y-2">
             {menuGroups.map((group) => (
               <div key={group.title}>
                 {/* Main section header – clickable to toggle */}
