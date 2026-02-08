@@ -9,7 +9,7 @@ export default function UsersPage() {
     {
       title: "Dashboard",
       items: [
-        { id: "dashboard-home", label: "Dashboard Home" },
+        { id: "dashboard-home", label: "Home" },
       ],
     },
     {
@@ -17,8 +17,8 @@ export default function UsersPage() {
       items: [
         { id: "manage-profile", label: "Manage Profile" },
         { id: "manage-users", label: "Manage Users" },
-        { id: "notifications", label: "Notifications" },
         { id: "distrib-list", label: "Distribution Lists" },
+        { id: "notifications", label: "Notifications" },
         { id: "logs", label: "Activity Logs" },
       ],
     },
@@ -38,7 +38,7 @@ export default function UsersPage() {
         { id: "cra-reports", label: "CRA Reports" },
         { id: "fair-lending", label: "Fair Lending Reports" },
         { id: "outreach", label: "Outreach Activities" },
-        { id: "community-dev", label: "Community Development Lending" },
+        { id: "community-dev", label: "Community Development" },
         { id: "inv-donat", label: "Investments & Donations" },
       ],
     },
@@ -48,14 +48,14 @@ export default function UsersPage() {
         { id: "how-to", label: "How to Guides" },
         { id: "regulations", label: "Exam Guidelines" },
         { id: "regulations", label: "Regulations" },
+        { id: "comm-dev-lists", label: "Community Development" },
         { id: "vendors", label: "Vendors" },
-        { id: "comm-dev-lists", label: "Community Development Organizations" },
       ],
     },
     {
       title: "Download Center",
       items: [
-        { id: "cra-reportsx", label: "New Auto-Generated Files" },
+        { id: "cra-reportsx", label: "New Files" },
         { id: "fair-lendingx", label: "Archives" },
       ],
     },
