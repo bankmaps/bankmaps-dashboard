@@ -64,34 +64,30 @@ export default function UsersPage() {
   return (
     <div className="flex h-screen bg-gray-100">
       {/* Sidebar */}
+      <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
+        <div className="p-6">
+          {/* Logo + Title row */}
+          <div className="flex items-center gap-3 mb-8">
+            <img 
+              src="/logo.png" 
+              alt="BankMaps Logo" 
+              className="w-10 h-10 object-contain rounded-full"
+            />
+            <h2 className="text-2xl font-bold text-white">CRA Assistant</h2>
+          </div>
 
-      
-
-      
-      <div className="hidden md:block w-80 bg-[oklch(71.5% 0.143 215.221)] border-r border-[oklch(71.5% 0.143 215.221)/0.3] overflow-y-auto">
-<div className="p-6">
-  {/* Logo + Title row */}
-  <div className="flex items-center gap-3 mb-8">
-    <img 
-      src="/logo.png" 
-      alt="BankMaps Logo" 
-      className="w-10 h-10 object-contain rounded-full"  // adjust size/shape as needed
-    />
-    <h2 className="text-2xl font-bold text-black">CRA Assistant</h2>
-  </div>
-
-  <nav className="space-y-2">
+          <nav className="space-y-2">
             {menuGroups.map((group) => (
               <div key={group.title}>
-                {/* Main section header – clickable to toggle */}
+                {/* Main section header */}
                 <button
                   onClick={() => setOpenSection(openSection === group.title ? null : group.title)}
                   className={`
                     w-full flex justify-between items-center px-4 py-3 rounded-lg text-base font-semibold
                     transition-all duration-200
                     ${openSection === group.title
-                      ? "oklch(91.7% 0.08 205.041) text-black shadow-sm"
-                      : "text-black hover:oklch(91.7% 0.08 205.041)"}
+                      ? "bg-[oklch(91.7%_0.08_205.041)] text-black shadow-sm"
+                      : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8]"}
                   `}
                 >
                   <span>{group.title}</span>
@@ -120,8 +116,8 @@ export default function UsersPage() {
                         transition-colors duration-150
                         ${
                           activeItem === item.id
-                            ? "oklch(91.7% 0.08 205.041) text-black"
-                            : "text-black hover:oklch(91.7% 0.08 205.041) hover:text-black"
+                            ? "bg-[oklch(91.7%_0.08_205.041)] text-black"
+                            : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8] hover:text-black"
                         }
                       `}
                     >
@@ -178,7 +174,7 @@ export default function UsersPage() {
             )}
 
             {/* Add Users form */}
-            {activeItem === "manage-users" && (  // ← changed id to match your menu
+            {activeItem === "manage-users" && (
               <div className="max-w-lg mx-auto">
                 <h2 className="text-2xl font-bold mb-6 text-gray-900">Add New User</h2>
                 <div className="space-y-6">
