@@ -71,7 +71,7 @@ export default function UsersPage() {
             <img 
               src="/logo.png" 
               alt="BankMaps Logo" 
-              className="w-14 h-14 object-contain rounded-full"
+              className="w-14 h-14 object-contain squared-full"
             />
             <h2 className="text-2xl font-bold text-black">CRA Assistant</h2>
           </div>
