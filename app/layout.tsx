@@ -15,11 +15,11 @@ const geistMono = Geist_Mono({
 
 // Metadata with explicit icon override
 export const metadata: Metadata = {
-  title: "BankMaps Grok Chat",
-  description: "Grok-powered AI assistant for BankMaps members",
+  title: "BankMaps",
+  description: "CRA ai Assistant",
   icons: {
-    icon: "/bankmapsfav.ico",           // Primary favicon (renamed to avoid cache)
-    shortcut: "/bankmapsfav.ico",
+    icon: "/favicon.ico",           // Primary favicon (renamed to avoid cache)
+    shortcut: "/favicon.ico",
     apple: "/apple-touch-icon.png",      // For iOS home screen
   },
 };
