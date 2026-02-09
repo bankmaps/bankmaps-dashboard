@@ -122,7 +122,7 @@ export default function ManageProfile() {
     setNewGeo({ state: [], county: [], town: [], tract_number: [], type: "", name: "" });
   };
 
-  const handleUpdateGeo = (index: number, updatedGeo: any) {
+  const handleUpdateGeo = (index: number, updatedGeo: any) => {
     const updated = [...geographies];
     updated[index] = updatedGeo;
     setGeographies(updated);
