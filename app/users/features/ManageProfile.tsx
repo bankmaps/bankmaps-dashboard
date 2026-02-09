@@ -184,7 +184,7 @@ const handleDeleteGeo = (index: number) => {
             <input
               type="text"
               value={orgName}
-              onChange=(e) => setOrgName(e.target.value)
+              onChange={(e) => setOrgName(e.target.value)}
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
