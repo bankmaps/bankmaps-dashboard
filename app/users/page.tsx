@@ -174,6 +174,9 @@ export default function UsersPage() {
       </div>
     )}
 
+{/* Manage Profile */}
+    {activeItem === "manage-profile" && <ManageProfile />}
+    
     {/* Add Users form */}
     {activeItem === "manage-users" && (
       <div className="max-w-lg mx-auto">
