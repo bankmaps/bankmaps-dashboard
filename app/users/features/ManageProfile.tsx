@@ -21,7 +21,7 @@ export default function ManageProfile() {
     const loadProfile = async () => {
       try {
         setLoading(true);
-        const res = await fetch("/api/profile", {
+        const res = await fetch("/api/users", {
           method: "GET",
           credentials: "include", // sends session cookies
         });
@@ -49,7 +49,7 @@ export default function ManageProfile() {
   const handleSave = async () => {
     try {
       setError(null);
-      const res = await fetch("/api/profile", {
+      const res = await fetch("/api/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
