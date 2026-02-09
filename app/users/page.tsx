@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-
+import ManageProfile from "./features/ManageProfile";
 
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
@@ -148,65 +148,67 @@ export default function UsersPage() {
         </header>
 
         {/* Content */}
-        <main className="flex-1 p-8 overflow-auto">
-          <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
-            {/* Dashboard content */}
-            {activeItem === "dashboard" && (
-              <div>
-                <h2 className="text-2xl font-bold mb-6 text-gray-900">Overview</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="p-6 bg-blue-50 rounded-lg border border-blue-100">
-                    <h3 className="font-medium text-blue-800">Active Organizations</h3>
-                    <div className="text-4xl font-bold mt-2 text-blue-900">2</div>
-                    <p className="text-sm text-blue-700 mt-1">All in good standing</p>
-                  </div>
-                  <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
-                    <h3 className="font-medium text-gray-700">Last Activity</h3>
-                    <div className="text-4xl font-bold mt-2 text-gray-900">2 days ago</div>
-                    <p className="text-sm text-gray-600 mt-1">File upload • CRA data</p>
-                  </div>
-                  <div className="p-6 bg-green-50 rounded-lg border border-green-100">
-                    <h3 className="font-medium text-green-800">Total Files</h3>
-                    <div className="text-4xl font-bold mt-2 text-green-900">47</div>
-                    <p className="text-sm text-green-700 mt-1">Across all users</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Add Users form */}
-            {activeItem === "manage-users" && (
-              <div className="max-w-lg mx-auto">
-                <h2 className="text-2xl font-bold mb-6 text-gray-900">Add New User</h2>
-                <div className="space-y-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                    <input
-                      type="email"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      placeholder="user@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
-                    <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white">
-                      <option>Viewer</option>
-                      <option>Editor</option>
-                      <option>Admin</option>
-                    </select>
-                  </div>
-                  <button className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 transition">
-                    Send Invite
-                  </button>
-                </div>
-              </div>
-            )}
-
-
-
-            
-        </main>
+<main className="flex-1 p-8 overflow-auto">
+  <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
+    {/* Dashboard content */}
+    {activeItem === "dashboard" && (
+      <div>
+        <h2 className="text-2xl font-bold mb-6 text-gray-900">Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="p-6 bg-blue-50 rounded-lg border border-blue-100">
+            <h3 className="font-medium text-blue-800">Active Organizations</h3>
+            <div className="text-4xl font-bold mt-2 text-blue-900">2</div>
+            <p className="text-sm text-blue-700 mt-1">All in good standing</p>
+          </div>
+          <div className="p-6 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="font-medium text-gray-700">Last Activity</h3>
+            <div className="text-4xl font-bold mt-2 text-gray-900">2 days ago</div>
+            <p className="text-sm text-gray-600 mt-1">File upload • CRA data</p>
+          </div>
+          <div className="p-6 bg-green-50 rounded-lg border border-green-100">
+            <h3 className="font-medium text-green-800">Total Files</h3>
+            <div className="text-4xl font-bold mt-2 text-green-900">47</div>
+            <p className="text-sm text-green-700 mt-1">Across all users</p>
+          </div>
+        </div>
       </div>
-    </div>
-  );
-}
+    )}
+
+    {/* Add Users form */}
+    {activeItem === "manage-users" && (
+      <div className="max-w-lg mx-auto">
+        <h2 className="text-2xl font-bold mb-6 text-gray-900">Add New User</h2>
+        <div className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <input
+              type="email"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+              placeholder="user@example.com"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
+            <select className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white">
+              <option>Viewer</option>
+              <option>Editor</option>
+              <option>Admin</option>
+            </select>
+          </div>
+          <button className="w-full bg-teal-600 text-white py-3 rounded-lg font-medium hover:bg-teal-700 transition">
+            Send Invite
+          </button>
+        </div>
+      </div>
+    )}
+
+    {/* Placeholder for all other items */}
+    {activeItem !== "dashboard" && activeItem !== "manage-users" && (
+      <div className="text-center py-20 text-gray-500">
+        <p className="text-xl font-medium">
+          {activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
+        </p>
+      </div>
+    )}
+  </div>
+</main>
