@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjQ4LCJlbWFpbCI6InN0dWFydEBiYW5rbWFwcy5jb20iLCJuYW1lIjoicnlhbiIsImlhdCI6MTc3MDY1NjcxMywiZXhwIjoxNzcwNjYwMzEzfQ.YfGdqoxuu3jFpeLb6DUUFpRjgbbM50jbohHsFJ2w634";
 
 export default function ManageProfile() {
   const [loading, setLoading] = useState(true);
@@ -40,10 +41,10 @@ export default function ManageProfile() {
         const res = await fetch("/api/users", {
           method: "GET",
           credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`,  // ← this line fixes the 401
-          },
+headers: {
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${token}`
+},
         });
 
         if (!res.ok) {
@@ -77,10 +78,10 @@ export default function ManageProfile() {
       setError(null);
       const res = await fetch("/api/users", {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
+headers: {
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${token}`
+},
         credentials: "include",
         body: JSON.stringify({ name, email }),
       });
