@@ -43,9 +43,9 @@ export default function ManageProfile() {
           method: "GET",
           credentials: "include",
           headers: {
-            "Content-Type": "application/json",
-            // "Authorization": `Bearer ${token}`, // add when token logic is ready
-          },
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${token}`
+},
         });
 
         if (!res.ok) throw new Error("Failed to load profile");
@@ -80,7 +80,10 @@ export default function ManageProfile() {
       setError(null);
       const res = await fetch("/api/users", {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+  "Content-Type": "application/json",
+  "Authorization": `Bearer ${token}`
+},
         credentials: "include",
         body: JSON.stringify({
           name,
