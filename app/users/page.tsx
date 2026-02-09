@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import ManageProfile from "./features/ManageProfile";
+
 
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
