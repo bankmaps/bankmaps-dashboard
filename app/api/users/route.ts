@@ -128,3 +128,78 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+export async function GET(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'No token' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { sub: number };
+    const bluehost_id = decoded.sub;
+
+    const sql = neon(process.env.NEON_DATABASE_URL!);
+
+    // Fetch user basics
+    const userRes = await sql`
+      SELECT user_id, email, name, ai_subscription 
+      FROM users 
+      WHERE bluehost_id = ${bluehost_id}
+      LIMIT 1
+    `;
+
+    if (userRes.length === 0) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    const user = userRes[0];
+
+    // Fetch linked organizations
+    const orgs = await sql`
+      SELECT id, name, type, regulator, states, linked_sources, geographies, custom_context
+      FROM organizations 
+      WHERE user_id = ${user.user_id}
+    `;
+
+    return NextResponse.json({
+      name: user.name,
+      email: user.email,
+      ai_subscription: user.ai_subscription,
+      organizations: orgs,
+    });
+  } catch (error) {
+    console.error("GET /api/users error:", error);
+    return NextResponse.json({ error: "Failed to load profile" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'No token' }, { status: 401 });
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { sub: number };
+    const bluehost_id = decoded.sub;
+
+    const body = await req.json();
+
+    const sql = neon(process.env.NEON_DATABASE_URL!);
+
+    await sql`
+      UPDATE users
+      SET name = ${body.name || null},
+          email = ${body.email || null},
+          updated_at = NOW()
+      WHERE bluehost_id = ${bluehost_id}
+    `;
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error("PATCH /api/users error:", error);
+    return NextResponse.json({ error: "Failed to update" }, { status: 500 });
+  }
+}
