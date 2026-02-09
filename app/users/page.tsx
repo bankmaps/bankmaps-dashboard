@@ -64,98 +64,99 @@ export default function UsersPage() {
 
   return (
     <div className="flex h-screen bg-gray-100">
-{/* Sidebar */}
-<div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
-  <div className="p-6">
-    {/* Logo + Title row */}
-    <div className="flex items-center gap-3 mb-8">
-      <img 
-        src="/logo.png" 
-        alt="BankMaps Logo" 
-        className="w-10 h-10 object-contain rounded-full"
-      />
-      <h2 className="text-2xl font-bold text-white">CRA Assistant</h2>
-    </div>
-
-    <nav className="space-y-2">
-      {menuGroups.map((group) => {
-        const groupRef = useRef<HTMLDivElement>(null);
-
-        useEffect(() => {
-          const observer = new IntersectionObserver(
-            ([entry]) => {
-              if (entry.isIntersecting) {
-                setOpenSection(group.title); // auto-open when heading visible
-              }
-            },
-            { threshold: 0.5 } // open when 50% of heading is in view
-          );
-
-          if (groupRef.current) {
-            observer.observe(groupRef.current);
-          }
-
-          return () => {
-            if (groupRef.current) {
-              observer.unobserve(groupRef.current);
-            }
-          };
-        }, [group.title]);
-
-        return (
-          <div key={group.title} ref={groupRef}>
-            {/* Main section header */}
-            <button
-              onClick={() => setOpenSection(openSection === group.title ? null : group.title)}
-              className={`
-                w-full flex justify-between items-center px-4 py-3 rounded-lg text-base font-semibold
-                transition-all duration-200
-                ${openSection === group.title
-                  ? "bg-[oklch(91.7%_0.08_205.041)] text-black shadow-sm"
-                  : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8]"}
-              `}
-            >
-              <span>{group.title}</span>
-              <span
-                className={`text-sm transition-transform duration-200 ${
-                  openSection === group.title ? "rotate-180" : "rotate-0"
-                }`}
-              >
-                ▼
-              </span>
-            </button>
-
-            {/* Collapsible sub-items */}
-            <div
-              className={`
-                ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
-                ${openSection === group.title ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}
-              `}
-            >
-              {group.items.map((item) => (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveItem(item.id)}
-                  className={`
-                    w-full text-left px-5 py-2.5 rounded-md text-sm font-medium
-                    transition-colors duration-150
-                    ${
-                      activeItem === item.id
-                        ? "bg-[oklch(91.7%_0.08_205.041)] text-black"
-                        : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8] hover:text-black"
-                    }
-                  `}
-                >
-                  {item.label}
-                </button>
-              ))}
-            </div>
+      {/* Sidebar */}
+      <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
+        <div className="p-6">
+          {/* Logo + Title row */}
+          <div className="flex items-center gap-3 mb-8">
+            <img 
+              src="/logo.png" 
+              alt="BankMaps Logo" 
+              className="w-10 h-10 object-contain rounded-full"
+            />
+            <h2 className="text-2xl font-bold text-white">CRA Assistant</h2>
           </div>
-        );
-      })}
-    </nav>
-  </div>
-</div>
+
+          <nav className="space-y-2">
+            {menuGroups.map((group) => {
+              const groupRef = useRef<HTMLDivElement>(null);
+
+              useEffect(() => {
+                const observer = new IntersectionObserver(
+                  ([entry]) => {
+                    if (entry.isIntersecting) {
+                      setOpenSection(group.title); // auto-open when heading visible
+                    }
+                  },
+                  { threshold: 0.5 } // open when 50% of heading is in view
+                );
+
+                if (groupRef.current) {
+                  observer.observe(groupRef.current);
+                }
+
+                return () => {
+                  if (groupRef.current) {
+                    observer.unobserve(groupRef.current);
+                  }
+                };
+              }, [group.title]);
+
+              return (
+                <div key={group.title} ref={groupRef}>
+                  {/* Main section header – clickable + hover to open */}
+                  <button
+                    onClick={() => setOpenSection(openSection === group.title ? null : group.title)}
+                    onMouseEnter={() => setOpenSection(group.title)} // open on hover
+                    className={`
+                      w-full flex justify-between items-center px-4 py-3 rounded-lg text-base font-semibold
+                      transition-all duration-200
+                      ${openSection === group.title
+                        ? "bg-[oklch(91.7%_0.08_205.041)] text-black shadow-sm"
+                        : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8] hover:shadow-sm hover:scale-[1.02]"}
+                    `}
+                  >
+                    <span>{group.title}</span>
+                    <span
+                      className={`text-sm transition-transform duration-200 ${
+                        openSection === group.title ? "rotate-180" : "rotate-0"
+                      }`}
+                    >
+                      ▼
+                    </span>
+                  </button>
+
+                  {/* Collapsible sub-items */}
+                  <div
+                    className={`
+                      ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
+                      ${openSection === group.title ? "max-h-96 opacity-100" : "max-h-0 opacity-0"}
+                    `}
+                  >
+                    {group.items.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveItem(item.id)}
+                        className={`
+                          w-full text-left px-5 py-2.5 rounded-md text-sm font-medium
+                          transition-colors duration-150
+                          ${
+                            activeItem === item.id
+                              ? "bg-[oklch(91.7%_0.08_205.041)] text-black"
+                              : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8] hover:text-black"
+                          }
+                        `}
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </nav>
+        </div>
+      </div>
 
       {/* Main area */}
       <div className="flex-1 flex flex-col">
