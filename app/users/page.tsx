@@ -3,13 +3,13 @@ import { useState } from "react";
 
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
-  const [activeItem, setActiveItem] = useState<string>("dashboard");
+  const [activeItem, setActiveItem] = useState<string>("dashboard-home");
 
   const menuGroups = [
     {
       title: "Dashboard",
       items: [
-        { id: "dashboard", label: "Home" },
+        { id: "dashboard-home", label: "Home" },
       ],
     },
     {
@@ -71,15 +71,15 @@ export default function UsersPage() {
             <img 
               src="/logo.png" 
               alt="BankMaps Logo" 
-              className="w-20 h-20 object-contain squared-full"
+              className="w-10 h-10 object-contain rounded-full"
             />
-            <h2 className="text-2xl font-bold text-black">CRA Assistant</h2>
+            <h2 className="text-2xl font-bold text-white">CRA Assistant</h2>
           </div>
 
           <nav className="space-y-2">
             {menuGroups.map((group) => (
               <div key={group.title}>
-                {/* Main section header */}
+                {/* Main section header – with hover */}
                 <button
                   onClick={() => setOpenSection(openSection === group.title ? null : group.title)}
                   className={`
@@ -87,7 +87,7 @@ export default function UsersPage() {
                     transition-all duration-200
                     ${openSection === group.title
                       ? "bg-[oklch(91.7%_0.08_205.041)] text-black shadow-sm"
-                      : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8]"}
+                      : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8] hover:shadow-sm hover:scale-[1.02]"}
                   `}
                 >
                   <span>{group.title}</span>
@@ -100,7 +100,7 @@ export default function UsersPage() {
                   </span>
                 </button>
 
-                {/* Collapsible sub-items */}
+                {/* Collapsible sub-items – with hover */}
                 <div
                   className={`
                     ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out
@@ -113,11 +113,11 @@ export default function UsersPage() {
                       onClick={() => setActiveItem(item.id)}
                       className={`
                         w-full text-left px-5 py-2.5 rounded-md text-sm font-medium
-                        transition-colors duration-150
+                        transition-all duration-150
                         ${
                           activeItem === item.id
-                            ? "bg-[oklch(91.7%_0.08_205.041)] text-black"
-                            : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8] hover:text-black"
+                            ? "bg-[oklch(91.7%_0.08_205.041)] text-black shadow-md"
+                            : "text-white hover:bg-[oklch(91.7%_0.08_205.041)/0.8] hover:shadow-sm hover:scale-[1.02] hover:text-black"
                         }
                       `}
                     >
@@ -150,9 +150,9 @@ export default function UsersPage() {
         <main className="flex-1 p-8 overflow-auto">
           <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
             {/* Dashboard content */}
-            {activeItem === "dashboard" && (
+            {activeItem === "dashboard-home" && (
               <div>
-                <h2 className="text-2xl font-bold mb-6 text-gray-900">Overview</h2>
+                <h2 className="text-2xl font-bold mb-6 text-gray-900">Dashboard Overview</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="p-6 bg-blue-50 rounded-lg border border-blue-100">
                     <h3 className="font-medium text-blue-800">Active Organizations</h3>
