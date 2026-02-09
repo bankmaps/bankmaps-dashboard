@@ -157,9 +157,9 @@ export async function GET(req: NextRequest) {
 
     // Fetch linked organizations
     const orgs = await sql`
-      SELECT id, name, type, regulator, states, linked_sources, geographies, custom_context
+      SELECT user_id, name, type, regulator, states, linked_sources, geographies, custom_context
       FROM organizations 
-      WHERE user_id = ${user.user_id}
+      WHERE bluehost_id = ${bluehost_id}
     `;
 
     return NextResponse.json({
