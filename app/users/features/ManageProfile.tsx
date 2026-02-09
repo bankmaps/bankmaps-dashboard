@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjQ4LCJlbWFpbCI6InN0dWFydEBiYW5rbWFwcy5jb20iLCJuYW1lIjoicnlhbiIsImlhdCI6MTc3MDY1NjcxMywiZXhwIjoxNzcwNjYwMzEzfQ.YfGdqoxuu3jFpeLb6DUUFpRjgbbM50jbohHsFJ2w634";
 
 export default function ManageProfile() {
   const [loading, setLoading] = useState(true);
@@ -13,13 +12,13 @@ export default function ManageProfile() {
   const [email, setEmail] = useState("");
   const [subscription, setSubscription] = useState("active");
 
-  // Organization info (assuming one org for now - expand to multi-org later)
+  // Organization info (single org for simplicity)
   const [orgName, setOrgName] = useState("");
   const [orgType, setOrgType] = useState("");
   const [regulator, setRegulator] = useState("");
   const [states, setStates] = useState<string[]>([]);
 
-  // Geographies (array of objects)
+  // Geographies
   const [geographies, setGeographies] = useState<any[]>([]);
   const [editingGeoIndex, setEditingGeoIndex] = useState<number | null>(null);
   const [newGeo, setNewGeo] = useState({
@@ -44,8 +43,7 @@ export default function ManageProfile() {
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            // Add Authorization if JWT is used
-            // "Authorization": `Bearer ${token}`,
+            // "Authorization": `Bearer ${token}`, // add when token logic is ready
           },
         });
 
@@ -57,8 +55,7 @@ export default function ManageProfile() {
         setEmail(data.email || "");
         setSubscription(data.ai_subscription || "inactive");
 
-        // Assume one org for simplicity
-        const org = data.organizations[0] || {};
+        const org = data.organizations?.[0] || {};
         setOrgName(org.name || "");
         setOrgType(org.type || "");
         setRegulator(org.regulator || "");
@@ -76,33 +73,29 @@ export default function ManageProfile() {
     fetchData();
   }, []);
 
-  // Save handler (updates all)
+  // Save handler
   const handleSave = async () => {
     try {
       setError(null);
-      setSuccess(false);
-
-      const payload = {
-        name,
-        email,
-        organization: {  // Assume one org update
-          name: orgName,
-          type: orgType,
-          regulator,
-          states,
-          geographies,
-          custom_context: customContext,
-        },
-      };
-
       const res = await fetch("/api/users", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name,
+          email,
+          organization: {
+            name: orgName,
+            type: orgType,
+            regulator,
+            states,
+            geographies,
+            custom_context: customContext,
+          },
+        }),
       });
 
-      if (!res.ok) throw new Error("Failed to save changes");
+      if (!res.ok) throw new Error("Failed to save");
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -114,23 +107,22 @@ export default function ManageProfile() {
   // Geography handlers
   const handleAddGeo = () => {
     if (!newGeo.name || !newGeo.type) {
-      setError("Name and type required for geography");
+      setError("Name and type required");
       return;
     }
-
     setGeographies([...geographies, newGeo]);
     setNewGeo({ state: [], county: [], town: [], tract_number: [], type: "", name: "" });
   };
 
-  const handleUpdateGeo = (index: number, updatedGeo: any) => {
+  const handleUpdateGeo = (index: number) => {
     const updated = [...geographies];
-    updated[index] = updatedGeo;
+    // Save the current state (you can add more fields later)
     setGeographies(updated);
     setEditingGeoIndex(null);
   };
 
-const handleDeleteGeo = (index: number) => {
-   const updated = geographies.filter((_, i) => i !== index);
+  const handleDeleteGeo = (index: number) => {
+    const updated = geographies.filter((_, i) => i !== index);
     setGeographies(updated);
   };
 
@@ -259,8 +251,8 @@ const handleDeleteGeo = (index: number) => {
                       <option value="REMA">REMA</option>
                       <option value="Other">Other</option>
                     </select>
-                    {/* Add inputs for state, county, town, tract_number */}
-                    <button onClick={() => handleUpdateGeo(index, updated[index])} className="bg-teal-600 text-white px-4 py-2 rounded-lg">
+                    {/* Add more inputs for state, county, town, tract_number */}
+                    <button onClick={() => handleUpdateGeo(index)} className="bg-teal-600 text-white px-4 py-2 rounded-lg">
                       Save
                     </button>
                     <button onClick={() => setEditingGeoIndex(null)} className="ml-2 text-gray-600">
@@ -304,7 +296,7 @@ const handleDeleteGeo = (index: number) => {
               <option value="REMA">REMA</option>
               <option value="Other">Other</option>
             </select>
-            {/* Add inputs for state, county, town, tract_number */}
+            {/* Add more inputs for state, county, town, tract_number */}
             <button onClick={handleAddGeo} className="bg-teal-600 text-white px-4 py-2 rounded-lg">
               Add Geography
             </button>
