@@ -296,7 +296,7 @@ const handleDeleteGeo = (index: number) => {
             />
             <select
               value={newGeo.type}
-              onChange=(e) => setNewGeo({ ...newGeo, type: e.target.value })
+              onChange={(e) => setNewGeo({ ...newGeo, type: e.target.value })}
               className="w-full px-4 py-2 border rounded-lg"
             >
               <option value="">Type</option>
@@ -317,7 +317,7 @@ const handleDeleteGeo = (index: number) => {
         <h2 className="text-xl font-semibold mb-4">Custom Context</h2>
         <textarea
           value={customContext}
-          onChange=(e) => setCustomContext(e.target.value)
+          onChange={(e) => setCustomContext(e.target.value)}
           className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
           rows={4}
           placeholder="Additional notes or context"
