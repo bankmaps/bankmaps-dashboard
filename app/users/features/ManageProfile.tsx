@@ -192,7 +192,7 @@ const handleDeleteGeo = (index: number) => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
             <select
               value={orgType}
-              onChange=(e) => setOrgType(e.target.value)
+              onChange={(e) => setOrgType(e.target.value)}
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               <option value="">Select Type</option>
@@ -206,7 +206,7 @@ const handleDeleteGeo = (index: number) => {
             <input
               type="text"
               value={regulator}
-              onChange=(e) => setRegulator(e.target.value)
+              onChange={(e) => setRegulator(e.target.value)}
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
