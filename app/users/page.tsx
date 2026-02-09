@@ -202,15 +202,19 @@ export default function UsersPage() {
               </div>
             )}
 
-            {/* Placeholder for all other items */}
-            {activeItem !== "dashboard-home" && activeItem !== "manage-users" && (
-              <div className="text-center py-20 text-gray-500">
-                <p className="text-xl font-medium">
-                  {activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
-                </p>
-              </div>
-            )}
-          </div>
+{/* Manage Profile */}
+{activeItem === "manage-profile" && <ManageProfile />}
+
+{/* Placeholder for all other items */}
+{activeItem !== "dashboard-home" && activeItem !== "manage-users" && activeItem !== "manage-profile" && (
+  <div className="text-center py-20 text-gray-500">
+    <p className="text-xl font-medium">
+      {activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
+    </p>
+  </div>
+)}
+
+            
         </main>
       </div>
     </div>
