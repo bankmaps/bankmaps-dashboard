@@ -215,7 +215,7 @@ const handleDeleteGeo = (index: number) => {
             <input
               type="text"
               value={states.join(", ")}
-              onChange=(e) => setStates(e.target.value.split(", "))
+              onChange={(e) => setStates(e.target.value.split(", "))}
               className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               placeholder="MA, NY, CA"
             />
