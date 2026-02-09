@@ -129,8 +129,8 @@ export default function ManageProfile() {
     setEditingGeoIndex(null);
   };
 
-  const handleDeleteGeo = (index: number) {
-    const updated = geographies.filter((_, i) => i !== index);
+const handleDeleteGeo = (index: number) => {
+   const updated = geographies.filter((_, i) => i !== index);
     setGeographies(updated);
   };
 
