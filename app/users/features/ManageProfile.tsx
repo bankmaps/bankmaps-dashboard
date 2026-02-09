@@ -13,86 +13,125 @@ export default function ManageProfile() {
   const [email, setEmail] = useState("");
   const [subscription, setSubscription] = useState("active");
 
-  // Organizations list
-  const [organizations, setOrganizations] = useState<any[]>([]);
+  // Organization info (assuming one org for now - expand to multi-org later)
+  const [orgName, setOrgName] = useState("");
+  const [orgType, setOrgType] = useState("");
+  const [regulator, setRegulator] = useState("");
+  const [states, setStates] = useState<string[]>([]);
 
-  // Get token from URL (?token=...) on first load
-  const searchParams = new URLSearchParams(window.location.search);
-  const token = searchParams.get("token") || localStorage.getItem("jwt_token"); // fallback to stored token
+  // Geographies (array of objects)
+  const [geographies, setGeographies] = useState<any[]>([]);
+  const [editingGeoIndex, setEditingGeoIndex] = useState<number | null>(null);
+  const [newGeo, setNewGeo] = useState({
+    state: [],
+    county: [],
+    town: [],
+    tract_number: [],
+    type: "",
+    name: "",
+  });
 
-  // Store token for future fetches
-  useEffect(() => {
-    if (token && token !== localStorage.getItem("jwt_token")) {
-      localStorage.setItem("jwt_token", token);
-    }
-  }, [token]);
+  // Custom context
+  const [customContext, setCustomContext] = useState("");
 
   // Fetch data on mount
   useEffect(() => {
     const fetchData = async () => {
-      if (!token) {
-        setError("No authentication token found");
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
         const res = await fetch("/api/users", {
           method: "GET",
           credentials: "include",
-headers: {
-  "Content-Type": "application/json",
-  "Authorization": `Bearer ${token}`
-},
+          headers: {
+            "Content-Type": "application/json",
+            // Add Authorization if JWT is used
+            // "Authorization": `Bearer ${token}`,
+          },
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
+        if (!res.ok) throw new Error("Failed to load profile");
 
         const data = await res.json();
 
         setName(data.name || "");
         setEmail(data.email || "");
         setSubscription(data.ai_subscription || "inactive");
-        setOrganizations(data.organizations || []);
+
+        // Assume one org for simplicity
+        const org = data.organizations[0] || {};
+        setOrgName(org.name || "");
+        setOrgType(org.type || "");
+        setRegulator(org.regulator || "");
+        setStates(org.states || []);
+
+        setGeographies(org.geographies || []);
+        setCustomContext(org.custom_context || "");
       } catch (err: any) {
-        setError(err.message || "Failed to load profile");
+        setError(err.message || "Error loading profile");
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [token]);
+  }, []);
 
-  // Save handler
+  // Save handler (updates all)
   const handleSave = async () => {
-    if (!token) {
-      setError("Not authenticated");
-      return;
-    }
-
     try {
       setError(null);
+      setSuccess(false);
+
+      const payload = {
+        name,
+        email,
+        organization: {  // Assume one org update
+          name: orgName,
+          type: orgType,
+          regulator,
+          states,
+          geographies,
+          custom_context: customContext,
+        },
+      };
+
       const res = await fetch("/api/users", {
         method: "PATCH",
-headers: {
-  "Content-Type": "application/json",
-  "Authorization": `Bearer ${token}`
-},
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ name, email }),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) throw new Error("Failed to save changes");
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err: any) {
       setError(err.message);
     }
+  };
+
+  // Geography handlers
+  const handleAddGeo = () => {
+    if (!newGeo.name || !newGeo.type) {
+      setError("Name and type required for geography");
+      return;
+    }
+
+    setGeographies([...geographies, newGeo]);
+    setNewGeo({ state: [], county: [], town: [], tract_number: [], type: "", name: "" });
+  };
+
+  const handleUpdateGeo = (index: number, updatedGeo: any) {
+    const updated = [...geographies];
+    updated[index] = updatedGeo;
+    setGeographies(updated);
+    setEditingGeoIndex(null);
+  };
+
+  const handleDeleteGeo = (index: number) {
+    const updated = geographies.filter((_, i) => i !== index);
+    setGeographies(updated);
   };
 
   if (loading) return <div className="p-8 text-center">Loading profile...</div>;
@@ -134,34 +173,163 @@ headers: {
         <p className="mt-4 text-sm text-gray-500">
           Subscription: <strong>{subscription}</strong>
         </p>
-        <button
-          onClick={handleSave}
-          className="mt-6 bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition"
-        >
-          Save Changes
-        </button>
       </section>
 
-      {/* Organizations placeholder */}
-      <section className="bg-white p-6 rounded-xl shadow border border-gray-200">
-        <h2 className="text-xl font-semibold mb-4">Your Organizations</h2>
-        {organizations.length === 0 ? (
-          <p className="text-gray-500">No organizations added yet.</p>
+      {/* Organization Info */}
+      <section className="mb-12 bg-white p-6 rounded-xl shadow border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4">Organization Information</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+            <input
+              type="text"
+              value={orgName}
+              onChange=(e) => setOrgName(e.target.value)
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+            <select
+              value={orgType}
+              onChange=(e) => setOrgType(e.target.value)
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+            >
+              <option value="">Select Type</option>
+              <option value="Bank">Bank</option>
+              <option value="Credit Union">Credit Union</option>
+              <option value="Mortgage Company">Mortgage Company</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Regulator</label>
+            <input
+              type="text"
+              value={regulator}
+              onChange=(e) => setRegulator(e.target.value)
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">States</label>
+            <input
+              type="text"
+              value={states.join(", ")}
+              onChange=(e) => setStates(e.target.value.split(", "))
+              className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+              placeholder="MA, NY, CA"
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Geographies */}
+      <section className="mb-12 bg-white p-6 rounded-xl shadow border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4">Geographies</h2>
+        {geographies.length === 0 ? (
+          <p className="text-gray-500">No geographies added yet.</p>
         ) : (
           <div className="space-y-4">
-            {organizations.map((org) => (
-              <div key={org.id} className="border p-4 rounded-lg bg-gray-50">
-                <p className="font-medium">{org.name}</p>
-                <p className="text-sm text-gray-600">{org.type} • {org.regulator}</p>
-                {/* Add edit button later */}
+            {geographies.map((geo, index) => (
+              <div key={index} className="border p-4 rounded-lg bg-gray-50">
+                {editingGeoIndex === index ? (
+                  <div className="space-y-4">
+                    <input
+                      type="text"
+                      value={geo.name}
+                      onChange={(e) => {
+                        const updated = [...geographies];
+                        updated[index].name = e.target.value;
+                        setGeographies(updated);
+                      }}
+                      className="w-full px-4 py-2 border rounded-lg"
+                      placeholder="Name"
+                    />
+                    <select
+                      value={geo.type}
+                      onChange=(e) => {
+                        const updated = [...geographies];
+                        updated[index].type = e.target.value;
+                        setGeographies(updated);
+                      }}
+                      className="w-full px-4 py-2 border rounded-lg"
+                    >
+                      <option value="">Type</option>
+                      <option value="Assessment Area">Assessment Area</option>
+                      <option value="REMA">REMA</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {/* Add inputs for state, county, town, tract_number */}
+                    <button onClick={() => handleUpdateGeo(index, updated[index])} className="bg-teal-600 text-white px-4 py-2 rounded-lg">
+                      Save
+                    </button>
+                    <button onClick={() => setEditingGeoIndex(null)} className="ml-2 text-gray-600">
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="font-medium">{geo.name}</p>
+                    <p className="text-sm text-gray-600">{geo.type}</p>
+                    <button onClick={() => setEditingGeoIndex(index)} className="text-teal-600 hover:text-teal-800">
+                      Edit
+                    </button>
+                    <button onClick={() => handleDeleteGeo(index)} className="ml-2 text-red-600 hover:text-red-800">
+                      Delete
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
         )}
-        <button className="mt-6 text-teal-600 hover:text-teal-800">
-          + Add New Organization
-        </button>
+        {/* Add new geography form */}
+        <div className="mt-6">
+          <h3 className="text-lg font-medium mb-4">Add New Geography</h3>
+          <div className="space-y-4">
+            <input
+              type="text"
+              value={newGeo.name}
+              onChange={(e) => setNewGeo({ ...newGeo, name: e.target.value })}
+              className="w-full px-4 py-2 border rounded-lg"
+              placeholder="Name"
+            />
+            <select
+              value={newGeo.type}
+              onChange=(e) => setNewGeo({ ...newGeo, type: e.target.value })
+              className="w-full px-4 py-2 border rounded-lg"
+            >
+              <option value="">Type</option>
+              <option value="Assessment Area">Assessment Area</option>
+              <option value="REMA">REMA</option>
+              <option value="Other">Other</option>
+            </select>
+            {/* Add inputs for state, county, town, tract_number */}
+            <button onClick={handleAddGeo} className="bg-teal-600 text-white px-4 py-2 rounded-lg">
+              Add Geography
+            </button>
+          </div>
+        </div>
       </section>
+
+      {/* Custom Context */}
+      <section className="mb-12 bg-white p-6 rounded-xl shadow border border-gray-200">
+        <h2 className="text-xl font-semibold mb-4">Custom Context</h2>
+        <textarea
+          value={customContext}
+          onChange=(e) => setCustomContext(e.target.value)
+          className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+          rows={4}
+          placeholder="Additional notes or context"
+        />
+      </section>
+
+      <button
+        onClick={handleSave}
+        className="bg-teal-600 text-white px-6 py-2 rounded-lg hover:bg-teal-700 transition"
+      >
+        Save All Changes
+      </button>
     </div>
   );
 }
