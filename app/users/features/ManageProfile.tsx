@@ -247,7 +247,7 @@ const handleDeleteGeo = (index: number) => {
                     />
                     <select
                       value={geo.type}
-                      onChange=(e) => {
+                      onChange={(e) => {
                         const updated = [...geographies];
                         updated[index].type = e.target.value;
                         setGeographies(updated);
