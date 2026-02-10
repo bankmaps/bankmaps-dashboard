@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 const token = typeof window !== 'undefined' ? localStorage.getItem("jwt_token") || "" : "";
+<div className="text-sm text-gray-500">Debug token: {token ? token.substring(0, 20) + "..." : "missing"}</div>
 export default function ManageProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
