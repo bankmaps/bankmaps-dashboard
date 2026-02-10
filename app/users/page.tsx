@@ -25,6 +25,43 @@ export default function UsersPage() {
         { id: "logs", label: "Activity Logs" },
       ],
     },
+        {
+      title: "Tools",
+      items: [
+        { id: "upload-file", label: "Upload Data" },
+        { id: "view-files", label: "Calendar" },
+        { id: "download-files", label: "Task Manager" },
+        { id: "file-history", label: "Geocoding" },
+        { id: "bulk-actions", label: "File Validation" },
+      ],
+    },
+    {
+      title: "Live Reports",
+      items: [
+        { id: "cra-reports", label: "CRA Reports" },
+        { id: "fair-lending", label: "Fair Lending Reports" },
+        { id: "outreach", label: "Outreach Activities" },
+        { id: "community-dev", label: "Community Development" },
+        { id: "inv-donat", label: "Investments & Donations" },
+      ],
+    },
+    {
+      title: "Resources",
+      items: [
+        { id: "how-to", label: "How to Guides" },
+        { id: "exam-guides", label: "Exam Guidelines" },
+        { id: "regulations", label: "Regulations" },
+        { id: "comm-dev-lists", label: "Community Development" },
+        { id: "vendors", label: "Vendors" },
+      ],
+    },
+    {
+      title: "Download Center",
+      items: [
+        { id: "new-files", label: "New Files" },
+        { id: "archives", label: "Archives" },
+      ],
+    },
   ];
 
   return (
