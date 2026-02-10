@@ -1,11 +1,28 @@
 "use client";
 import { useState } from "react";
+import { useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import ManageProfile from "./features/ManageProfile";
 
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
   const [activeItem, setActiveItem] = useState<string>("dashboard");
 
+  const searchParams = useSearchParams();
+const urlToken = searchParams.get("token");
+
+// Store token in localStorage (persistent across refreshes)
+useEffect(() => {
+  if (urlToken) {
+    localStorage.setItem("jwt_token", urlToken);
+    // Optional: clean URL by removing token param (prevents resending on refresh)
+    window.history.replaceState({}, '', window.location.pathname);
+  }
+}, [urlToken]);
+
+// Use stored token for all fetches (fallback if no URL token)
+const token = urlToken || localStorage.getItem("jwt_token") || "";
+  
   const menuGroups = [
     {
       title: "Dashboard",
