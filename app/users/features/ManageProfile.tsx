@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-//const token = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOjQ4LCJlbWFpbCI6InN0dWFydEBiYW5rbWFwcy5jb20iLCJuYW1lIjoicnlhbiIsImlhdCI6MTc3MDY3NzQ5MiwiZXhwIjoxNzcwNjgxMDkyfQ.bj5RoEJMVJ1nG5qN62Xxqeq9Dkw-T61yWDSq2hAKBNM";
 
 export default function ManageProfile() {
   const [loading, setLoading] = useState(true);
