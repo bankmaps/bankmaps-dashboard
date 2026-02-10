@@ -11,14 +11,17 @@ export default function UsersPage() {
   const searchParams = useSearchParams();
 const urlToken = searchParams.get("token");
 
-// Store token in localStorage (persistent across refreshes)
+// Token handling - only run in browser
 useEffect(() => {
+  if (typeof window === 'undefined') return; // skip on server
+
+  const urlToken = new URLSearchParams(window.location.search).get("token");
   if (urlToken) {
     localStorage.setItem("jwt_token", urlToken);
-    // Optional: clean URL by removing token param (prevents resending on refresh)
+    // Clean URL (optional - removes ?token from address bar)
     window.history.replaceState({}, '', window.location.pathname);
   }
-}, [urlToken]);
+}, []);
 
 // Use stored token for all fetches (fallback if no URL token)
 const token = urlToken || localStorage.getItem("jwt_token") || "";
