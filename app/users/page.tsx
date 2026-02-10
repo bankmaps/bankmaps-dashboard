@@ -13,19 +13,17 @@ const urlToken = searchParams.get("token");
 
 // Token handling - only run in browser
 useEffect(() => {
-  if (typeof window === 'undefined') return; // skip on server
+  if (typeof window === 'undefined') return;
 
   const urlToken = new URLSearchParams(window.location.search).get("token");
   if (urlToken) {
     localStorage.setItem("jwt_token", urlToken);
-    // Clean URL (optional - removes ?token from address bar)
     window.history.replaceState({}, '', window.location.pathname);
   }
 }, []);
 
-// Use stored token for all fetches (fallback if no URL token)
-const token = urlToken || localStorage.getItem("jwt_token") || "";
-  
+const token = typeof window !== 'undefined' ? localStorage.getItem("jwt_token") || "" : "";
+
   const menuGroups = [
     {
       title: "Dashboard",
