@@ -65,9 +65,18 @@ export default function UsersPage() {
     },
   ];
 
-  return (
+ return (
+  <Suspense fallback={<div className="flex h-screen bg-gray-100 items-center justify-center">Loading dashboard...</div>}>
     <div className="flex h-screen bg-gray-100">
       <TokenProvider />
+      {/* Sidebar */}
+      {/* ... your sidebar code ... */}
+      {/* Main area */}
+      {/* ... your main area code ... */}
+    </div>
+  </Suspense>
+);
+      
             {/* Sidebar */}
       <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
         <div className="p-6">
