@@ -62,9 +62,16 @@ export default function UsersPage() {
     },
   ];
 
-  return (
-    <Suspense fallback={<div className="flex h-screen bg-gray-100 items-center justify-center">Loading dashboard...</div>}>
-      <TokenProvider>
+     return (
+  <Suspense fallback={<div>Loading dashboard...</div>}>
+    <TokenProvider>
+      <div className="flex h-screen bg-gray-100">
+        {/* Sidebar */}
+        {/* Main content */}
+      </div>
+    </TokenProvider>
+  </Suspense>
+);
         <div className="flex h-screen bg-gray-100">
           {/* Sidebar */}
           <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
