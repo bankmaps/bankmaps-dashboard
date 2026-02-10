@@ -45,7 +45,8 @@ export default function ManageProfile() {
           credentials: "include",
           headers: {
   "Content-Type": "application/json",
- },
+  "Authorization": `Bearer ${token}`
+},
 },
         });
 
@@ -83,6 +84,7 @@ export default function ManageProfile() {
         method: "PATCH",
         headers: {
   "Content-Type": "application/json",
+  "Authorization": `Bearer ${token}`
 },
         credentials: "include",
         body: JSON.stringify({
