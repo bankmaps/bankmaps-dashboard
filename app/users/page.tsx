@@ -1,30 +1,14 @@
 "use client";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from 'next/navigation';
 import TokenProvider from "./features/TokenProvider";
 import ManageProfile from "./features/ManageProfile";
 
-
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
   const [activeItem, setActiveItem] = useState<string>("dashboard");
-
   const searchParams = useSearchParams();
-const urlToken = searchParams.get("token");
-
-// Token handling - safe for server/build
-const token = useMemo(() => {
-  if (typeof window === 'undefined') return ""; // skip on server/prerender
-
-  const urlToken = new URLSearchParams(window.location.search).get("token");
-  if (urlToken) {
-    localStorage.setItem("jwt_token", urlToken);
-    window.history.replaceState({}, '', window.location.pathname);
-  }
-
-  return localStorage.getItem("jwt_token") || "";
-}, []);
-  
+ 
   const menuGroups = [
     {
       title: "Dashboard",
@@ -84,7 +68,7 @@ const token = useMemo(() => {
   return (
     <div className="flex h-screen bg-gray-100">
       <TokenProvider />
-      {/* Sidebar */}
+            {/* Sidebar */}
       <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
         <div className="p-6">
           {/* Logo + Title row */}
