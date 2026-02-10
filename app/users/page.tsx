@@ -147,20 +147,41 @@ export default function UsersPage() {
               </div>
             </header>
 
-            <main className="flex-1 p-8 overflow-auto">
-              <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
-                {activeItem === "dashboard" && ( /* dashboard cards */ )}
-                {activeItem === "manage-profile" && <ManageProfile />}
-                {activeItem === "manage-users" && ( /* add user form */ )}
-                {activeItem !== "dashboard" && activeItem !== "manage-users" && activeItem !== "manage-profile" && (
-                  <div className="text-center py-20 text-gray-500">
-                    <p className="text-xl font-medium">
-                      {activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
-                    </p>
-                  </div>
-                )}
-              </div>
-            </main>
+<main className="flex-1 p-8 overflow-auto">
+  <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
+
+    {activeItem === "dashboard" && (
+      /* dashboard cards */
+      <div>
+        <h2 className="text-2xl font-bold mb-6 text-gray-900">Overview</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* ... your cards here ... */}
+        </div>
+      </div>
+    )}
+
+    {activeItem === "manage-profile" && <ManageProfile />}
+
+    {activeItem === "manage-users" && (
+      /* add user form */
+      <div className="max-w-lg mx-auto">
+        <h2 className="text-2xl font-bold mb-6 text-gray-900">Add New User</h2>
+        {/* ... form fields and button ... */}
+      </div>
+    )}
+
+    {activeItem !== "dashboard" && activeItem !== "manage-users" && activeItem !== "manage-profile" && (
+      /* placeholder for other items */
+      <div className="text-center py-20 text-gray-500">
+        <p className="text-xl font-medium">
+          {activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
+        </p>
+      </div>
+    )}
+
+  </div>
+</main>
+         
           </div>
 
         </div>
