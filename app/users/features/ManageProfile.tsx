@@ -2,11 +2,6 @@
 
 import { useState, useEffect } from "react";
 
-useEffect(() => {
-  const storedToken = localStorage.getItem("jwt_token") || "";
-  // use storedToken in your fetches
-}, []);
-
 export default function ManageProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,19 +33,28 @@ export default function ManageProfile() {
   // Custom context
   const [customContext, setCustomContext] = useState("");
 
+  // Safe token read (TokenProvider handles storage in page.tsx)
+  const token = typeof window !== 'undefined' ? localStorage.getItem("jwt_token") || "" : "";
+
   // Fetch data on mount
   useEffect(() => {
     const fetchData = async () => {
+      if (!token) {
+        setError("No authentication token found");
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         const res = await fetch("/api/users", {
           method: "GET",
           credentials: "include",
           headers: {
-  "Content-Type": "application/json",
-  "Authorization": `Bearer ${token}`
-  },
-});
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+          },
+        });
 
         if (!res.ok) throw new Error("Failed to load profile");
 
@@ -76,34 +80,43 @@ export default function ManageProfile() {
     };
 
     fetchData();
-  }, []);
+  }, [token]);
 
   // Save handler
   const handleSave = async () => {
+    if (!token) {
+      setError("No authentication token found");
+      return;
+    }
+
     try {
       setError(null);
+      setSuccess(false);
+
+      const payload = {
+        name,
+        email,
+        organization: {
+          name: orgName,
+          type: orgType,
+          regulator,
+          states,
+          geographies,
+          custom_context: customContext,
+        },
+      };
+
       const res = await fetch("/api/users", {
         method: "PATCH",
         headers: {
-  "Content-Type": "application/json",
-  "Authorization": `Bearer ${token}`
-},
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
         credentials: "include",
-        body: JSON.stringify({
-          name,
-          email,
-          organization: {
-            name: orgName,
-            type: orgType,
-            regulator,
-            states,
-            geographies,
-            custom_context: customContext,
-          },
-        }),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) throw new Error("Failed to save changes");
 
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
@@ -115,16 +128,16 @@ export default function ManageProfile() {
   // Geography handlers
   const handleAddGeo = () => {
     if (!newGeo.name || !newGeo.type) {
-      setError("Name and type required");
+      setError("Name and type required for geography");
       return;
     }
+
     setGeographies([...geographies, newGeo]);
     setNewGeo({ state: [], county: [], town: [], tract_number: [], type: "", name: "" });
   };
 
   const handleUpdateGeo = (index: number) => {
     const updated = [...geographies];
-    // Save the current state (you can add more fields later)
     setGeographies(updated);
     setEditingGeoIndex(null);
   };
