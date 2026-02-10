@@ -46,9 +46,8 @@ export default function ManageProfile() {
           headers: {
   "Content-Type": "application/json",
   "Authorization": `Bearer ${token}`
-},
-},
-        });
+  },
+});
 
         if (!res.ok) throw new Error("Failed to load profile");
 
