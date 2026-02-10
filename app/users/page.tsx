@@ -11,19 +11,18 @@ export default function UsersPage() {
   const searchParams = useSearchParams();
 const urlToken = searchParams.get("token");
 
-// Token handling - only run in browser
-useEffect(() => {
-  if (typeof window === 'undefined') return;
+// Token handling - safe for server/build
+const token = useMemo(() => {
+  if (typeof window === 'undefined') return ""; // skip on server
 
   const urlToken = new URLSearchParams(window.location.search).get("token");
   if (urlToken) {
     localStorage.setItem("jwt_token", urlToken);
     window.history.replaceState({}, '', window.location.pathname);
   }
-}, []);
 
-const token = typeof window !== 'undefined' ? localStorage.getItem("jwt_token") || "" : "";
-
+  return localStorage.getItem("jwt_token") || "";
+}, []); // empty deps - runs once
   const menuGroups = [
     {
       title: "Dashboard",
