@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-// Read stored token from localStorage (set by page.tsx)
-const token = localStorage.getItem("jwt_token") || "";
+
+useEffect(() => {
+  const storedToken = localStorage.getItem("jwt_token") || "";
+  // use storedToken in your fetches
+}, []);
 
 export default function ManageProfile() {
   const [loading, setLoading] = useState(true);
