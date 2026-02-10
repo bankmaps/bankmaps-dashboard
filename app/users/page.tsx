@@ -1,7 +1,6 @@
 "use client";
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from 'next/navigation';
-import { useEffect } from 'react';
 import ManageProfile from "./features/ManageProfile";
 
 export default function UsersPage() {
