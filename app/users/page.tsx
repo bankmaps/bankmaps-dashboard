@@ -12,7 +12,7 @@ const urlToken = searchParams.get("token");
 
 // Token handling - safe for server/build
 const token = useMemo(() => {
-  if (typeof window === 'undefined') return ""; // skip on server
+  if (typeof window === 'undefined') return ""; // skip on server/prerender
 
   const urlToken = new URLSearchParams(window.location.search).get("token");
   if (urlToken) {
@@ -21,7 +21,8 @@ const token = useMemo(() => {
   }
 
   return localStorage.getItem("jwt_token") || "";
-}, []); // empty deps - runs once
+}, []);
+  
   const menuGroups = [
     {
       title: "Dashboard",
