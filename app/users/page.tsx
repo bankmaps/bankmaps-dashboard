@@ -1,7 +1,9 @@
 "use client";
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from 'next/navigation';
+import TokenProvider from "./features/TokenProvider";
 import ManageProfile from "./features/ManageProfile";
+
 
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
@@ -81,6 +83,7 @@ const token = useMemo(() => {
 
   return (
     <div className="flex h-screen bg-gray-100">
+      <TokenProvider />
       {/* Sidebar */}
       <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
         <div className="p-6">
