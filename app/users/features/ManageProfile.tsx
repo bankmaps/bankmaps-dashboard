@@ -43,8 +43,7 @@ export default function ManageProfile() {
           credentials: "include",
           headers: {
   "Content-Type": "application/json",
-  // "Authorization": `Bearer ${token}`, // commented out or missing
-},
+ },
 },
         });
 
