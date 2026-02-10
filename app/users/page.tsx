@@ -3,6 +3,8 @@
 import { useState, Suspense } from "react";
 import TokenProvider from "./features/TokenProvider";
 import ManageProfile from "./features/ManageProfile";
+import ManageUsers from "./features/ManageUsers";
+import DistributionLists from "./features/DistributionLists";
 
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Account");
@@ -23,7 +25,6 @@ export default function UsersPage() {
         { id: "logs", label: "Activity Logs" },
       ],
     },
-    // ... keep your other groups as-is ...
   ];
 
   return (
@@ -33,12 +34,10 @@ export default function UsersPage() {
           {/* Sidebar */}
           <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
             <div className="p-6">
-              {/* Logo + Title */}
               <div className="flex items-center gap-3 mb-8">
                 <img src="/logo.png" alt="BankMaps Logo" className="w-20 h-20 object-contain" />
                 <h2 className="text-2xl font-bold text-black">CRA Assistant</h2>
               </div>
-
               <nav className="space-y-2">
                 {menuGroups.map((group) => (
                   <div key={group.title}>
@@ -53,7 +52,6 @@ export default function UsersPage() {
                       <span>{group.title}</span>
                       <span className={`text-sm transition-transform duration-200 ${openSection === group.title ? "rotate-180" : "rotate-0"}`}>▼</span>
                     </button>
-
                     <div
                       className={`ml-4 mt-1 space-y-1 overflow-hidden transition-all duration-300 ease-in-out ${
                         openSection === group.title ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
@@ -81,7 +79,6 @@ export default function UsersPage() {
 
           {/* Main content area */}
           <div className="flex-1 flex flex-col">
-            {/* Header */}
             <header className="bg-white border-b px-8 py-4 flex justify-between items-center">
               <h1 className="text-xl font-semibold text-gray-900">
                 {activeItem.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ") || "Dashboard"}
@@ -92,14 +89,18 @@ export default function UsersPage() {
               </div>
             </header>
 
-            {/* Content */}
             <main className="flex-1 p-8 overflow-auto">
-              <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
-                {/* Test: Manage Profile loads here */}
+              <div className="bg-white rounded-xl shadow border border-gray-200 p-8 min-h-[70vh]">
+                {activeItem === "dashboard" && (
+                  <div className="text-center py-20">
+                    <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
+                    <p className="mt-4 text-gray-600">Overview – token available via TokenProvider</p>
+                  </div>
+                )}
                 {activeItem === "manage-profile" && <ManageProfile />}
-
-                {/* Placeholder for other sections */}
-                {activeItem !== "manage-profile" && (
+                {activeItem === "manage-users" && <ManageUsers />}
+                {activeItem === "distrib-list" && <DistributionLists />}
+                {!["dashboard", "manage-profile", "manage-users", "distrib-list"].includes(activeItem) && (
                   <div className="text-center py-20 text-gray-500">
                     <p className="text-xl font-medium">
                       {activeItem.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
