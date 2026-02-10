@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-
+const token = typeof window !== 'undefined' ? localStorage.getItem("jwt_token") || "" : "";
 export default function ManageProfile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
