@@ -403,21 +403,22 @@ const handleSave = async () => {
   try {
     // Get token from URL (?token=...)
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
+    
+   const token = localStorage.getItem("jwt_token");
 
-    if (!token) {
-      alert('Authentication token missing. Please log in again from BankMaps member portal.');
-      return;
-    }
+if (!token) {
+  alert("No authentication token found. Please log in again.");
+  return;
+}
 
-    const res = await fetch('/api/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+const res = await fetch('/api/organizations', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`,
+  },
+  body: JSON.stringify({ ...formData, geographies: selectedGeographies }),
+});
 
     if (!res.ok) {
       const errData = await res.json();
