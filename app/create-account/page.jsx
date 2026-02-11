@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import Select from 'react-select';
+import TokenProvider from "../users/features/TokenProvider";
 
 export const dynamic = 'force-dynamic';
 
@@ -169,7 +170,7 @@ export default function Page() {
   );
 
   const geographyStateOptions = useMemo(() => {
-    if (!geographiesList.length) return [];
+    if (!geographiesList.length)  [];
     const unique = [...new Set(geographiesList.map(i => i.state?.trim()).filter(Boolean))].sort();
     return unique.map(s => ({ value: s, label: s }));
   }, [geographiesList]);
@@ -861,6 +862,7 @@ const renderStep3 = () => (
   );
 
   return (
+    <TokenProvider>
     <div style={{ maxWidth: '720px', margin: '0 auto', padding: '40px 20px' }}>
       <h1>Create Account</h1>
 
@@ -942,5 +944,6 @@ const renderStep3 = () => (
         )}
       </div>
     </div>
+   </TokenProvider>
   );
 }
