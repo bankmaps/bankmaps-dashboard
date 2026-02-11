@@ -45,33 +45,57 @@ export async function POST(req: NextRequest) {
     const sql = neon(process.env.NEON_DATABASE_URL!);
     console.log('Neon connection initialized');
 
-    // Step 1: Upsert users row
-    const [User] = await sql`
-      INSERT INTO users (
-        bluehost_id,
-        email,
-        name,
-        ai_subscription,
-        paid_organizations_count,
-        max_allowed_organizations,
-        updated_at
-      ) VALUES (
-        ${bluehost_id},
-        ${body.email || decoded.email || 'unknown@email.com'},
-        ${body.name || decoded.name || 'Unknown User'},
-        'active',
-        1,
-        5,
-        NOW()
-      )
-      ON CONFLICT (bluehost_id)
-      DO UPDATE SET
-        email = EXCLUDED.email,
-        name = EXCLUDED.name,
-        updated_at = NOW()
-      RETURNING id;
-    `;
+// Step 1: Get real name from members table
+let fullName = 'Unknown User';
+try {
+  const memberRows = await sql`
+    SELECT Fname, Lname
+    FROM bankmaps_bankmaps.members
+    WHERE bluehost_id = ${bluehost_id}
+    LIMIT 1;
+  `;
 
+  if (memberRows.length > 0) {
+    const member = memberRows[0];
+    const fname = member.Fname?.trim() || '';
+    const lname = member.Lname?.trim() || '';
+    if (fname || lname) {
+      fullName = `${fname} ${lname}`.trim();
+    }
+  } else {
+    console.log('No member record found for bluehost_id:', bluehost_id);
+  }
+} catch (memberErr) {
+  console.error('Failed to query members table:', memberErr);
+  // continue with fallback name
+}
+
+// Use the real name (or fallback) in the upsert
+const [User] = await sql`
+  INSERT INTO users (
+    bluehost_id,
+    email,
+    name,
+    ai_subscription,
+    paid_organizations_count,
+    max_allowed_organizations,
+    updated_at
+  ) VALUES (
+    ${bluehost_id},
+    ${body.email || decoded.email || 'unknown@email.com'},
+    ${fullName},   -- ← this uses Fname + Lname from members
+    'active',
+    1,
+    5,
+    NOW()
+  )
+  ON CONFLICT (bluehost_id)
+  DO UPDATE SET
+    email = EXCLUDED.email,
+    name = EXCLUDED.name,
+    updated_at = NOW()
+  RETURNING id;
+`;
     const user_id = User.id;
     console.log('User upserted - user_id:', user_id);
 
