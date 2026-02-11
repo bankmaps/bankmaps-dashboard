@@ -254,7 +254,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch user basics
     const userRes = await sql`
-      SELECT user_id, email, name, ai_subscription 
+      SELECT id, email, name, ai_subscription 
       FROM users 
       WHERE bluehost_id = ${bluehost_id}
       LIMIT 1
