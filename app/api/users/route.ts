@@ -215,7 +215,8 @@ const response = NextResponse.json({
         ) OR EXISTS (
           SELECT 1 FROM jsonb_array_elements_text(geographies->0->'tract_number')
           WHERE value = '__ALL__'
-        );
+        )
+        ';
     
     console.log('Background HMDA cache completed for org_id:', user_id);
   } catch (cacheErr) {
