@@ -152,7 +152,7 @@ const response = NextResponse.json({
   user_id,
 }, { status: 201 });
 
-// Start caching in background (fire-and-forget)
+// Step 3: Populate cached_hmda in background (non-blocking)
 (async () => {
   try {
     console.log('Starting background HMDA cache for org_id:', user_id);
@@ -162,19 +162,27 @@ const response = NextResponse.json({
       DELETE FROM cached_hmda WHERE organization_id = ${user_id};
     `;
 
-    // Insert all matching rows (using * to copy everything)
+    // Insert all matching HMDA rows (all fields + extras)
     await sql`
       INSERT INTO cached_hmda (
-        organization_id,
-        hmda_original_id,
-        cached_at,
-        *
+        year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid, state, st, town, county, msa, msa_number, tract_number, 
+        property_value, borrower_income, purchaser_type, financing_type, loan_purpose, occupancy, lien, open_or_closed_end, 
+        business_or_commercial, reverse_mortgage, action_taken, product, amount, applications_received, application_dollars, 
+        originated_loans, originated_dollars, originated_and_purchased_loans, originated_and_purchased_loan_dollars, 
+        approved_not_accepted, approved_not_accepted_dollars, denied_applications, denied_application_dollars, 
+        purchased_loans, purchased_loan_dollars, withdrawn_applications, withdrawn_application_dollars, spread, rate, 
+        income_level, borrower_income_level, majority_minority, borrower_race, borrower_ethnicity, borrower_gender, 
+        minority_status, borrower_age, coapplicant, organization_id, cached_at
       )
       SELECT 
-        ${user_id} AS organization_id,
-        h.id AS hmda_original_id,
-        NOW() AS cached_at,
-        h.*
+        h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid, h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number, 
+        h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, h.loan_purpose, h.occupancy, h.lien, h.open_or_closed_end, 
+        h.business_or_commercial, h.reverse_mortgage, h.action_taken, h.product, h.amount, h.applications_received, h.application_dollars, 
+        h.originated_loans, h.originated_dollars, h.originated_and_purchased_loans, h.originated_and_purchased_loan_dollars, 
+        h.approved_not_accepted, h.approved_not_accepted_dollars, h.denied_applications, h.denied_application_dollars, 
+        h.purchased_loans, h.purchased_loan_dollars, h.withdrawn_applications, h.withdrawn_application_dollars, h.spread, h.rate, 
+        h.income_level, h.borrower_income_level, h.majority_minority, h.borrower_race, h.borrower_ethnicity, h.borrower_gender, 
+        h.minority_status, h.borrower_age, h.coapplicant, ${user_id} AS organization_id, NOW() AS cached_at
       FROM hmda_us h
       WHERE 
         h.state = ANY (
@@ -215,11 +223,14 @@ const response = NextResponse.json({
   }
 })();
 
-return response;
-    
-    console.log('Organization inserted - id:', newOrg.id);
+// Return success immediately
+return NextResponse.json({
+  success: true,
+  message: 'Organization saved! Your customized HMDA data is being compiled in the background.',
+  organization_id: newOrg.id,
+  user_id,
+}, { status: 201 });
 
-    return NextResponse.json({ success: true, organization_id: newOrg.id, user_id }, { status: 201 });
   } catch (error: any) {
     console.error('SAVE ORGANIZATION FAILED:', error.message);
     return NextResponse.json({ success: false, error: 'Failed to save organization', details: error.message }, { status: 500 });
