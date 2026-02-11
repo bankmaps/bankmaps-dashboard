@@ -412,7 +412,7 @@ const handleSave = async () => {
   };
 
   try {
-    const res = await fetch('/api/organizations', {  // adjust endpoint if needed
+    const res = await fetch('/api/users', {  // adjust endpoint if needed
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
