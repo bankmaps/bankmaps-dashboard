@@ -391,28 +391,22 @@ export default function Page() {
 
 const handleSave = async () => {
   const token = localStorage.getItem("jwt_token");
-
   if (!token) {
-    alert("No authentication token found. Please use the invite link.");
+    alert("No authentication token found.");
     return;
   }
 
-  // Build the payload from your states (no formData needed)
   const payload = {
     name: orgName.trim(),
     type: selectedOrgType,
     regulator: selectedRegulator,
-    states: selectedStates,  // or hqStates if that's the one
-    geographies: selectedGeographies,  // your main JSONB array
-    custom_context: customContext.trim(),  // optional notes
-    // Add any other fields you need, e.g.:
-    // matches: orgMatches,
-    // candidates: candidates,
-    // selected_lenders: selectedLenderPerSource,
+    states: selectedStates,
+    geographies: selectedGeographies,
+    customContext: customContext.trim(),
   };
 
   try {
-    const res = await fetch('/api/users', {  // adjust endpoint if needed
+    const res = await fetch('/api/users', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -422,19 +416,23 @@ const handleSave = async () => {
     });
 
     if (!res.ok) {
-      const errData = await res.json();
-      console.error("Save failed:", errData);
-      alert(`Failed to create organization: ${errData.message || "Unknown error"}`);
+      const err = await res.json();
+      alert(`Save failed: ${err.error || 'Unknown error'}`);
       return;
     }
 
-    const data = await res.json();
-    console.log("Organization saved:", data);
-    alert("Organization saved successfully!");
-    // Optional: redirect, e.g. window.location.href = '/users';
+    // Success - show non-blocking message
+    alert(
+      "Organization saved successfully!\n\n" +
+      "Your customized HMDA data is now being compiled in the background.\n" +
+      "This may take a few minutes. You can continue using the dashboard."
+    );
+
+    // Optional: redirect to dashboard
+    // window.location.href = '/users/dashboard';
   } catch (err) {
-    console.error("Network/save error:", err);
-    alert("Error saving organization. Please try again.");
+    console.error('Save error:', err);
+    alert('Network error - please try again');
   }
 };
   
