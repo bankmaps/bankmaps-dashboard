@@ -236,7 +236,7 @@ return NextResponse.json({
     return NextResponse.json({ success: false, error: 'Failed to save organization', details: error.message }, { status: 500 });
   }
 }
-/*
+
 // GET and PATCH unchanged - keep as is
 
 export async function GET(req: NextRequest) {
@@ -245,7 +245,7 @@ export async function GET(req: NextRequest) {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'No token' }, { status: 401 });
     }
-*/
+
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as { sub: number };
     const bluehost_id = decoded.sub;
