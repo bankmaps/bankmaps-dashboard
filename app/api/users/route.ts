@@ -144,6 +144,79 @@ export async function POST(req: NextRequest) {
       RETURNING id;
     `;
 
+// Return success immediately (non-blocking)
+const response = NextResponse.json({
+  success: true,
+  message: 'Organization saved! Your customized HMDA data is being compiled in the background.',
+  organization_id: newOrg.id,
+  user_id,
+}, { status: 201 });
+
+// Start caching in background (fire-and-forget)
+(async () => {
+  try {
+    console.log('Starting background HMDA cache for org_id:', user_id);
+
+    // Clear old cache
+    await sql`
+      DELETE FROM cached_hmda WHERE organization_id = ${user_id};
+    `;
+
+    // Insert all matching rows (using * to copy everything)
+    await sql`
+      INSERT INTO cached_hmda (
+        organization_id,
+        hmda_original_id,
+        cached_at,
+        *
+      )
+      SELECT 
+        ${user_id} AS organization_id,
+        h.id AS hmda_original_id,
+        NOW() AS cached_at,
+        h.*
+      FROM hmda_us h
+      WHERE 
+        h.state = ANY (
+          SELECT jsonb_array_elements_text(geographies->0->'state')
+          FROM organizations WHERE id = ${user_id}
+        ) OR EXISTS (
+          SELECT 1 FROM jsonb_array_elements_text(geographies->0->'state')
+          WHERE value = '__ALL__'
+        )
+        AND
+        h.county = ANY (
+          SELECT jsonb_array_elements_text(geographies->0->'county')
+          FROM organizations WHERE id = ${user_id}
+        ) OR EXISTS (
+          SELECT 1 FROM jsonb_array_elements_text(geographies->0->'county')
+          WHERE value = '__ALL__'
+        )
+        AND
+        h.town = ANY (
+          SELECT jsonb_array_elements_text(geographies->0->'town')
+          FROM organizations WHERE id = ${user_id}
+        ) OR EXISTS (
+          SELECT 1 FROM jsonb_array_elements_text(geographies->0->'town')
+          WHERE value = '__ALL__'
+        )
+        AND
+        h.tract_number = ANY (
+          SELECT jsonb_array_elements_text(geographies->0->'tract_number')
+          FROM organizations WHERE id = ${user_id}
+        ) OR EXISTS (
+          SELECT 1 FROM jsonb_array_elements_text(geographies->0->'tract_number')
+          WHERE value = '__ALL__'
+        );
+    
+    console.log('Background HMDA cache completed for org_id:', user_id);
+  } catch (cacheErr) {
+    console.error('Background HMDA cache failed for org_id ' + user_id + ':', cacheErr);
+  }
+})();
+
+return response;
+    
     console.log('Organization inserted - id:', newOrg.id);
 
     return NextResponse.json({ success: true, organization_id: newOrg.id, user_id }, { status: 201 });
