@@ -10,97 +10,113 @@ export async function POST(req: NextRequest) {
   try {
     console.log('POST /api/users - request received');
 
-    // Get token from Authorization header (Bearer <token>)
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       console.log('Missing or invalid Authorization header');
-      return NextResponse.json(
-        { success: false, error: 'No token provided in Authorization header' },
-        { status: 401 }
-      );
+      return NextResponse.json({ success: false, error: 'No token' }, { status: 401 });
     }
 
     const token = authHeader.split(' ')[1];
     console.log('Token received (first 10 chars):', token.substring(0, 10) + '...');
 
-    // Verify JWT
     const decoded = jwt.verify(token, JWT_SECRET) as { sub: number; email?: string; name?: string };
     const bluehost_id = decoded.sub;
     console.log('JWT verified - bluehost_id:', bluehost_id);
 
-    // Parse request body
     const body = await req.json();
     console.log('Request body received:', body);
 
-    // Basic validation
     if (!body.name || !body.type || !body.regulator) {
       console.log('Validation failed - missing required fields');
-      return NextResponse.json(
-        { success: false, error: 'Missing required fields: name, type, regulator' },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: 'Missing required fields: name, type, regulator' }, { status: 400 });
     }
 
     // Connect to Neon
     const sql = neon(process.env.NEON_DATABASE_URL!);
     console.log('Neon connection initialized');
 
-// Step 1: Get real name from members table using "Id" column
-let fullName = 'Unknown User';
-try {
-  const memberRows = await sql`
-    SELECT "Fname", "Lname"
-    FROM members
-    WHERE "Id" = ${bluehost_id}
-    LIMIT 1;
-  `;
+    // Connect to Bluehost MySQL
+    const mysql = require('mysql2/promise');
+    const bluehostConn = await mysql.createConnection({
+      host: process.env.BLUEHOST_HOST,
+      user: process.env.BLUEHOST_USER,
+      password: process.env.BLUEHOST_PASSWORD,
+      database: process.env.BLUEHOST_DB,
+    });
+    console.log('Bluehost MySQL connected');
 
-  if (memberRows.length > 0) {
-    const member = memberRows[0];
-    const fname = member.Fname?.trim() || '';
-    const lname = member.Lname?.trim() || '';
-    if (fname || lname) {
-      fullName = `${fname} ${lname}`.trim();
+    // Pull only checked fields from members
+    let fullName = 'Unknown User';
+    let aiSubscription = 'active';
+    let aiSubscriptionExpires = null;
+    let paidOrgCount = 1;
+    let maxAllowedOrg = 5;
+    let lastAiCheck = null;
+
+    try {
+      const [rows] = await bluehostConn.execute(
+        'SELECT Fname, Lname, ai_subscription, ai_subscription_expires, paid_organizations_count, max_allowed_organizations, last_ai_check FROM members WHERE Id = ? LIMIT 1',
+        [bluehost_id]
+      );
+
+      if (rows.length > 0) {
+        const member = rows[0];
+        fullName = `${member.Fname?.trim() || ''} ${member.Lname?.trim() || ''}`.trim() || 'Unknown User';
+        aiSubscription = member.ai_subscription || aiSubscription;
+        aiSubscriptionExpires = member.ai_subscription_expires || null;
+        paidOrgCount = member.paid_organizations_count || paidOrgCount;
+        maxAllowedOrg = member.max_allowed_organizations || maxAllowedOrg;
+        lastAiCheck = member.last_ai_check || null;
+        console.log('Pulled from Bluehost members:', { fullName, aiSubscription, paidOrgCount, maxAllowedOrg });
+      } else {
+        console.log('No member found in Bluehost for Id:', bluehost_id);
+      }
+    } catch (err) {
+      console.error('Bluehost query failed:', err);
+    } finally {
+      await bluehostConn.end();
     }
-    console.log(`Found name in members: ${fullName} for Id ${bluehost_id}`);
-  } else {
-    console.log(`No member found in members for Id: ${bluehost_id}`);
-  }
-} catch (memberErr) {
-  console.error('Failed to query members table:', memberErr);
-  // continue with fallback name
-}
 
-// Use the real name (or fallback) in the upsert
-const [User] = await sql`
-  INSERT INTO users (
-    bluehost_id,
-    email,
-    name,
-    ai_subscription,
-    paid_organizations_count,
-    max_allowed_organizations,
-    updated_at
-  ) VALUES (
-    ${bluehost_id},
-    ${body.email || decoded.email || 'unknown@email.com'},
-    ${fullName},
-    'active',
-    1,
-    5,
-    NOW()
-  )
-  ON CONFLICT (bluehost_id)
-  DO UPDATE SET
-    email = EXCLUDED.email,
-    name = EXCLUDED.name,
-    updated_at = NOW()
-  RETURNING id;
-`;
+    // Upsert users with Bluehost fields
+    const [User] = await sql`
+      INSERT INTO users (
+        bluehost_id,
+        email,
+        name,
+        ai_subscription,
+        ai_subscription_expires,
+        paid_organizations_count,
+        max_allowed_organizations,
+        last_ai_check,
+        updated_at
+      ) VALUES (
+        ${bluehost_id},
+        ${body.email || decoded.email || 'unknown@email.com'},
+        ${fullName},
+        ${aiSubscription},
+        ${aiSubscriptionExpires},
+        ${paidOrgCount},
+        ${maxAllowedOrg},
+        ${lastAiCheck},
+        NOW()
+      )
+      ON CONFLICT (bluehost_id)
+      DO UPDATE SET
+        email = EXCLUDED.email,
+        name = EXCLUDED.name,
+        ai_subscription = EXCLUDED.ai_subscription,
+        ai_subscription_expires = EXCLUDED.ai_subscription_expires,
+        paid_organizations_count = EXCLUDED.paid_organizations_count,
+        max_allowed_organizations = EXCLUDED.max_allowed_organizations,
+        last_ai_check = EXCLUDED.last_ai_check,
+        updated_at = NOW()
+      RETURNING id;
+    `;
+
     const user_id = User.id;
     console.log('User upserted - user_id:', user_id);
 
-    // Step 2: Insert new organization - NOW INCLUDING bluehost_id
+    // Insert organization (unchanged)
     const [newOrg] = await sql`
       INSERT INTO organizations (
         user_id,
@@ -130,30 +146,15 @@ const [User] = await sql`
 
     console.log('Organization inserted - id:', newOrg.id);
 
-    return NextResponse.json(
-      {
-        success: true,
-        organization_id: newOrg.id,
-        user_id,
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, organization_id: newOrg.id, user_id }, { status: 201 });
   } catch (error: any) {
-    console.error('SAVE ORGANIZATION FAILED:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-      detail: error.detail,
-      hint: error.hint,
-      position: error.position
-    });
-
-    return NextResponse.json(
-      { success: false, error: 'Failed to save organization', details: error.message || 'Unknown error' },
-      { status: 500 }
-    );
+    console.error('SAVE ORGANIZATION FAILED:', error.message);
+    return NextResponse.json({ success: false, error: 'Failed to save organization', details: error.message }, { status: 500 });
   }
 }
+
+// GET and PATCH unchanged - keep as is
+
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
