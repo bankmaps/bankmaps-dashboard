@@ -390,50 +390,51 @@ export default function Page() {
   };
 
 const handleSave = async () => {
+  const token = localStorage.getItem("jwt_token");
+
+  if (!token) {
+    alert("No authentication token found. Please use the invite link.");
+    return;
+  }
+
+  // Build the payload from your states (no formData needed)
   const payload = {
     name: orgName.trim(),
     type: selectedOrgType,
     regulator: selectedRegulator,
-    states: selectedStates,
-    linked: selectedLenderPerSource,
-    geographies: selectedGeographies,
-    customContext,
+    states: selectedStates,  // or hqStates if that's the one
+    geographies: selectedGeographies,  // your main JSONB array
+    custom_context: customContext.trim(),  // optional notes
+    // Add any other fields you need, e.g.:
+    // matches: orgMatches,
+    // candidates: candidates,
+    // selected_lenders: selectedLenderPerSource,
   };
 
   try {
-    // Get token from URL (?token=...)
-    const urlParams = new URLSearchParams(window.location.search);
-    
-   const token = localStorage.getItem("jwt_token");
-
-if (!token) {
-  alert("No authentication token found. Please log in again.");
-  return;
-}
-
-const res = await fetch('/api/organizations', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
-  },
-  body: JSON.stringify({ ...formData, geographies: selectedGeographies }),
-});
+    const res = await fetch('/api/organizations', {  // adjust endpoint if needed
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
     if (!res.ok) {
       const errData = await res.json();
-      throw new Error(errData.error || 'Save failed');
+      console.error("Save failed:", errData);
+      alert(`Failed to create organization: ${errData.message || "Unknown error"}`);
+      return;
     }
 
     const data = await res.json();
-    console.log('Organization saved:', data);
-
-    alert('Organization created successfully!');
-    window.location.href = '/users';  // redirect to your new landing page
-
+    console.log("Organization saved:", data);
+    alert("Organization saved successfully!");
+    // Optional: redirect, e.g. window.location.href = '/users';
   } catch (err) {
-    console.error('Save error:', err);
-    alert('Error saving organization: ' + (err?.message || 'Unknown error'));
+    console.error("Network/save error:", err);
+    alert("Error saving organization. Please try again.");
   }
 };
   
