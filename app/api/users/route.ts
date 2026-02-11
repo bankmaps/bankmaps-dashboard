@@ -45,21 +45,16 @@ export async function POST(req: NextRequest) {
     const sql = neon(process.env.NEON_DATABASE_URL!);
     console.log('Neon connection initialized');
 
-// Step 1: Get real name from members table
+// Step 1: Get real name from members table using "Id" column
 let fullName = 'Unknown User';
 try {
   const memberRows = await sql`
-    SELECT Fname, Lname
+    SELECT "Fname", "Lname"
     FROM members
-    WHERE Id = ${bluehost_id}
+    WHERE "Id" = ${bluehost_id}
     LIMIT 1;
   `;
-console.log('Members query result length:', memberRows.length);
-  if (memberRows.length > 0) {
-    console.log('Found member name:', memberRows[0].Fname, memberRows[0].Lname);
-  } else {
-    console.log('No member found for bluehost_id:', bluehost_id);
-  }
+
   if (memberRows.length > 0) {
     const member = memberRows[0];
     const fname = member.Fname?.trim() || '';
@@ -67,8 +62,9 @@ console.log('Members query result length:', memberRows.length);
     if (fname || lname) {
       fullName = `${fname} ${lname}`.trim();
     }
+    console.log(`Found name in members: ${fullName} for Id ${bluehost_id}`);
   } else {
-    console.log('No member record found for bluehost_id:', bluehost_id);
+    console.log(`No member found in members for Id: ${bluehost_id}`);
   }
 } catch (memberErr) {
   console.error('Failed to query members table:', memberErr);
@@ -88,7 +84,7 @@ const [User] = await sql`
   ) VALUES (
     ${bluehost_id},
     ${body.email || decoded.email || 'unknown@email.com'},
-    ${fullName},   -- ← this uses Fname + Lname from members
+    ${fullName},
     'active',
     1,
     5,
