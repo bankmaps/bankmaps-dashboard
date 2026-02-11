@@ -50,7 +50,7 @@ let fullName = 'Unknown User';
 try {
   const memberRows = await sql`
     SELECT Fname, Lname
-    FROM bankmaps_bankmaps.members
+    FROM members
     WHERE bluehost_id = ${bluehost_id}
     LIMIT 1;
   `;
