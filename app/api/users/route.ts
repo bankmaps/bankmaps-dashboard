@@ -51,7 +51,7 @@ try {
   const memberRows = await sql`
     SELECT Fname, Lname
     FROM members
-    WHERE bluehost_id = ${bluehost_id}
+    WHERE Id = ${bluehost_id}
     LIMIT 1;
   `;
 console.log('Members query result length:', memberRows.length);
