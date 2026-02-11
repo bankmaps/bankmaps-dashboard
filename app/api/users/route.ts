@@ -54,7 +54,12 @@ try {
     WHERE bluehost_id = ${bluehost_id}
     LIMIT 1;
   `;
-
+console.log('Members query result length:', memberRows.length);
+  if (memberRows.length > 0) {
+    console.log('Found member name:', memberRows[0].Fname, memberRows[0].Lname);
+  } else {
+    console.log('No member found for bluehost_id:', bluehost_id);
+  }
   if (memberRows.length > 0) {
     const member = memberRows[0];
     const fname = member.Fname?.trim() || '';
