@@ -415,24 +415,30 @@ const handleSave = async () => {
       body: JSON.stringify(payload),
     });
 
+    const data = await res.json();  // parse even on success
+
     if (!res.ok) {
-      const err = await res.json();
-      alert(`Save failed: ${err.error || 'Unknown error'}`);
-      return;
+      throw new Error(data.error || data.message || 'Save failed');
     }
 
-    // Success - show non-blocking message
+    if (!data.success) {
+      throw new Error(data.message || 'Server reported failure');
+    }
+
+    // Success path — no blocking alert that requires click
+    // Option 1: Quick non-blocking feedback + immediate redirect (recommended)
+    // You could use a toast library here later, but for now use a simple setState message
     alert(
-      "Organization saved successfully!\n\n" +
-      "Your customized HMDA data is now being compiled in the background.\n" +
-      "This may take a few minutes. You can continue using the dashboard."
+      "Organization saved!\nHMDA data is compiling in the background.\nRedirecting to your dashboard..."
     );
 
-    // Optional: redirect to dashboard
-    // window.location.href = '/users/dashboard';
+    // Redirect — this is the key missing piece
+    window.location.href = '/users';          // hard redirect (reliable, fresh data)
+    // OR: router.push('/users');             // if you import { useRouter } from 'next/navigation'
+
   } catch (err) {
     console.error('Save error:', err);
-    alert('Network error - please try again');
+    alert(`Error: ${err.message || 'Could not save organization. Please try again.'}`);
   }
 };
   
