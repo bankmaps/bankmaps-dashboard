@@ -214,7 +214,12 @@ const [newOrg] = await sql`
             )
           )
         `;
+console.log('INSERT completed - rows should now be in cached_hmda for org', organization_id);
 
+// Force a quick check
+const check = await sql`SELECT COUNT(*) FROM cached_hmda WHERE organization_id = ${organization_id}`;
+console.log('Quick post-insert count:', check[0].count);
+        
         console.log('Background HMDA cache completed for organization_id:', organization_id);
       } catch (cacheErr) {
         console.error('Background HMDA cache failed for organization_id ' + organization_id + ':', cacheErr);
