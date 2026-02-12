@@ -224,8 +224,9 @@ export async function POST(req: NextRequest) {
         const testResult = await sql.query(testQuery);
         console.log(`[HMDA CACHE] Expected rows to insert: ${testResult.rows[0]?.cnt || 0}`);
 
-        if (!testResult.rows[0]?.cnt || testResult.rows[0].cnt === 0) {
+        if (!testResult[0]?.cnt || testResult[0].cnt === 0) {
           console.log('[HMDA CACHE] WARNING: No matching HMDA records found! Check your geography filters.');
+          console.log(`[HMDA CACHE] Expected rows to insert: ${testResult[0]?.cnt || 0}`);
           return;
         }
 
