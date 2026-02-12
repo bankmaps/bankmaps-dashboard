@@ -1,4 +1,4 @@
-// app/api/users/route.ts - FIXED VERSION 3 - MAXIMUM DEBUGGING
+// app/api/users/route.ts - FIXED VERSION 4 - TypeScript compatible
 
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
     const organization_id = newOrg.id;
     console.log('Organization created - organization_id:', organization_id);
 
-    // Background HMDA cache - SUPER DEFENSIVE VERSION
+    // Background HMDA cache - TypeScript compatible
     setImmediate(async () => {
       try {
         console.log(`[HMDA CACHE] START org=${organization_id}`);
@@ -257,14 +257,15 @@ export async function POST(req: NextRequest) {
           console.log('[HMDA CACHE] WARNING: No WHERE conditions! This will copy the ENTIRE hmda_us table!');
         }
 
-        // Test query to count matches
+        // Test query to count matches - FIXED: Use tagged template, not .query()
         console.log('[HMDA CACHE] Running test count query...');
         const testQuery = `SELECT COUNT(*) as cnt FROM hmda_us h ${whereClause}`;
         console.log(`[HMDA CACHE] Test query: ${testQuery}`);
         
-        const testResult = await bgSql.query(testQuery);
+        // Use neon's unsafe raw query method
+        const testResult = await bgSql(testQuery);
         console.log(`[HMDA CACHE] Test result:`, testResult);
-        const expectedCount = testResult.rows?.[0]?.cnt || 0;
+        const expectedCount = testResult[0]?.cnt || 0;
         console.log(`[HMDA CACHE] Expected rows to insert: ${expectedCount}`);
 
         if (expectedCount === 0) {
@@ -312,7 +313,7 @@ export async function POST(req: NextRequest) {
         `;
 
         console.log('[HMDA CACHE] Executing INSERT...');
-        await bgSql.query(insertQuery);
+        await bgSql(insertQuery);
         console.log(`[HMDA CACHE] INSERT completed successfully`);
 
         // Verify
@@ -332,7 +333,7 @@ export async function POST(req: NextRequest) {
         console.error('[HMDA CACHE] Error message:', err?.message);
         console.error('[HMDA CACHE] Error name:', err?.name);
         console.error('[HMDA CACHE] Error stack:', err?.stack);
-        console.error('[HMDA CACHE] Full error object:', JSON.stringify(err, null, 2));
+        if (err?.code) console.error('[HMDA CACHE] Error code:', err.code);
       }
     });
 
@@ -354,7 +355,6 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET and PATCH remain the same...
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
