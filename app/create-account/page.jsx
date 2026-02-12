@@ -248,8 +248,14 @@ export default function Page() {
         towns.includes(i.town)
     );
 
-    const unique = [...new Set(filtered.map(i => i.tract_number?.trim()).filter(Boolean))].sort();
+   const unique = [...new Set(filtered.map(i => i.tract_number?.trim()).filter(Boolean))].sort();
 
+// ADD THIS DEBUG LOGGING:
+console.log('--- Tract Options Debug ---');
+console.log('currentGeography:', currentGeography);
+console.log('filtered records count:', filtered.length);
+console.log('unique tracts found:', unique);
+console.log('geographiesList sample:', geographiesList.slice(0, 3));
     return [
       { value: '__ALL__', label: 'All Tracts (in selected towns)' },
       ...unique.map(tr => ({ value: tr, label: tr })),
