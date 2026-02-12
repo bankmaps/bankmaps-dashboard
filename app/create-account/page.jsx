@@ -242,11 +242,11 @@ export default function Page() {
       : currentGeography.town;
 
     filtered = filtered.filter(
-      i =>
-        currentGeography.state.includes(i.state) &&
-        counties.includes(i.county) &&
-        towns.includes(i.town)
-    );
+  i =>
+    currentGeography.state.includes(i.state?.trim()) &&
+    counties.includes(i.county?.trim()) &&
+    towns.includes(i.town?.trim())
+);
 
    const unique = [...new Set(filtered.map(i => i.tract_number?.trim()).filter(Boolean))].sort();
 
