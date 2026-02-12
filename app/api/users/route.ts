@@ -1,4 +1,4 @@
-// app/api/users/route.ts - FIXED VERSION 2
+// app/api/users/route.ts - FIXED VERSION 3 - MAXIMUM DEBUGGING
 
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     console.log('JWT verified - bluehost_id:', bluehost_id);
 
     const body = await req.json();
-    console.log('Request body received:', body);
+    console.log('Request body received:', JSON.stringify(body, null, 2));
 
     if (!body.name || !body.type || !body.regulator) {
       console.log('Validation failed - missing required fields');
@@ -148,104 +148,134 @@ export async function POST(req: NextRequest) {
     const organization_id = newOrg.id;
     console.log('Organization created - organization_id:', organization_id);
 
-    // Background HMDA cache - FIXED APPROACH WITH RAW SQL
-    (async () => {
+    // Background HMDA cache - SUPER DEFENSIVE VERSION
+    setImmediate(async () => {
       try {
         console.log(`[HMDA CACHE] START org=${organization_id}`);
+        console.log('[HMDA CACHE] Initializing SQL connection...');
+        
+        const bgSql = neon(process.env.NEON_DATABASE_URL!);
+        console.log('[HMDA CACHE] SQL connection initialized');
         
         // Clear old cache
-        await sql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id};`;
-        console.log(`[HMDA CACHE] Cleared old cache`);
+        console.log('[HMDA CACHE] About to delete old cache...');
+        const deleteResult = await bgSql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id}`;
+        console.log(`[HMDA CACHE] Cleared old cache - deleted ${deleteResult.length || 0} rows`);
 
         // Fetch organization geography
-        const orgRows = await sql`SELECT geographies FROM organizations WHERE id = ${organization_id}`;
+        console.log('[HMDA CACHE] Fetching organization geographies...');
+        const orgRows = await bgSql`SELECT geographies FROM organizations WHERE id = ${organization_id}`;
+        console.log(`[HMDA CACHE] Query returned ${orgRows.length} rows`);
         
-        if (!orgRows || orgRows.length === 0 || !orgRows[0]?.geographies?.[0]) {
-          console.log(`[HMDA CACHE] No geographies for org ${organization_id}`);
+        if (!orgRows || orgRows.length === 0) {
+          console.log(`[HMDA CACHE] ERROR: No organization found with id=${organization_id}`);
+          return;
+        }
+
+        console.log('[HMDA CACHE] Organization row:', JSON.stringify(orgRows[0]));
+        
+        if (!orgRows[0].geographies) {
+          console.log(`[HMDA CACHE] ERROR: geographies field is null/undefined`);
+          return;
+        }
+
+        if (!Array.isArray(orgRows[0].geographies)) {
+          console.log(`[HMDA CACHE] ERROR: geographies is not an array, it's: ${typeof orgRows[0].geographies}`);
+          return;
+        }
+
+        if (orgRows[0].geographies.length === 0) {
+          console.log(`[HMDA CACHE] ERROR: geographies array is empty`);
           return;
         }
 
         const geo = orgRows[0].geographies[0];
-        console.log(`[HMDA CACHE] Geo filters:`, JSON.stringify(geo));
+        console.log(`[HMDA CACHE] First geography object:`, JSON.stringify(geo, null, 2));
 
         // Build WHERE clause components as strings
         const whereConditions: string[] = [];
 
         // State filter
+        console.log('[HMDA CACHE] Processing state filter...');
+        console.log('[HMDA CACHE] geo.state:', JSON.stringify(geo.state));
         if (geo.state?.includes('__ALL__')) {
           console.log('[HMDA CACHE] State: ALL (no filter)');
-          // No state restriction
-        } else if (geo.state && geo.state.length > 0) {
+        } else if (geo.state && Array.isArray(geo.state) && geo.state.length > 0) {
           const stateList = geo.state.map((s: string) => `'${s.replace(/'/g, "''")}'`).join(',');
           whereConditions.push(`h.state IN (${stateList})`);
-          console.log(`[HMDA CACHE] State filter: IN (${stateList})`);
+          console.log(`[HMDA CACHE] State filter: h.state IN (${stateList})`);
+        } else {
+          console.log('[HMDA CACHE] State: No filter (empty or invalid)');
         }
 
         // County filter
+        console.log('[HMDA CACHE] Processing county filter...');
+        console.log('[HMDA CACHE] geo.county:', JSON.stringify(geo.county));
         if (geo.county?.includes('__ALL__')) {
           console.log('[HMDA CACHE] County: ALL (no filter)');
-          // No county restriction
-        } else if (geo.county && geo.county.length > 0) {
+        } else if (geo.county && Array.isArray(geo.county) && geo.county.length > 0) {
           const countyList = geo.county.map((c: string) => `'${c.replace(/'/g, "''")}'`).join(',');
           whereConditions.push(`h.county IN (${countyList})`);
-          console.log(`[HMDA CACHE] County filter: IN (${countyList})`);
+          console.log(`[HMDA CACHE] County filter: h.county IN (${countyList})`);
+        } else {
+          console.log('[HMDA CACHE] County: No filter (empty or invalid)');
         }
 
         // Town filter
+        console.log('[HMDA CACHE] Processing town filter...');
+        console.log('[HMDA CACHE] geo.town:', JSON.stringify(geo.town));
         if (geo.town?.includes('__ALL__')) {
           console.log('[HMDA CACHE] Town: ALL (no filter)');
-          // No town restriction
-        } else if (geo.town && geo.town.length > 0) {
+        } else if (geo.town && Array.isArray(geo.town) && geo.town.length > 0) {
           const townList = geo.town.map((t: string) => `'${t.replace(/'/g, "''")}'`).join(',');
           whereConditions.push(`h.town IN (${townList})`);
-          console.log(`[HMDA CACHE] Town filter: IN (${townList})`);
+          console.log(`[HMDA CACHE] Town filter: h.town IN (${townList})`);
+        } else {
+          console.log('[HMDA CACHE] Town: No filter (empty or invalid)');
         }
 
         // Tract filter
+        console.log('[HMDA CACHE] Processing tract filter...');
+        console.log('[HMDA CACHE] geo.tract_number:', JSON.stringify(geo.tract_number));
         if (geo.tract_number?.includes('__ALL__')) {
           console.log('[HMDA CACHE] Tract: ALL (no filter)');
-          // No tract restriction
-        } else if (geo.tract_number && geo.tract_number.length > 0) {
+        } else if (geo.tract_number && Array.isArray(geo.tract_number) && geo.tract_number.length > 0) {
           const tractList = geo.tract_number.map((t: string) => `'${t.replace(/'/g, "''")}'`).join(',');
           whereConditions.push(`h.tract_number IN (${tractList})`);
-          console.log(`[HMDA CACHE] Tract filter: IN (${tractList})`);
+          console.log(`[HMDA CACHE] Tract filter: h.tract_number IN (${tractList})`);
+        } else {
+          console.log('[HMDA CACHE] Tract: No filter (empty or invalid)');
         }
 
         const whereClause = whereConditions.length > 0 
           ? `WHERE ${whereConditions.join(' AND ')}`
           : '';
 
-        console.log(`[HMDA CACHE] Final WHERE clause: ${whereClause}`);
+        console.log(`[HMDA CACHE] Final WHERE clause: ${whereClause || '(no filters - will match ALL rows)'}`);
 
-        // First, test query to see how many rows match
+        if (!whereClause) {
+          console.log('[HMDA CACHE] WARNING: No WHERE conditions! This will copy the ENTIRE hmda_us table!');
+        }
+
+        // Test query to count matches
+        console.log('[HMDA CACHE] Running test count query...');
         const testQuery = `SELECT COUNT(*) as cnt FROM hmda_us h ${whereClause}`;
         console.log(`[HMDA CACHE] Test query: ${testQuery}`);
         
-        const result = await sql.query(testQuery);
+        const testResult = await bgSql.query(testQuery);
+        console.log(`[HMDA CACHE] Test result:`, testResult);
+        const expectedCount = testResult.rows?.[0]?.cnt || 0;
+        console.log(`[HMDA CACHE] Expected rows to insert: ${expectedCount}`);
 
-const count = Number((result as { cnt: string }[])[0]?.cnt ?? 0);
+        if (expectedCount === 0) {
+          console.log('[HMDA CACHE] WARNING: No matching HMDA records found!');
+          console.log('[HMDA CACHE] This means your geography filters do not match any data in hmda_us table.');
+          console.log('[HMDA CACHE] Check that state/county/town/tract values match exactly (case-sensitive)');
+          return;
+        }
 
-console.log(`[HMDA CACHE] Expected rows to insert: ${count}`);
-
-if (count === 0) {
-  console.log('[HMDA CACHE] WARNING: No matching HMDA records found! Check your geography filters.');
-}
-
-const hmdaCount = Number(result[0]?.cnt ?? 0);
-
-console.log(`[HMDA CACHE] Expected rows to insert: ${hmdaCount}`);
-
-if (hmdaCount === 0) {
-  console.log('[HMDA CACHE] WARNING: No matching HMDA records found! Check your geography filters.');
-}
-
-console.log(`[HMDA CACHE] Expected rows to insert: ${count}`);
-
-if (count === 0) {
-  console.log('[HMDA CACHE] WARNING: No matching HMDA records found! Check your geography filters.');
-}
-
-        // Now do the actual insert
+        // Do the actual insert
+        console.log('[HMDA CACHE] Starting INSERT query...');
         const insertQuery = `
           INSERT INTO cached_hmda (
             year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid, 
@@ -281,19 +311,30 @@ if (count === 0) {
           ${whereClause}
         `;
 
-        await sql.query(insertQuery);
-        console.log(`[HMDA CACHE] INSERT completed`);
+        console.log('[HMDA CACHE] Executing INSERT...');
+        await bgSql.query(insertQuery);
+        console.log(`[HMDA CACHE] INSERT completed successfully`);
 
-        const verifyResult = await sql`
+        // Verify
+        console.log('[HMDA CACHE] Verifying insert...');
+        const verifyResult = await bgSql`
           SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}
         `;
-        console.log(`[HMDA CACHE] SUCCESS - Inserted ${verifyResult[0]?.cnt || 0} records`);
+        const actualCount = verifyResult[0]?.cnt || 0;
+        console.log(`[HMDA CACHE] ✅ SUCCESS - Inserted ${actualCount} records (expected ${expectedCount})`);
+        
+        if (actualCount !== expectedCount) {
+          console.log(`[HMDA CACHE] ⚠️ WARNING: Count mismatch! Expected ${expectedCount} but got ${actualCount}`);
+        }
 
       } catch (err: any) {
-        console.error(`[HMDA CACHE] FAILED org=${organization_id}:`, err?.message || err);
-        console.error('[HMDA CACHE] Stack:', err?.stack);
+        console.error(`[HMDA CACHE] ❌ FATAL ERROR for org=${organization_id}:`);
+        console.error('[HMDA CACHE] Error message:', err?.message);
+        console.error('[HMDA CACHE] Error name:', err?.name);
+        console.error('[HMDA CACHE] Error stack:', err?.stack);
+        console.error('[HMDA CACHE] Full error object:', JSON.stringify(err, null, 2));
       }
-    })();
+    });
 
     return NextResponse.json({
       success: true,
@@ -313,6 +354,7 @@ if (count === 0) {
   }
 }
 
+// GET and PATCH remain the same...
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
