@@ -220,7 +220,7 @@ return NextResponse.json({
   user_id,
 }, { status: 201 });
 alert("Organization saved! Your customized HMDA data is being compiled in the background - redirecting to your dashboard.");
-router.push('/users');  // or '/users/dashboard'
+window.location.replace('/users');
   } catch (error: any) {
     console.error('SAVE ORGANIZATION FAILED:', error.message);
     return NextResponse.json({ success: false, error: 'Failed to save organization', details: error.message }, { status: 500 });
