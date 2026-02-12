@@ -1,4 +1,4 @@
-// app/api/users/route.ts - FIXED VERSION 5 - Proper Neon SQL
+// app/api/users/route.ts - FINAL VERSION - Fixed background task
 
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
@@ -148,119 +148,9 @@ export async function POST(req: NextRequest) {
     const organization_id = newOrg.id;
     console.log('Organization created - organization_id:', organization_id);
 
-    // Background HMDA cache - SIMPLIFIED WITHOUT TEST QUERY
-    setImmediate(async () => {
-      try {
-        console.log(`[HMDA CACHE] START org=${organization_id}`);
-        console.log('[HMDA CACHE] Initializing SQL connection...');
-        
-        const bgSql = neon(process.env.NEON_DATABASE_URL!);
-        console.log('[HMDA CACHE] SQL connection initialized');
-        
-        // Clear old cache
-        console.log('[HMDA CACHE] About to delete old cache...');
-        const deleteResult = await bgSql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id}`;
-        console.log(`[HMDA CACHE] Cleared old cache - deleted ${deleteResult.length || 0} rows`);
-
-        // Fetch organization geography
-        console.log('[HMDA CACHE] Fetching organization geographies...');
-        const orgRows = await bgSql`SELECT geographies FROM organizations WHERE id = ${organization_id}`;
-        console.log(`[HMDA CACHE] Query returned ${orgRows.length} rows`);
-        
-        if (!orgRows || orgRows.length === 0) {
-          console.log(`[HMDA CACHE] ERROR: No organization found with id=${organization_id}`);
-          return;
-        }
-
-        console.log('[HMDA CACHE] Organization row:', JSON.stringify(orgRows[0]));
-        
-        if (!orgRows[0].geographies || !Array.isArray(orgRows[0].geographies) || orgRows[0].geographies.length === 0) {
-          console.log(`[HMDA CACHE] ERROR: No valid geographies`);
-          return;
-        }
-
-        const geo = orgRows[0].geographies[0];
-        console.log(`[HMDA CACHE] Geography:`, JSON.stringify(geo, null, 2));
-
-        // Build filter arrays
-        const states = geo.state?.includes('__ALL__') ? [] : (geo.state || []);
-        const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []);
-        const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []);
-        const tracts = geo.tract_number?.includes('__ALL__') ? [] : (geo.tract_number || []);
-
-        console.log('[HMDA CACHE] Filters:', { states, counties, towns, tracts });
-
-        // Build INSERT with dynamic WHERE using template literals
-        // We'll construct the query piece by piece
-        let insertQueryStart = `
-          INSERT INTO cached_hmda (
-            year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid, 
-            state, st, town, county, msa, msa_number, tract_number,
-            property_value, borrower_income, purchaser_type, financing_type, loan_purpose, 
-            occupancy, lien, open_or_closed_end, business_or_commercial, reverse_mortgage, 
-            action_taken, product, amount, applications_received, application_dollars,
-            originated_loans, originated_dollars, originated_and_purchased_loans, 
-            originated_and_purchased_loan_dollars, approved_not_accepted, 
-            approved_not_accepted_dollars, denied_applications, denied_application_dollars,
-            purchased_loans, purchased_loan_dollars, withdrawn_applications, 
-            withdrawn_application_dollars, spread, rate, income_level, borrower_income_level, 
-            majority_minority, borrower_race, borrower_ethnicity, borrower_gender,
-            minority_status, borrower_age, coapplicant, organization_id, cached_at
-          )
-          SELECT 
-            h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid, 
-            h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number,
-            h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, 
-            h.loan_purpose, h.occupancy, h.lien, h.open_or_closed_end, h.business_or_commercial, 
-            h.reverse_mortgage, h.action_taken, h.product, h.amount, h.applications_received, 
-            h.application_dollars, h.originated_loans, h.originated_dollars, 
-            h.originated_and_purchased_loans, h.originated_and_purchased_loan_dollars,
-            h.approved_not_accepted, h.approved_not_accepted_dollars, h.denied_applications, 
-            h.denied_application_dollars, h.purchased_loans, h.purchased_loan_dollars, 
-            h.withdrawn_applications, h.withdrawn_application_dollars, h.spread, h.rate,
-            h.income_level, h.borrower_income_level, h.majority_minority, h.borrower_race, 
-            h.borrower_ethnicity, h.borrower_gender, h.minority_status, h.borrower_age, 
-            h.coapplicant,
-            ${organization_id} AS organization_id,
-            NOW() AS cached_at
-          FROM hmda_us h
-          WHERE 1=1`;
-
-        // Add filters only if they exist
-        if (states.length > 0) {
-          const stateList = states.map(s => `'${s.replace(/'/g, "''")}'`).join(',');
-          insertQueryStart += ` AND h.state IN (${stateList})`;
-        }
-        if (counties.length > 0) {
-          const countyList = counties.map(c => `'${c.replace(/'/g, "''")}'`).join(',');
-          insertQueryStart += ` AND h.county IN (${countyList})`;
-        }
-        if (towns.length > 0) {
-          const townList = towns.map(t => `'${t.replace(/'/g, "''")}'`).join(',');
-          insertQueryStart += ` AND h.town IN (${townList})`;
-        }
-        if (tracts.length > 0) {
-          const tractList = tracts.map(t => `'${t.replace(/'/g, "''")}'`).join(',');
-          insertQueryStart += ` AND h.tract_number IN (${tractList})`;
-        }
-
-        console.log('[HMDA CACHE] Final query:', insertQueryStart);
-
-        // Execute using template literal trick
-        console.log('[HMDA CACHE] Executing INSERT...');
-        await bgSql.unsafe(insertQueryStart);
-        console.log('[HMDA CACHE] INSERT completed');
-
-        // Verify
-        const verifyResult = await bgSql`
-          SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}
-        `;
-        console.log(`[HMDA CACHE] ✅ SUCCESS - Inserted ${verifyResult[0]?.cnt || 0} records`);
-
-      } catch (err: any) {
-        console.error(`[HMDA CACHE] ❌ ERROR for org=${organization_id}:`, err?.message);
-        console.error('[HMDA CACHE] Stack:', err?.stack);
-      }
+    // Trigger background cache - DON'T await this!
+    cacheHMDAData(organization_id).catch(err => {
+      console.error(`[HMDA CACHE] Background task failed for org ${organization_id}:`, err);
     });
 
     return NextResponse.json({
@@ -278,6 +168,107 @@ export async function POST(req: NextRequest) {
       error: 'Failed to save organization', 
       details: error.message 
     }, { status: 500 });
+  }
+}
+
+// Separate function for background caching
+async function cacheHMDAData(organization_id: number) {
+  console.log(`[HMDA CACHE] START org=${organization_id}`);
+  
+  try {
+    // Create NEW connection for background task
+    const bgSql = neon(process.env.NEON_DATABASE_URL!);
+    
+    // Clear old cache
+    console.log('[HMDA CACHE] Deleting old cache...');
+    await bgSql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id}`;
+    console.log('[HMDA CACHE] Old cache cleared');
+
+    // Fetch geography
+    console.log('[HMDA CACHE] Fetching geography...');
+    const orgRows = await bgSql`SELECT geographies FROM organizations WHERE id = ${organization_id}`;
+    
+    if (!orgRows?.length || !orgRows[0].geographies?.length) {
+      console.log('[HMDA CACHE] No geographies found');
+      return;
+    }
+
+    const geo = orgRows[0].geographies[0];
+    console.log('[HMDA CACHE] Geography:', JSON.stringify(geo));
+
+    // Build filters
+    const states = geo.state?.includes('__ALL__') ? [] : (geo.state || []);
+    const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []);
+    const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []);
+    const tracts = geo.tract_number?.includes('__ALL__') ? [] : (geo.tract_number || []);
+
+    console.log('[HMDA CACHE] Filters:', { states, counties, towns, tracts });
+
+    // Build WHERE clause
+    let whereClause = 'WHERE 1=1';
+    if (states.length > 0) {
+      whereClause += ` AND h.state IN (${states.map(s => `'${s.replace(/'/g, "''")}'`).join(',')})`;
+    }
+    if (counties.length > 0) {
+      whereClause += ` AND h.county IN (${counties.map(c => `'${c.replace(/'/g, "''")}'`).join(',')})`;
+    }
+    if (towns.length > 0) {
+      whereClause += ` AND h.town IN (${towns.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
+    }
+    if (tracts.length > 0) {
+      whereClause += ` AND h.tract_number IN (${tracts.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
+    }
+
+    console.log('[HMDA CACHE] WHERE:', whereClause);
+
+    // Execute INSERT
+    const insertQuery = `
+      INSERT INTO cached_hmda (
+        year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid, 
+        state, st, town, county, msa, msa_number, tract_number,
+        property_value, borrower_income, purchaser_type, financing_type, loan_purpose, 
+        occupancy, lien, open_or_closed_end, business_or_commercial, reverse_mortgage, 
+        action_taken, product, amount, applications_received, application_dollars,
+        originated_loans, originated_dollars, originated_and_purchased_loans, 
+        originated_and_purchased_loan_dollars, approved_not_accepted, 
+        approved_not_accepted_dollars, denied_applications, denied_application_dollars,
+        purchased_loans, purchased_loan_dollars, withdrawn_applications, 
+        withdrawn_application_dollars, spread, rate, income_level, borrower_income_level, 
+        majority_minority, borrower_race, borrower_ethnicity, borrower_gender,
+        minority_status, borrower_age, coapplicant, organization_id, cached_at
+      )
+      SELECT 
+        h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid, 
+        h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number,
+        h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, 
+        h.loan_purpose, h.occupancy, h.lien, h.open_or_closed_end, h.business_or_commercial, 
+        h.reverse_mortgage, h.action_taken, h.product, h.amount, h.applications_received, 
+        h.application_dollars, h.originated_loans, h.originated_dollars, 
+        h.originated_and_purchased_loans, h.originated_and_purchased_loan_dollars,
+        h.approved_not_accepted, h.approved_not_accepted_dollars, h.denied_applications, 
+        h.denied_application_dollars, h.purchased_loans, h.purchased_loan_dollars, 
+        h.withdrawn_applications, h.withdrawn_application_dollars, h.spread, h.rate,
+        h.income_level, h.borrower_income_level, h.majority_minority, h.borrower_race, 
+        h.borrower_ethnicity, h.borrower_gender, h.minority_status, h.borrower_age, 
+        h.coapplicant,
+        ${organization_id} AS organization_id,
+        NOW() AS cached_at
+      FROM hmda_us h
+      ${whereClause}
+    `;
+
+    console.log('[HMDA CACHE] Executing INSERT...');
+    await bgSql.unsafe(insertQuery);
+    console.log('[HMDA CACHE] INSERT complete');
+
+    // Verify
+    const count = await bgSql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
+    console.log(`[HMDA CACHE] ✅ SUCCESS - Inserted ${count[0]?.cnt || 0} records`);
+
+  } catch (err: any) {
+    console.error(`[HMDA CACHE] ❌ ERROR:`, err.message);
+    console.error('[HMDA CACHE] Stack:', err.stack);
+    throw err;
   }
 }
 
