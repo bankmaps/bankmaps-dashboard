@@ -137,7 +137,8 @@ export async function POST(req: NextRequest) {
     if (counties.length > 0) where += ` AND h.county IN (${counties.map(c => `'${c.replace(/'/g, "''")}'`).join(',')})`;
     if (towns.length > 0) where += ` AND h.town IN (${towns.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
     if (tracts.length > 0) where += ` AND h.tract_number IN (${tracts.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
-
+console.log('[HMDA] typeof sql.unsafe:', typeof sql.unsafe);
+console.log('[HMDA] sql methods:', Object.getOwnPropertyNames(sql));
     const insertQuery = `
       INSERT INTO cached_hmda (
         year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid,
