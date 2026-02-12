@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Select from 'react-select';
 import TokenProvider from "../users/features/TokenProvider";
 
@@ -59,6 +60,7 @@ const SOURCE_CONFIG = {
 };
 
 export default function Page() {
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [orgName, setOrgName] = useState('');
   const [selectedOrgType, setSelectedOrgType] = useState('');
@@ -433,7 +435,7 @@ const handleSave = async () => {
     );
 
     // Redirect — this is the key missing piece
-    window.location.href = '/users';          // hard redirect (reliable, fresh data)
+    router.push('/users');
     // OR: router.push('/users');             // if you import { useRouter } from 'next/navigation'
 
   } catch (err) {
