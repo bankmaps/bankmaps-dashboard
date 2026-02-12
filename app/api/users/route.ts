@@ -231,7 +231,13 @@ if (count === 0) {
   console.log('[HMDA CACHE] WARNING: No matching HMDA records found! Check your geography filters.');
 }
 
-const count = Number(result[0]?.cnt ?? 0);
+const hmdaCount = Number(result[0]?.cnt ?? 0);
+
+console.log(`[HMDA CACHE] Expected rows to insert: ${hmdaCount}`);
+
+if (hmdaCount === 0) {
+  console.log('[HMDA CACHE] WARNING: No matching HMDA records found! Check your geography filters.');
+}
 
 console.log(`[HMDA CACHE] Expected rows to insert: ${count}`);
 
