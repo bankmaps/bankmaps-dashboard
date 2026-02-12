@@ -3,6 +3,7 @@
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import { useRouter } from 'next/navigation';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -153,10 +154,10 @@ const response = NextResponse.json({
 }, { status: 201 });
 
 // Step 3: Populate cached_hmda in background (non-blocking)
+    const router = useRouter();
 (async () => {
   try {
     console.log('Starting background HMDA cache for org_id:', user_id);
-
     // Clear old cache
     await sql`
       DELETE FROM cached_hmda WHERE organization_id = ${user_id};
@@ -220,7 +221,8 @@ return NextResponse.json({
   organization_id: newOrg.id,
   user_id,
 }, { status: 201 });
-
+alert("Organization saved! Your customized HMDA data is being compiled in the background - redirecting to your dashboard.");
+router.push('/users');  // or '/users/dashboard'
   } catch (error: any) {
     console.error('SAVE ORGANIZATION FAILED:', error.message);
     return NextResponse.json({ success: false, error: 'Failed to save organization', details: error.message }, { status: 500 });
