@@ -184,39 +184,28 @@ const response = NextResponse.json({
         h.income_level, h.borrower_income_level, h.majority_minority, h.borrower_race, h.borrower_ethnicity, h.borrower_gender, 
         h.minority_status, h.borrower_age, h.coapplicant, ${user_id} AS organization_id, NOW() AS cached_at
       FROM hmda_us h
-      WHERE 
-        h.state = ANY (
-          SELECT jsonb_array_elements_text(geographies->0->'state')
-          FROM organizations WHERE id = ${user_id}
-        ) OR EXISTS (
-          SELECT 1 FROM jsonb_array_elements_text(geographies->0->'state')
-          WHERE value = '__ALL__'
+WHERE 
+        EXISTS (
+          SELECT 1 FROM organizations o
+          WHERE o.id = ${user_id}
+          AND (
+            h.state = ANY (jsonb_array_elements_text(o.geographies->0->'state'))
+            OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'state') WHERE value = '__ALL__')
+          )
+          AND (
+            h.county = ANY (jsonb_array_elements_text(o.geographies->0->'county'))
+            OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'county') WHERE value = '__ALL__')
+          )
+          AND (
+            h.town = ANY (jsonb_array_elements_text(o.geographies->0->'town'))
+            OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'town') WHERE value = '__ALL__')
+          )
+          AND (
+            h.tract_number = ANY (jsonb_array_elements_text(o.geographies->0->'tract_number'))
+            OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'tract_number') WHERE value = '__ALL__')
+          )
         )
-        AND
-        h.county = ANY (
-          SELECT jsonb_array_elements_text(geographies->0->'county')
-          FROM organizations WHERE id = ${user_id}
-        ) OR EXISTS (
-          SELECT 1 FROM jsonb_array_elements_text(geographies->0->'county')
-          WHERE value = '__ALL__'
-        )
-        AND
-        h.town = ANY (
-          SELECT jsonb_array_elements_text(geographies->0->'town')
-          FROM organizations WHERE id = ${user_id}
-        ) OR EXISTS (
-          SELECT 1 FROM jsonb_array_elements_text(geographies->0->'town')
-          WHERE value = '__ALL__'
-        )
-        AND
-        h.tract_number = ANY (
-          SELECT jsonb_array_elements_text(geographies->0->'tract_number')
-          FROM organizations WHERE id = ${user_id}
-        ) OR EXISTS (
-          SELECT 1 FROM jsonb_array_elements_text(geographies->0->'tract_number')
-          WHERE value = '__ALL__'
-        )
-        `;
+    `;
     
     console.log('Background HMDA cache completed for org_id:', user_id);
   } catch (cacheErr) {
