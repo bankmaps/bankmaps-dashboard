@@ -1,4 +1,5 @@
-// app/api/users/route.ts - FINAL VERSION - Fixed background task
+// app/api/users/route.ts - SYNCHRONOUS VERSION
+// Caches HMDA data DURING the request instead of background
 
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
@@ -12,27 +13,21 @@ export async function POST(req: NextRequest) {
 
     const authHeader = req.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      console.log('Missing or invalid Authorization header');
       return NextResponse.json({ success: false, error: 'No token' }, { status: 401 });
     }
 
     const token = authHeader.split(' ')[1];
-    console.log('Token received (first 10 chars):', token.substring(0, 10) + '...');
-
     const decoded = jwt.verify(token, JWT_SECRET) as { sub: number; email?: string; name?: string };
     const bluehost_id = decoded.sub;
-    console.log('JWT verified - bluehost_id:', bluehost_id);
 
     const body = await req.json();
-    console.log('Request body received:', JSON.stringify(body, null, 2));
+    console.log('Request body:', JSON.stringify(body, null, 2));
 
     if (!body.name || !body.type || !body.regulator) {
-      console.log('Validation failed - missing required fields');
-      return NextResponse.json({ success: false, error: 'Missing required fields: name, type, regulator' }, { status: 400 });
+      return NextResponse.json({ success: false, error: 'Missing required fields' }, { status: 400 });
     }
 
     const sql = neon(process.env.NEON_DATABASE_URL!);
-    console.log('Neon connection initialized');
 
     const mysql = require('mysql2/promise');
     const bluehostConn = await mysql.createConnection({
@@ -41,7 +36,6 @@ export async function POST(req: NextRequest) {
       password: process.env.BLUEHOST_PASSWORD,
       database: process.env.BLUEHOST_DB,
     });
-    console.log('Bluehost MySQL connected');
 
     let fullName = 'Unknown User';
     let aiSubscription = 'active';
@@ -55,7 +49,6 @@ export async function POST(req: NextRequest) {
         'SELECT Fname, Lname, ai_subscription, ai_subscription_expires, paid_organizations_count, max_allowed_organizations, last_ai_check FROM members WHERE Id = ? LIMIT 1',
         [bluehost_id]
       );
-
       if (rows.length > 0) {
         const member = rows[0];
         fullName = `${member.Fname?.trim() || ''} ${member.Lname?.trim() || ''}`.trim() || 'Unknown User';
@@ -64,9 +57,6 @@ export async function POST(req: NextRequest) {
         paidOrgCount = member.paid_organizations_count || paidOrgCount;
         maxAllowedOrg = member.max_allowed_organizations || maxAllowedOrg;
         lastAiCheck = member.last_ai_check || null;
-        console.log('Pulled from Bluehost members:', { fullName, aiSubscription, paidOrgCount, maxAllowedOrg });
-      } else {
-        console.log('No member found in Bluehost for Id:', bluehost_id);
       }
     } catch (err) {
       console.error('Bluehost query failed:', err);
@@ -76,62 +66,29 @@ export async function POST(req: NextRequest) {
 
     const [User] = await sql`
       INSERT INTO users (
-        bluehost_id,
-        email,
-        name,
-        ai_subscription,
-        ai_subscription_expires,
-        paid_organizations_count,
-        max_allowed_organizations,
-        last_ai_check,
-        updated_at
+        bluehost_id, email, name, ai_subscription, ai_subscription_expires,
+        paid_organizations_count, max_allowed_organizations, last_ai_check, updated_at
       ) VALUES (
-        ${bluehost_id},
-        ${body.email || decoded.email || 'unknown@email.com'},
-        ${fullName},
-        ${aiSubscription},
-        ${aiSubscriptionExpires},
-        ${paidOrgCount},
-        ${maxAllowedOrg},
-        ${lastAiCheck},
-        NOW()
+        ${bluehost_id}, ${body.email || decoded.email || 'unknown@email.com'}, ${fullName},
+        ${aiSubscription}, ${aiSubscriptionExpires}, ${paidOrgCount}, ${maxAllowedOrg}, ${lastAiCheck}, NOW()
       )
-      ON CONFLICT (bluehost_id)
-      DO UPDATE SET
-        email = EXCLUDED.email,
-        name = EXCLUDED.name,
-        ai_subscription = EXCLUDED.ai_subscription,
+      ON CONFLICT (bluehost_id) DO UPDATE SET
+        email = EXCLUDED.email, name = EXCLUDED.name, ai_subscription = EXCLUDED.ai_subscription,
         ai_subscription_expires = EXCLUDED.ai_subscription_expires,
         paid_organizations_count = EXCLUDED.paid_organizations_count,
         max_allowed_organizations = EXCLUDED.max_allowed_organizations,
-        last_ai_check = EXCLUDED.last_ai_check,
-        updated_at = NOW()
+        last_ai_check = EXCLUDED.last_ai_check, updated_at = NOW()
       RETURNING id;
     `;
 
     const user_id = User.id;
-    console.log('User upserted - user_id:', user_id);
 
     const [newOrg] = await sql`
       INSERT INTO organizations (
-        user_id,
-        bluehost_id,
-        name,
-        type,
-        regulator,
-        states,
-        linked_sources,
-        geographies,
-        custom_context,
-        created_at
+        user_id, bluehost_id, name, type, regulator, states, linked_sources, geographies, custom_context, created_at
       ) VALUES (
-        ${user_id},
-        ${bluehost_id},
-        ${body.name},
-        ${body.type},
-        ${body.regulator},
-        ${JSON.stringify(body.states || [])}::jsonb,
-        ${JSON.stringify(body.linked || {})}::jsonb,
+        ${user_id}, ${bluehost_id}, ${body.name}, ${body.type}, ${body.regulator},
+        ${JSON.stringify(body.states || [])}::jsonb, ${JSON.stringify(body.linked || {})}::jsonb,
         ${JSON.stringify(body.geographies?.map((area: any) => ({
           ...area,
           state: typeof area.state === 'string' ? JSON.parse(area.state) : (area.state || []),
@@ -139,136 +96,102 @@ export async function POST(req: NextRequest) {
           town: typeof area.town === 'string' ? JSON.parse(area.town) : (area.town || []),
           tract_number: typeof area.tract_number === 'string' ? JSON.parse(area.tract_number) : (area.tract_number || []),
         })) || [])}::jsonb,
-        ${body.customContext || null},
-        NOW()
+        ${body.customContext || null}, NOW()
       )
       RETURNING id;
     `;
 
     const organization_id = newOrg.id;
-    console.log('Organization created - organization_id:', organization_id);
+    console.log(`Organization created - id: ${organization_id}`);
 
-    // Trigger background cache - DON'T await this!
-    cacheHMDAData(organization_id).catch(err => {
-      console.error(`[HMDA CACHE] Background task failed for org ${organization_id}:`, err);
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: 'Organization saved! Your customized HMDA data is being compiled in the background.',
-      organization_id,
-      user_id,
-      redirectTo: '/users'
-    }, { status: 201 });
-
-  } catch (error: any) {
-    console.error('SAVE ORGANIZATION FAILED:', error.message);
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Failed to save organization', 
-      details: error.message 
-    }, { status: 500 });
-  }
-}
-
-// Separate function for background caching
-async function cacheHMDAData(organization_id: number) {
-  console.log(`[HMDA CACHE] START org=${organization_id}`);
-  
-  try {
-    // Create NEW connection for background task
-    const bgSql = neon(process.env.NEON_DATABASE_URL!);
+    // ═══════════════════════════════════════════════════════════
+    // CACHE HMDA DATA SYNCHRONOUSLY (during the request)
+    // ═══════════════════════════════════════════════════════════
+    console.log('[HMDA] Starting cache for org', organization_id);
     
-    // Clear old cache
-    console.log('[HMDA CACHE] Deleting old cache...');
-    await bgSql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id}`;
-    console.log('[HMDA CACHE] Old cache cleared');
+    await sql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id}`;
+    console.log('[HMDA] Cleared old cache');
 
-    // Fetch geography
-    console.log('[HMDA CACHE] Fetching geography...');
-    const orgRows = await bgSql`SELECT geographies FROM organizations WHERE id = ${organization_id}`;
-    
-    if (!orgRows?.length || !orgRows[0].geographies?.length) {
-      console.log('[HMDA CACHE] No geographies found');
-      return;
+    const [org] = await sql`SELECT geographies FROM organizations WHERE id = ${organization_id}`;
+    if (!org?.geographies?.[0]) {
+      console.log('[HMDA] No geographies, skipping cache');
+      return NextResponse.json({
+        success: true,
+        message: 'Organization saved (no HMDA data cached - no geographies defined)',
+        organization_id,
+        user_id,
+        redirectTo: '/users'
+      }, { status: 201 });
     }
 
-    const geo = orgRows[0].geographies[0];
-    console.log('[HMDA CACHE] Geography:', JSON.stringify(geo));
-
-    // Build filters
+    const geo = org.geographies[0];
     const states = geo.state?.includes('__ALL__') ? [] : (geo.state || []);
     const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []);
     const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []);
     const tracts = geo.tract_number?.includes('__ALL__') ? [] : (geo.tract_number || []);
 
-    console.log('[HMDA CACHE] Filters:', { states, counties, towns, tracts });
+    console.log('[HMDA] Filters:', { states, counties, towns, tracts });
 
-    // Build WHERE clause
-    let whereClause = 'WHERE 1=1';
-    if (states.length > 0) {
-      whereClause += ` AND h.state IN (${states.map(s => `'${s.replace(/'/g, "''")}'`).join(',')})`;
-    }
-    if (counties.length > 0) {
-      whereClause += ` AND h.county IN (${counties.map(c => `'${c.replace(/'/g, "''")}'`).join(',')})`;
-    }
-    if (towns.length > 0) {
-      whereClause += ` AND h.town IN (${towns.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
-    }
-    if (tracts.length > 0) {
-      whereClause += ` AND h.tract_number IN (${tracts.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
-    }
+    let where = 'WHERE 1=1';
+    if (states.length > 0) where += ` AND h.state IN (${states.map(s => `'${s.replace(/'/g, "''")}'`).join(',')})`;
+    if (counties.length > 0) where += ` AND h.county IN (${counties.map(c => `'${c.replace(/'/g, "''")}'`).join(',')})`;
+    if (towns.length > 0) where += ` AND h.town IN (${towns.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
+    if (tracts.length > 0) where += ` AND h.tract_number IN (${tracts.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
 
-    console.log('[HMDA CACHE] WHERE:', whereClause);
-
-    // Execute INSERT
     const insertQuery = `
       INSERT INTO cached_hmda (
-        year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid, 
-        state, st, town, county, msa, msa_number, tract_number,
-        property_value, borrower_income, purchaser_type, financing_type, loan_purpose, 
-        occupancy, lien, open_or_closed_end, business_or_commercial, reverse_mortgage, 
-        action_taken, product, amount, applications_received, application_dollars,
-        originated_loans, originated_dollars, originated_and_purchased_loans, 
-        originated_and_purchased_loan_dollars, approved_not_accepted, 
-        approved_not_accepted_dollars, denied_applications, denied_application_dollars,
-        purchased_loans, purchased_loan_dollars, withdrawn_applications, 
-        withdrawn_application_dollars, spread, rate, income_level, borrower_income_level, 
-        majority_minority, borrower_race, borrower_ethnicity, borrower_gender,
-        minority_status, borrower_age, coapplicant, organization_id, cached_at
+        year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid,
+        state, st, town, county, msa, msa_number, tract_number, property_value, borrower_income,
+        purchaser_type, financing_type, loan_purpose, occupancy, lien, open_or_closed_end,
+        business_or_commercial, reverse_mortgage, action_taken, product, amount,
+        applications_received, application_dollars, originated_loans, originated_dollars,
+        originated_and_purchased_loans, originated_and_purchased_loan_dollars,
+        approved_not_accepted, approved_not_accepted_dollars, denied_applications,
+        denied_application_dollars, purchased_loans, purchased_loan_dollars,
+        withdrawn_applications, withdrawn_application_dollars, spread, rate, income_level,
+        borrower_income_level, majority_minority, borrower_race, borrower_ethnicity,
+        borrower_gender, minority_status, borrower_age, coapplicant, organization_id, cached_at
       )
       SELECT 
-        h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid, 
+        h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid,
         h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number,
-        h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, 
-        h.loan_purpose, h.occupancy, h.lien, h.open_or_closed_end, h.business_or_commercial, 
-        h.reverse_mortgage, h.action_taken, h.product, h.amount, h.applications_received, 
-        h.application_dollars, h.originated_loans, h.originated_dollars, 
-        h.originated_and_purchased_loans, h.originated_and_purchased_loan_dollars,
-        h.approved_not_accepted, h.approved_not_accepted_dollars, h.denied_applications, 
-        h.denied_application_dollars, h.purchased_loans, h.purchased_loan_dollars, 
-        h.withdrawn_applications, h.withdrawn_application_dollars, h.spread, h.rate,
-        h.income_level, h.borrower_income_level, h.majority_minority, h.borrower_race, 
-        h.borrower_ethnicity, h.borrower_gender, h.minority_status, h.borrower_age, 
-        h.coapplicant,
-        ${organization_id} AS organization_id,
-        NOW() AS cached_at
+        h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, h.loan_purpose,
+        h.occupancy, h.lien, h.open_or_closed_end, h.business_or_commercial, h.reverse_mortgage,
+        h.action_taken, h.product, h.amount, h.applications_received, h.application_dollars,
+        h.originated_loans, h.originated_dollars, h.originated_and_purchased_loans,
+        h.originated_and_purchased_loan_dollars, h.approved_not_accepted,
+        h.approved_not_accepted_dollars, h.denied_applications, h.denied_application_dollars,
+        h.purchased_loans, h.purchased_loan_dollars, h.withdrawn_applications,
+        h.withdrawn_application_dollars, h.spread, h.rate, h.income_level,
+        h.borrower_income_level, h.majority_minority, h.borrower_race, h.borrower_ethnicity,
+        h.borrower_gender, h.minority_status, h.borrower_age, h.coapplicant,
+        ${organization_id} AS organization_id, NOW() AS cached_at
       FROM hmda_us h
-      ${whereClause}
+      ${where}
     `;
 
-    console.log('[HMDA CACHE] Executing INSERT...');
-    await bgSql.unsafe(insertQuery);
-    console.log('[HMDA CACHE] INSERT complete');
+    console.log('[HMDA] Executing INSERT...');
+    await sql.unsafe(insertQuery);
+    
+    const [count] = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
+    console.log(`[HMDA] ✅ Cached ${count.cnt} records`);
 
-    // Verify
-    const count = await bgSql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
-    console.log(`[HMDA CACHE] ✅ SUCCESS - Inserted ${count[0]?.cnt || 0} records`);
+    return NextResponse.json({
+      success: true,
+      message: `Organization saved! Cached ${count.cnt} HMDA records.`,
+      organization_id,
+      user_id,
+      cached_records: count.cnt,
+      redirectTo: '/users'
+    }, { status: 201 });
 
-  } catch (err: any) {
-    console.error(`[HMDA CACHE] ❌ ERROR:`, err.message);
-    console.error('[HMDA CACHE] Stack:', err.stack);
-    throw err;
+  } catch (error: any) {
+    console.error('ERROR:', error.message);
+    return NextResponse.json({ 
+      success: false, 
+      error: 'Failed to save organization', 
+      details: error.message 
+    }, { status: 500 });
   }
 }
 
@@ -282,27 +205,13 @@ export async function GET(req: NextRequest) {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as { sub: number };
     const bluehost_id = decoded.sub;
-
     const sql = neon(process.env.NEON_DATABASE_URL!);
 
-    const userRes = await sql`
-      SELECT id, email, name, ai_subscription 
-      FROM users 
-      WHERE bluehost_id = ${bluehost_id}
-      LIMIT 1
-    `;
-
-    if (userRes.length === 0) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
+    const userRes = await sql`SELECT id, email, name, ai_subscription FROM users WHERE bluehost_id = ${bluehost_id} LIMIT 1`;
+    if (userRes.length === 0) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     const user = userRes[0];
-
-    const orgs = await sql`
-      SELECT user_id, name, type, regulator, states, linked_sources, geographies, custom_context
-      FROM organizations 
-      WHERE bluehost_id = ${bluehost_id}
-    `;
+    const orgs = await sql`SELECT user_id, name, type, regulator, states, linked_sources, geographies, custom_context FROM organizations WHERE bluehost_id = ${bluehost_id}`;
 
     return NextResponse.json({
       name: user.name,
@@ -311,7 +220,7 @@ export async function GET(req: NextRequest) {
       organizations: orgs,
     });
   } catch (error) {
-    console.error("GET /api/users error:", error);
+    console.error("GET error:", error);
     return NextResponse.json({ error: "Failed to load profile" }, { status: 500 });
   }
 }
@@ -326,22 +235,13 @@ export async function PATCH(req: NextRequest) {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, JWT_SECRET) as { sub: number };
     const bluehost_id = decoded.sub;
-
     const body = await req.json();
-
     const sql = neon(process.env.NEON_DATABASE_URL!);
 
-    await sql`
-      UPDATE users
-      SET name = ${body.name || null},
-          email = ${body.email || null},
-          updated_at = NOW()
-      WHERE bluehost_id = ${bluehost_id}
-    `;
-
+    await sql`UPDATE users SET name = ${body.name || null}, email = ${body.email || null}, updated_at = NOW() WHERE bluehost_id = ${bluehost_id}`;
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("PATCH /api/users error:", error);
+    console.error("PATCH error:", error);
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
   }
 }
