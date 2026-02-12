@@ -205,33 +205,19 @@ export async function POST(req: NextRequest) {
       LIMIT 20000;  -- remove after successful test
     `;
 
-    console.log(`[HMDA CACHE] INSERT executed`);
+   console.log(`[HMDA CACHE] INSERT executed`);
 
-    const verify = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
+    const verify = await sql`
+      SELECT COUNT(*) AS cnt 
+      FROM cached_hmda 
+      WHERE organization_id = ${organization_id}
+    `;
     console.log(`[HMDA CACHE] POST-INSERT COUNT: ${verify[0].cnt}`);
 
   } catch (err) {
     console.error(`[HMDA CACHE] FAILED org=${organization_id}:`, err);
   }
 })();
-        console.log(`[HMDA CACHE] INSERT executed`);
-
-        const verify = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
-        console.log(`[HMDA CACHE] POST-INSERT COUNT: ${verify[0].cnt}`);
-
-      } catch (err) {
-        console.error(`[HMDA CACHE] FAILED org=${organization_id}:`, err);
-      }
-    })();
-        console.log(`[HMDA CACHE] INSERT finished - affected rows: ${insertRes.rowCount ?? 'unknown'}`);
-
-        const verify = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
-        console.log(`[HMDA CACHE] POST-INSERT COUNT: ${verify[0].cnt}`);
-
-      } catch (err) {
-        console.error(`[HMDA CACHE] FAILED org=${organization_id}:`, err);
-      }
-    })();
 
     return response;
   } catch (error: any) {
