@@ -229,8 +229,8 @@ export default function Page() {
   }, [geographiesList, currentGeography.state, currentGeography.county]);
 
   const geographyTractOptions = useMemo(() => {
-    if (!currentGeography.state.length || !currentGeography.county.length || !currentGeography.town.length) return [];
-
+    if (!currentGeography.state.length || !currentGeography.county.length) return [];
+    
     let filtered = geographiesList;
 
     const counties = currentGeography.county.includes('__ALL__')
