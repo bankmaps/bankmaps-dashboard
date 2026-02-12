@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
     const user_id = User.id;
     console.log('User upserted - user_id:', user_id);
 
-    // Insert organization (unchanged)
+    // Insert organization
     const [newOrg] = await sql`
       INSERT INTO organizations (
         user_id,
@@ -144,96 +144,85 @@ export async function POST(req: NextRequest) {
       RETURNING id;
     `;
 
-// Return success immediately (non-blocking)
-const response = NextResponse.json({
-  success: true,
-  message: 'Organization saved! Your customized HMDA data is being compiled in the background.',
-  organization_id: newOrg.id,
-  user_id,
-}, { status: 201 });
+    const organization_id = newOrg.id;
+    console.log('Organization created - organization_id:', organization_id);
 
-// Step 3: Populate cached_hmda in background (non-blocking)
-(async () => {
-  try {
-    console.log('Starting background HMDA cache for org_id:', user_id);
-    // Clear old cache
-    await sql`
-      DELETE FROM cached_hmda WHERE organization_id = ${user_id};
-    `;
+    // Return success immediately
+    const response = NextResponse.json({
+      success: true,
+      message: 'Organization saved! Your customized HMDA data is being compiled in the background.',
+      organization_id,
+      user_id,
+    }, { status: 201 });
 
-    // Insert all matching HMDA rows (all fields + extras)
-    await sql`
-      INSERT INTO cached_hmda (
-        year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid, state, st, town, county, msa, msa_number, tract_number, 
-        property_value, borrower_income, purchaser_type, financing_type, loan_purpose, occupancy, lien, open_or_closed_end, 
-        business_or_commercial, reverse_mortgage, action_taken, product, amount, applications_received, application_dollars, 
-        originated_loans, originated_dollars, originated_and_purchased_loans, originated_and_purchased_loan_dollars, 
-        approved_not_accepted, approved_not_accepted_dollars, denied_applications, denied_application_dollars, 
-        purchased_loans, purchased_loan_dollars, withdrawn_applications, withdrawn_application_dollars, spread, rate, 
-        income_level, borrower_income_level, majority_minority, borrower_race, borrower_ethnicity, borrower_gender, 
-        minority_status, borrower_age, coapplicant, organization_id, cached_at
-      )
-      SELECT 
-        h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid, h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number, 
-        h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, h.loan_purpose, h.occupancy, h.lien, h.open_or_closed_end, 
-        h.business_or_commercial, h.reverse_mortgage, h.action_taken, h.product, h.amount, h.applications_received, h.application_dollars, 
-        h.originated_loans, h.originated_dollars, h.originated_and_purchased_loans, h.originated_and_purchased_loan_dollars, 
-        h.approved_not_accepted, h.approved_not_accepted_dollars, h.denied_applications, h.denied_application_dollars, 
-        h.purchased_loans, h.purchased_loan_dollars, h.withdrawn_applications, h.withdrawn_application_dollars, h.spread, h.rate, 
-        h.income_level, h.borrower_income_level, h.majority_minority, h.borrower_race, h.borrower_ethnicity, h.borrower_gender, 
-        h.minority_status, h.borrower_age, h.coapplicant, ${user_id} AS organization_id, NOW() AS cached_at
-      FROM hmda_us h
-WHERE 
-  -- State match: either geographies has '__ALL__' in state OR the actual h.state is in the array
-  (
-    (o.geographies->0->'state') ? '__ALL__'
-    OR
-    (o.geographies->0->'state') @> jsonb_build_array(h.state::text)
-  )
-  AND
-  (
-    (o.geographies->0->'county') ? '__ALL__'
-    OR
-    (o.geographies->0->'county') @> jsonb_build_array(h.county::text)
-  )
-  AND
-  (
-    (o.geographies->0->'town') ? '__ALL__'
-    OR
-    (o.geographies->0->'town') @> jsonb_build_array(h.town::text)
-  )
-  AND
-  (
-    (o.geographies->0->'tract_number') ? '__ALL__'
-    OR
-    (o.geographies->0->'tract_number') @> jsonb_build_array(h.tract_number::text)
-  )
-        )
-    `;
-    
-    console.log('Background HMDA cache completed for org_id:', user_id);
-  } catch (cacheErr) {
-    console.error('Background HMDA cache failed for org_id ' + user_id + ':', cacheErr);
-  }
-})();
+    // Step 3: Populate cached_hmda in background (non-blocking)
+    (async () => {
+      try {
+        console.log('Starting background HMDA cache for organization_id:', organization_id);
 
-// Return success immediately
-return NextResponse.json({
-  success: true,
-  message: 'Organization saved! Your customized HMDA data is being compiled in the background.',
-  organization_id: newOrg.id,
-  user_id,
-}, { status: 201 });
-alert("Organization saved! Your customized HMDA data is being compiled in the background - redirecting to your dashboard.");
-window.location.replace('/users');
+        // Clear old cache for this organization
+        await sql`
+          DELETE FROM cached_hmda WHERE organization_id = ${organization_id};
+        `;
+
+        // Insert matching HMDA rows
+        await sql`
+          INSERT INTO cached_hmda (
+            year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid, state, st, town, county, msa, msa_number, tract_number, 
+            property_value, borrower_income, purchaser_type, financing_type, loan_purpose, occupancy, lien, open_or_closed_end, 
+            business_or_commercial, reverse_mortgage, action_taken, product, amount, applications_received, application_dollars, 
+            originated_loans, originated_dollars, originated_and_purchased_loans, originated_and_purchased_loan_dollars, 
+            approved_not_accepted, approved_not_accepted_dollars, denied_applications, denied_application_dollars, 
+            purchased_loans, purchased_loan_dollars, withdrawn_applications, withdrawn_application_dollars, spread, rate, 
+            income_level, borrower_income_level, majority_minority, borrower_race, borrower_ethnicity, borrower_gender, 
+            minority_status, borrower_age, coapplicant, organization_id, cached_at
+          )
+          SELECT 
+            h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid, h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number, 
+            h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, h.loan_purpose, h.occupancy, h.lien, h.open_or_closed_end, 
+            h.business_or_commercial, h.reverse_mortgage, h.action_taken, h.product, h.amount, h.applications_received, h.application_dollars, 
+            h.originated_loans, h.originated_dollars, h.originated_and_purchased_loans, h.originated_and_purchased_loan_dollars, 
+            h.approved_not_accepted, h.approved_not_accepted_dollars, h.denied_applications, h.denied_application_dollars, 
+            h.purchased_loans, h.purchased_loan_dollars, h.withdrawn_applications, h.withdrawn_application_dollars, h.spread, h.rate, 
+            h.income_level, h.borrower_income_level, h.majority_minority, h.borrower_race, h.borrower_ethnicity, h.borrower_gender, 
+            h.minority_status, h.borrower_age, h.coapplicant, ${organization_id} AS organization_id, NOW() AS cached_at
+          FROM hmda_us h
+          WHERE EXISTS (
+            SELECT 1 FROM organizations o
+            WHERE o.id = ${organization_id}
+            AND (
+              h.state = ANY (jsonb_array_elements_text(o.geographies->0->'state'))
+              OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'state') WHERE value = '__ALL__')
+            )
+            AND (
+              h.county = ANY (jsonb_array_elements_text(o.geographies->0->'county'))
+              OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'county') WHERE value = '__ALL__')
+            )
+            AND (
+              h.town = ANY (jsonb_array_elements_text(o.geographies->0->'town'))
+              OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'town') WHERE value = '__ALL__')
+            )
+            AND (
+              h.tract_number = ANY (jsonb_array_elements_text(o.geographies->0->'tract_number'))
+              OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'tract_number') WHERE value = '__ALL__')
+            )
+          )
+        `;
+
+        console.log('Background HMDA cache completed for organization_id:', organization_id);
+      } catch (cacheErr) {
+        console.error('Background HMDA cache failed for organization_id ' + organization_id + ':', cacheErr);
+      }
+    })();
+
+    return response;
   } catch (error: any) {
     console.error('SAVE ORGANIZATION FAILED:', error.message);
     return NextResponse.json({ success: false, error: 'Failed to save organization', details: error.message }, { status: 500 });
   }
 }
 
-// GET and PATCH unchanged - keep as is
-
+// GET and PATCH unchanged
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -247,7 +236,6 @@ export async function GET(req: NextRequest) {
 
     const sql = neon(process.env.NEON_DATABASE_URL!);
 
-    // Fetch user basics
     const userRes = await sql`
       SELECT id, email, name, ai_subscription 
       FROM users 
@@ -261,7 +249,6 @@ export async function GET(req: NextRequest) {
 
     const user = userRes[0];
 
-    // Fetch linked organizations
     const orgs = await sql`
       SELECT user_id, name, type, regulator, states, linked_sources, geographies, custom_context
       FROM organizations 
