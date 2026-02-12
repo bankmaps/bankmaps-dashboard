@@ -1,4 +1,4 @@
-// app/api/users/route.ts - ACTUALLY WORKS
+// app/api/users/route.ts - FIXED to handle __ALL__ selections
 
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
@@ -89,45 +89,82 @@ export async function POST(req: NextRequest) {
     const states = geo.state?.includes('__ALL__') ? [] : (geo.state || []);
     const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []);
     const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []);
+    const tracts = geo.tract_number?.includes('__ALL__') ? [] : (geo.tract_number || []);
 
-    console.log('[HMDA] Filters:', { states, counties });
+    console.log('[HMDA] Filters:', { states, counties, towns, tracts });
 
-    if (states.length > 0 && counties.length > 0) {
-      // Pass JavaScript arrays directly, Neon will convert them
-      await sql`
-        INSERT INTO cached_hmda (
-          year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid,
-          state, st, town, county, msa, msa_number, tract_number, property_value, borrower_income,
-          purchaser_type, financing_type, loan_purpose, occupancy, lien, open_or_closed_end,
-          business_or_commercial, reverse_mortgage, action_taken, product, amount,
-          applications_received, application_dollars, originated_loans, originated_dollars,
-          originated_and_purchased_loans, originated_and_purchased_loan_dollars,
-          approved_not_accepted, approved_not_accepted_dollars, denied_applications,
-          denied_application_dollars, purchased_loans, purchased_loan_dollars,
-          withdrawn_applications, withdrawn_application_dollars, spread, rate, income_level,
-          borrower_income_level, majority_minority, borrower_race, borrower_ethnicity,
-          borrower_gender, minority_status, borrower_age, coapplicant, organization_id, cached_at
-        )
-        SELECT 
-          h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid,
-          h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number,
-          h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, h.loan_purpose,
-          h.occupancy, h.lien, h.open_or_closed_end, h.business_or_commercial, h.reverse_mortgage,
-          h.action_taken, h.product, h.amount, h.applications_received, h.application_dollars,
-          h.originated_loans, h.originated_dollars, h.originated_and_purchased_loans,
-          h.originated_and_purchased_loan_dollars, h.approved_not_accepted,
-          h.approved_not_accepted_dollars, h.denied_applications, h.denied_application_dollars,
-          h.purchased_loans, h.purchased_loan_dollars, h.withdrawn_applications,
-          h.withdrawn_application_dollars, h.spread, h.rate, h.income_level,
-          h.borrower_income_level, h.majority_minority, h.borrower_race, h.borrower_ethnicity,
-          h.borrower_gender, h.minority_status, h.borrower_age, h.coapplicant,
-          ${organization_id}::bigint, NOW()
-        FROM hmda_us h
-        WHERE h.state = ANY(${states})
-          AND h.county = ANY(${counties})
-          AND h.town = ANY(${towns})
-      `;
+    // Build WHERE conditions dynamically - only add filters that have specific values
+    const whereConditions: string[] = [];
+    
+    if (states.length > 0) {
+      const stateArr = `ARRAY[${states.map(s => `'${s.replace(/'/g, "''")}'`).join(',')}]`;
+      whereConditions.push(`h.state = ANY(${stateArr}::text[])`);
     }
+    
+    if (counties.length > 0) {
+      const countyArr = `ARRAY[${counties.map(c => `'${c.replace(/'/g, "''")}'`).join(',')}]`;
+      whereConditions.push(`h.county = ANY(${countyArr}::text[])`);
+    }
+    
+    if (towns.length > 0) {
+      const townArr = `ARRAY[${towns.map(t => `'${t.replace(/'/g, "''")}'`).join(',')}]`;
+      whereConditions.push(`h.town = ANY(${townArr}::text[])`);
+    }
+    
+    if (tracts.length > 0) {
+      const tractArr = `ARRAY[${tracts.map(t => `'${t.replace(/'/g, "''")}'`).join(',')}]`;
+      whereConditions.push(`h.tract_number = ANY(${tractArr}::text[])`);
+    }
+
+    if (whereConditions.length === 0) {
+      console.log('[HMDA] No filters - would cache entire table, skipping');
+      return NextResponse.json({
+        success: true,
+        message: 'Organization saved (no HMDA cache - no filters)',
+        organization_id,
+        user_id: User.id,
+        redirectTo: '/users'
+      }, { status: 201 });
+    }
+
+    const whereClause = `WHERE ${whereConditions.join(' AND ')}`;
+    console.log('[HMDA] WHERE:', whereClause);
+
+    // Build and execute INSERT with dynamic WHERE
+    const insertQuery = `
+      INSERT INTO cached_hmda (
+        year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid,
+        state, st, town, county, msa, msa_number, tract_number, property_value, borrower_income,
+        purchaser_type, financing_type, loan_purpose, occupancy, lien, open_or_closed_end,
+        business_or_commercial, reverse_mortgage, action_taken, product, amount,
+        applications_received, application_dollars, originated_loans, originated_dollars,
+        originated_and_purchased_loans, originated_and_purchased_loan_dollars,
+        approved_not_accepted, approved_not_accepted_dollars, denied_applications,
+        denied_application_dollars, purchased_loans, purchased_loan_dollars,
+        withdrawn_applications, withdrawn_application_dollars, spread, rate, income_level,
+        borrower_income_level, majority_minority, borrower_race, borrower_ethnicity,
+        borrower_gender, minority_status, borrower_age, coapplicant, organization_id, cached_at
+      )
+      SELECT 
+        h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid,
+        h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number,
+        h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, h.loan_purpose,
+        h.occupancy, h.lien, h.open_or_closed_end, h.business_or_commercial, h.reverse_mortgage,
+        h.action_taken, h.product, h.amount, h.applications_received, h.application_dollars,
+        h.originated_loans, h.originated_dollars, h.originated_and_purchased_loans,
+        h.originated_and_purchased_loan_dollars, h.approved_not_accepted,
+        h.approved_not_accepted_dollars, h.denied_applications, h.denied_application_dollars,
+        h.purchased_loans, h.purchased_loan_dollars, h.withdrawn_applications,
+        h.withdrawn_application_dollars, h.spread, h.rate, h.income_level,
+        h.borrower_income_level, h.majority_minority, h.borrower_race, h.borrower_ethnicity,
+        h.borrower_gender, h.minority_status, h.borrower_age, h.coapplicant,
+        ${organization_id}, NOW()
+      FROM hmda_us h
+      ${whereClause}
+    `;
+
+    console.log('[HMDA] Executing INSERT...');
+    await sql([insertQuery] as any);
 
     const [count] = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
     console.log(`[HMDA] ✅ ${count.cnt} records`);
