@@ -3,7 +3,6 @@
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
-import { useRouter } from 'next/navigation';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -154,7 +153,6 @@ const response = NextResponse.json({
 }, { status: 201 });
 
 // Step 3: Populate cached_hmda in background (non-blocking)
-    const router = useRouter();
 (async () => {
   try {
     console.log('Starting background HMDA cache for org_id:', user_id);
