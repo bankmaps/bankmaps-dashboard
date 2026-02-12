@@ -117,32 +117,38 @@ export async function POST(req: NextRequest) {
     console.log('User upserted - user_id:', user_id);
 
     // Insert organization
-    const [newOrg] = await sql`
-      INSERT INTO organizations (
-        user_id,
-        bluehost_id,
-        name,
-        type,
-        regulator,
-        states,
-        linked_sources,
-        geographies,
-        custom_context,
-        created_at
-      ) VALUES (
-        ${user_id},
-        ${bluehost_id},
-        ${body.name},
-        ${body.type},
-        ${body.regulator},
-        ${JSON.stringify(body.states || [])}::jsonb,
-        ${JSON.stringify(body.linked || {})}::jsonb,
-        ${JSON.stringify(body.geographies || [])}::jsonb,
-        ${body.customContext || null},
-        NOW()
-      )
-      RETURNING id;
-    `;
+const [newOrg] = await sql`
+  INSERT INTO organizations (
+    user_id,
+    bluehost_id,
+    name,
+    type,
+    regulator,
+    states,
+    linked_sources,
+    geographies,
+    custom_context,
+    created_at
+  ) VALUES (
+    ${user_id},
+    ${bluehost_id},
+    ${body.name},
+    ${body.type},
+    ${body.regulator},
+    ${JSON.stringify(body.states || [])}::jsonb,
+    ${JSON.stringify(body.linked || {})}::jsonb,
+    ${JSON.stringify(body.geographies?.map((area: any) => ({
+      ...area,
+      state: typeof area.state === 'string' ? JSON.parse(area.state) : (area.state || []),
+      county: typeof area.county === 'string' ? JSON.parse(area.county) : (area.county || []),
+      town: typeof area.town === 'string' ? JSON.parse(area.town) : (area.town || []),
+      tract_number: typeof area.tract_number === 'string' ? JSON.parse(area.tract_number) : (area.tract_number || []),
+    })) || [])}::jsonb,
+    ${body.customContext || null},
+    NOW()
+  )
+  RETURNING id;
+`;
 
     const organization_id = newOrg.id;
     console.log('Organization created - organization_id:', organization_id);
