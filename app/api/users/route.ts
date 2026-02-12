@@ -138,6 +138,8 @@ export async function POST(req: NextRequest) {
     if (towns.length > 0) where += ` AND h.town IN (${towns.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
     if (tracts.length > 0) where += ` AND h.tract_number IN (${tracts.map(t => `'${t.replace(/'/g, "''")}'`).join(',')})`;
 
+console.log('[HMDA] Full INSERT query:', insertQuery);
+console.log('[HMDA] Query length:', insertQuery.length);
     const insertQuery = `
       INSERT INTO cached_hmda (
         year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid,
