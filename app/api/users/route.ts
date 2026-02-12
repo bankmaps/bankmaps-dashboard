@@ -155,7 +155,7 @@ export async function POST(req: NextRequest) {
       user_id,
     }, { status: 201 });
 
-    // Background task
+        // Background task
     (async () => {
       try {
         console.log(`[HMDA CACHE] START org=${organization_id}`);
@@ -163,7 +163,7 @@ export async function POST(req: NextRequest) {
         await sql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id};`;
         console.log(`[HMDA CACHE] Cleared old cache`);
 
-        const insertRes = await sql`
+        await sql`
           INSERT INTO cached_hmda (
             year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid, state, st, town, county, msa, msa_number, tract_number,
             property_value, borrower_income, purchaser_type, financing_type, loan_purpose, occupancy, lien, open_or_closed_end,
@@ -202,9 +202,18 @@ export async function POST(req: NextRequest) {
               (o.geographies->0->'tract_number') ? '__ALL__' OR (o.geographies->0->'tract_number') @> jsonb_build_array(h.tract_number::text)
             )
           )
-          LIMIT 20000;  -- remove this line after testing
+          LIMIT 20000;
         `;
 
+        console.log(`[HMDA CACHE] INSERT executed`);
+
+        const verify = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
+        console.log(`[HMDA CACHE] POST-INSERT COUNT: ${verify[0].cnt}`);
+
+      } catch (err) {
+        console.error(`[HMDA CACHE] FAILED org=${organization_id}:`, err);
+      }
+    })();
         console.log(`[HMDA CACHE] INSERT finished - affected rows: ${insertRes.rowCount ?? 'unknown'}`);
 
         const verify = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
