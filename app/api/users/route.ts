@@ -221,14 +221,15 @@ export async function POST(req: NextRequest) {
         const testQuery = `SELECT COUNT(*) as cnt FROM hmda_us h ${whereClause}`;
         console.log(`[HMDA CACHE] Test query: ${testQuery}`);
         
-        const testResult = await sql.query(testQuery);
-        console.log(`[HMDA CACHE] Expected rows to insert: ${testResult[0]?.cnt || 0}`);
+        const result = await sql.query<{ cnt: string }>(testQuery);
 
-        if (!testResult[0]?.cnt || testResult[0].cnt === 0) {
-          console.log('[HMDA CACHE] WARNING: No matching HMDA records found! Check your geography filters.');
-          console.log(`[HMDA CACHE] Expected rows to insert: ${testResult[0]?.cnt || 0}`);
-          return;
-        }
+const count = Number(result[0]?.cnt ?? 0);
+
+console.log(`[HMDA CACHE] Expected rows to insert: ${count}`);
+
+if (count === 0) {
+  console.log('[HMDA CACHE] WARNING: No matching HMDA records found! Check your geography filters.');
+}
 
         // Now do the actual insert
         const insertQuery = `
