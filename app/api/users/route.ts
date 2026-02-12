@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
     const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []);
     const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []);
 
-    console.log('[HMDA] Filters:', { states, counties, towns });
+    console.log('[HMDA] Filters:', { states, counties });
 
     if (states.length > 0 && counties.length >) {
       // Pass JavaScript arrays directly, Neon will convert them
