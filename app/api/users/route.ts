@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
     const organization_id = newOrg.id;
     console.log('Organization created - organization_id:', organization_id);
 
-    // Background task (fire-and-forget — still runs after redirect)
+    // Background task (still runs after response is sent)
     (async () => {
       try {
         console.log(`[HMDA CACHE] START org=${organization_id}`);
@@ -212,9 +212,14 @@ export async function POST(req: NextRequest) {
       }
     })();
 
-    // === REDIRECT ON SUCCESS (no JSON, no "OK" click screen) ===
-    // 303 See Other is the standard for POST → success page
-    return NextResponse.redirect(new URL('/users', req.url), 303);
+    // Return JSON instead of redirect → client handles navigation
+    return NextResponse.json({
+      success: true,
+      message: 'Organization saved! Your customized HMDA data is being compiled in the background.',
+      organization_id,
+      user_id,
+      redirectTo: '/users'   // ← client uses this
+    }, { status: 201 });
 
   } catch (error: any) {
     console.error('SAVE ORGANIZATION FAILED:', error.message);
@@ -222,7 +227,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET and PATCH unchanged
+// GET and PATCH remain unchanged
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
