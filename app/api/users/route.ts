@@ -89,6 +89,7 @@ export async function POST(req: NextRequest) {
     const states = geo.state?.includes('__ALL__') ? [] : (geo.state || []);
     const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []);
     const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []);
+    const tracts = geo.tract_number?.includes('__ALL__') ? [] : (geo.tract_number || []);
 
     console.log('[HMDA] Filters:', { states, counties, towns });
 
