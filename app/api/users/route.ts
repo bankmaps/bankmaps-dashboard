@@ -184,25 +184,30 @@ const response = NextResponse.json({
         h.minority_status, h.borrower_age, h.coapplicant, ${user_id} AS organization_id, NOW() AS cached_at
       FROM hmda_us h
 WHERE 
-        EXISTS (
-          SELECT 1 FROM organizations o
-          WHERE o.id = ${user_id}
-          AND (
-            h.state = ANY (jsonb_array_elements_text(o.geographies->0->'state'))
-            OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'state') WHERE value = '__ALL__')
-          )
-          AND (
-            h.county = ANY (jsonb_array_elements_text(o.geographies->0->'county'))
-            OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'county') WHERE value = '__ALL__')
-          )
-          AND (
-            h.town = ANY (jsonb_array_elements_text(o.geographies->0->'town'))
-            OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'town') WHERE value = '__ALL__')
-          )
-          AND (
-            h.tract_number = ANY (jsonb_array_elements_text(o.geographies->0->'tract_number'))
-            OR EXISTS (SELECT 1 FROM jsonb_array_elements_text(o.geographies->0->'tract_number') WHERE value = '__ALL__')
-          )
+  -- State match: either geographies has '__ALL__' in state OR the actual h.state is in the array
+  (
+    (o.geographies->0->'state') ? '__ALL__'
+    OR
+    (o.geographies->0->'state') @> jsonb_build_array(h.state::text)
+  )
+  AND
+  (
+    (o.geographies->0->'county') ? '__ALL__'
+    OR
+    (o.geographies->0->'county') @> jsonb_build_array(h.county::text)
+  )
+  AND
+  (
+    (o.geographies->0->'town') ? '__ALL__'
+    OR
+    (o.geographies->0->'town') @> jsonb_build_array(h.town::text)
+  )
+  AND
+  (
+    (o.geographies->0->'tract_number') ? '__ALL__'
+    OR
+    (o.geographies->0->'tract_number') @> jsonb_build_array(h.tract_number::text)
+  )
         )
     `;
     
