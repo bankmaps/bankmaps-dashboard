@@ -1,4 +1,4 @@
-// app/api/users/route.ts - COMPLETE WITH FULL COLUMN LIST
+// app/api/users/route.ts - ACTUALLY WORKS
 
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
@@ -93,10 +93,7 @@ export async function POST(req: NextRequest) {
     console.log('[HMDA] Filters:', { states, counties, towns });
 
     if (states.length > 0 && counties.length > 0 && towns.length > 0) {
-      const stateArr = `ARRAY[${states.map(s => `'${s.replace(/'/g, "''")}'`).join(',')}]`;
-      const countyArr = `ARRAY[${counties.map(c => `'${c.replace(/'/g, "''")}'`).join(',')}]`;
-      const townArr = `ARRAY[${towns.map(t => `'${t.replace(/'/g, "''")}'`).join(',')}]`;
-
+      // Pass JavaScript arrays directly, Neon will convert them
       await sql`
         INSERT INTO cached_hmda (
           year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid,
@@ -126,9 +123,9 @@ export async function POST(req: NextRequest) {
           h.borrower_gender, h.minority_status, h.borrower_age, h.coapplicant,
           ${organization_id}::bigint, NOW()
         FROM hmda_us h
-        WHERE h.state = ANY(${stateArr}::text[])
-          AND h.county = ANY(${countyArr}::text[])
-          AND h.town = ANY(${townArr}::text[])
+        WHERE h.state = ANY(${states})
+          AND h.county = ANY(${counties})
+          AND h.town = ANY(${towns})
       `;
     }
 
