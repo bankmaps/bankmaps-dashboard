@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     console.log('[HMDA] Filters:', { states, counties, towns });
 
-    if (states.length > 0 && counties.length > 0 && towns.length > 0) {
+    if (states.length > 0 && counties.length >) {
       // Pass JavaScript arrays directly, Neon will convert them
       await sql`
         INSERT INTO cached_hmda (
