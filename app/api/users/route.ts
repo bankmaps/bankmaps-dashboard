@@ -257,7 +257,7 @@ await sql`
     record_count = ${count}
   WHERE organization_id = ${organization_id}
 `;
-}
+
 
 export async function GET(req: NextRequest) {
   try {
