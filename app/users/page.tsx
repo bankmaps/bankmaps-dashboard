@@ -147,5 +147,4 @@ export default function UsersPage() {
         </TokenProvider>
       </Suspense>
     );
-  }
 }
