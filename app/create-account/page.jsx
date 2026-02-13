@@ -398,6 +398,8 @@ console.log('geographiesList sample:', geographiesList.slice(0, 3));
   };
 
 const handleSave = async () => {
+
+const handleSave = async () => {
   const token = localStorage.getItem("jwt_token");
   if (!token) {
     alert("No authentication token found.");
@@ -423,7 +425,7 @@ const handleSave = async () => {
       body: JSON.stringify(payload),
     });
 
-    const data = await res.json();  // parse even on success
+    const data = await res.json();
 
     if (!res.ok) {
       throw new Error(data.error || data.message || 'Save failed');
@@ -433,22 +435,20 @@ const handleSave = async () => {
       throw new Error(data.message || 'Server reported failure');
     }
 
-    // Success path — no blocking alert that requires click
-    // Option 1: Quick non-blocking feedback + immediate redirect (recommended)
-    // You could use a toast library here later, but for now use a simple setState message
-    alert(
-      "Organization saved!\nHMDA data is compiling in the background.\nRedirecting to your dashboard..."
-    );
-
-    // Redirect — this is the key missing piece
-    router.push('/users');
-    // OR: router.push('/users');             // if you import { useRouter } from 'next/navigation'
+    // Organization created successfully - redirect immediately
+    alert("✅ Organization created!\n\nHMDA data is being cached in the background.\nYou'll be redirected to your dashboard...");
+    
+    // Redirect after brief delay to let user see the message
+    setTimeout(() => {
+      router.push('/users');
+    }, 1500);
 
   } catch (err) {
     console.error('Save error:', err);
-    alert(`Error: ${err.message || 'Could not save organization. Please try again.'}`);
+    alert(`❌ Error: ${err.message || 'Could not save organization. Please try again.'}`);
   }
 };
+  
   
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
