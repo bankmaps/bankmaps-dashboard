@@ -398,8 +398,6 @@ console.log('geographiesList sample:', geographiesList.slice(0, 3));
   };
 
 const handleSave = async () => {
-
-const handleSave = async () => {
   const token = localStorage.getItem("jwt_token");
   if (!token) {
     alert("No authentication token found.");
@@ -435,8 +433,8 @@ const handleSave = async () => {
       throw new Error(data.message || 'Server reported failure');
     }
 
-    // Organization created successfully - redirect immediately
-    alert("✅ Organization created!\n\nHMDA data is being cached in the background.\nYou'll be redirected to your dashboard...");
+    // Success - organization created, cache running in background
+    alert("✅ Organization created!\n\nHMDA data is being cached in the background.\nRedirecting to your dashboard...");
     
     // Redirect after brief delay to let user see the message
     setTimeout(() => {
@@ -448,7 +446,6 @@ const handleSave = async () => {
     alert(`❌ Error: ${err.message || 'Could not save organization. Please try again.'}`);
   }
 };
-  
   
 
   const config = SOURCE_CONFIG[selectedOrgType] || { sources: [], labels: {} };
