@@ -68,10 +68,9 @@ export default function UsersPage() {
   return (
     <Suspense fallback={<div className="flex h-screen bg-gray-100 items-center justify-center">Loading...</div>}>
       <TokenProvider>
-        {(token) => (
-          <div className="flex h-screen bg-gray-100">
-            {/* Sidebar */}
-            <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
+        <div className="flex h-screen bg-gray-100">
+          {/* Sidebar */}
+          <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
               <div className="p-6">
                 <div className="flex items-center gap-3 mb-8">
                   <img src="/logo.png" alt="BankMaps Logo" className="w-20 h-20 object-contain" />
@@ -130,7 +129,7 @@ export default function UsersPage() {
 
               <main className="flex-1 p-8 overflow-auto">
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-8 min-h-[70vh]">
-                  {activeItem === "dashboard" && <Dashboard token={token} />}
+                  {activeItem === "dashboard" && <Dashboard />}
                   {activeItem === "manage-profile" && <ManageProfile />}
                   {activeItem === "manage-users" && <ManageUsers />}
                   {activeItem === "distrib-list" && <DistributionLists />}
@@ -145,8 +144,8 @@ export default function UsersPage() {
               </main>
             </div>
           </div>
-        )}
-      </TokenProvider>
-    </Suspense>
-  );
+        </TokenProvider>
+      </Suspense>
+    );
+  }
 }
