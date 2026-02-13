@@ -25,7 +25,7 @@ export default function TokenProvider({ children }: { children: ReactNode }) {
     if (urlToken) {
       // Store the fresh token
       localStorage.setItem("jwt_token", urlToken);
-
+document.cookie = `bankmaps_auth=authenticated; path=/; max-age=${60 * 60 * 24 * 7}; SameSite=Lax`;
       // Clean the URL (remove ?token=... so it doesn't show on refresh/back)
       window.history.replaceState({}, "", window.location.pathname);
     }
