@@ -239,25 +239,17 @@ async function startBackgroundCache(organization_id: number) {
       `;
     }
 
-    const result = await sql`
-  SELECT COUNT(*) AS cnt 
-  FROM cached_hmda 
-  WHERE organization_id = ${organization_id}
-`;
+    const [count] = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
+    console.log(`[HMDA] ✅ ${count.cnt} records cached for org=${organization_id}`);
 
-const count = Number(result[0]?.cnt || 0);
+    // Update status to completed
+    await sql`UPDATE cache_status SET status = 'completed', completed_at = NOW(), record_count = ${count.cnt} WHERE organization_id = ${organization_id}`;
 
-console.log(`[HMDA] ✅ ${count} records cached for org=${organization_id}`);
-
-await sql`
-  UPDATE cache_status 
-  SET 
-    status = 'completed',
-    completed_at = NOW(),
-    record_count = ${count}
-  WHERE organization_id = ${organization_id}
-`;
-
+  } catch (error: any) {
+    console.error(`[HMDA CACHE] ERROR for org=${organization_id}:`, error);
+    await sql`UPDATE cache_status SET status = 'failed', completed_at = NOW(), error_message = ${error.message} WHERE organization_id = ${organization_id}`;
+  }
+}
 
 export async function GET(req: NextRequest) {
   try {
