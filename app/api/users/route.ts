@@ -1,4 +1,4 @@
-// app/api/users/route.ts - HANDLES ALL TOWNS CORRECTLY
+// app/api/users/route.ts - ASYNC WITH STATUS POLLING
 
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
@@ -78,34 +78,61 @@ export async function POST(req: NextRequest) {
     const organization_id = newOrg.id;
     console.log(`[ORG] Created ${organization_id}`);
 
+    // Set initial cache status to 'processing'
+    await sql`
+      INSERT INTO cache_status (organization_id, status, started_at)
+      VALUES (${organization_id}, 'processing', NOW())
+      ON CONFLICT (organization_id) DO UPDATE SET status = 'processing', started_at = NOW()
+    `;
+
+    // Start background cache process - this continues even if user navigates away
+    startBackgroundCache(organization_id);
+
+    // Return immediately - user doesn't wait for cache
+    return NextResponse.json({
+      success: true,
+      message: 'Organization created! HMDA data is being cached...',
+      organization_id,
+      user_id: User.id,
+      cache_status: 'processing',
+      redirectTo: '/users'
+    }, { status: 201 });
+
+  } catch (error: any) {
+    console.error('ERROR:', error);
+    return NextResponse.json({ success: false, error: 'Failed', details: error.message }, { status: 500 });
+  }
+}
+
+// Background cache function - runs independently
+async function startBackgroundCache(organization_id: number) {
+  const sql = neon(process.env.NEON_DATABASE_URL!);
+  
+  try {
+    console.log(`[HMDA CACHE] START org=${organization_id}`);
+    
     await sql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id}`;
 
     const [org] = await sql`SELECT geographies FROM organizations WHERE id = ${organization_id}`;
     if (!org?.geographies?.[0]) {
-      return NextResponse.json({ success: true, organization_id, user_id: User.id, redirectTo: '/users' }, { status: 201 });
+      await sql`UPDATE cache_status SET status = 'completed', completed_at = NOW(), record_count = 0 WHERE organization_id = ${organization_id}`;
+      console.log(`[HMDA CACHE] No geographies for org=${organization_id}`);
+      return;
     }
 
     const geo = org.geographies[0];
     const states = geo.state?.includes('__ALL__') ? [] : (geo.state || []);
     const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []);
     const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []);
-    const tracts = geo.tract_number?.includes('__ALL__') ? [] : (geo.tract_number || []);
 
     console.log('[HMDA] Filters:', { states, counties, towns });
 
-    // Skip if NO filters at all
     if (states.length === 0 && counties.length === 0 && towns.length === 0) {
+      await sql`UPDATE cache_status SET status = 'completed', completed_at = NOW(), record_count = 0 WHERE organization_id = ${organization_id}`;
       console.log('[HMDA] No filters - skipping');
-      return NextResponse.json({
-        success: true,
-        message: 'Organization saved (no filters)',
-        organization_id,
-        user_id: User.id,
-        redirectTo: '/users'
-      }, { status: 201 });
+      return;
     }
 
-    // Handle different filter combinations
     // Case 1: state + county + town
     if (states.length > 0 && counties.length > 0 && towns.length > 0) {
       await sql`
@@ -142,7 +169,7 @@ export async function POST(req: NextRequest) {
           AND h.town = ANY(${towns})
       `;
     }
-    // Case 2: state + county (no town filter - THIS IS THE "ALL TOWNS" CASE)
+    // Case 2: state + county (no town - "ALL TOWNS")
     else if (states.length > 0 && counties.length > 0 && towns.length === 0) {
       await sql`
         INSERT INTO cached_hmda (
@@ -177,7 +204,7 @@ export async function POST(req: NextRequest) {
           AND h.county = ANY(${counties})
       `;
     }
-    // Case 3: state only (no county or town)
+    // Case 3: state only
     else if (states.length > 0 && counties.length === 0) {
       await sql`
         INSERT INTO cached_hmda (
@@ -213,20 +240,14 @@ export async function POST(req: NextRequest) {
     }
 
     const [count] = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
-    console.log(`[HMDA] ✅ ${count.cnt} records`);
+    console.log(`[HMDA] ✅ ${count.cnt} records cached for org=${organization_id}`);
 
-    return NextResponse.json({
-      success: true,
-      message: `Cached ${count.cnt} HMDA records`,
-      organization_id,
-      user_id: User.id,
-      cached_records: count.cnt,
-      redirectTo: '/users'
-    }, { status: 201 });
+    // Update status to completed
+    await sql`UPDATE cache_status SET status = 'completed', completed_at = NOW(), record_count = ${count.cnt} WHERE organization_id = ${organization_id}`;
 
   } catch (error: any) {
-    console.error('ERROR:', error);
-    return NextResponse.json({ success: false, error: 'Failed', details: error.message }, { status: 500 });
+    console.error(`[HMDA CACHE] ERROR for org=${organization_id}:`, error);
+    await sql`UPDATE cache_status SET status = 'failed', completed_at = NOW(), error_message = ${error.message} WHERE organization_id = ${organization_id}`;
   }
 }
 
