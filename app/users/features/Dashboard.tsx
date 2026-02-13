@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 
-export default function Dashboard({ token }: { token: string }) {
+export default function Dashboard() {
   const [organizations, setOrganizations] = useState<any[]>([]);
   const [cacheStatuses, setCacheStatuses] = useState<Record<number, any>>({});
   const [loading, setLoading] = useState(true);
@@ -10,6 +10,12 @@ export default function Dashboard({ token }: { token: string }) {
   // Fetch user's organizations
   useEffect(() => {
     const fetchOrganizations = async () => {
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetch('/api/users', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -19,7 +25,7 @@ export default function Dashboard({ token }: { token: string }) {
         
         // Start polling for cache status on each org
         data.organizations?.forEach((org: any) => {
-          pollCacheStatus(org.id);
+          pollCacheStatus(org.id, token);
         });
       } catch (err) {
         console.error('Failed to fetch organizations:', err);
@@ -28,13 +34,11 @@ export default function Dashboard({ token }: { token: string }) {
       }
     };
 
-    if (token) {
-      fetchOrganizations();
-    }
-  }, [token]);
+    fetchOrganizations();
+  }, []);
 
   // Poll cache status for an organization
-  const pollCacheStatus = async (orgId: number) => {
+  const pollCacheStatus = async (orgId: number, token: string) => {
     try {
       const res = await fetch(`/api/cache-status/${orgId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
@@ -48,7 +52,7 @@ export default function Dashboard({ token }: { token: string }) {
 
       // If still processing, poll again in 3 seconds
       if (status.status === 'processing') {
-        setTimeout(() => pollCacheStatus(orgId), 3000);
+        setTimeout(() => pollCacheStatus(orgId, token), 3000);
       }
     } catch (err) {
       console.error(`Failed to fetch cache status for org ${orgId}:`, err);
