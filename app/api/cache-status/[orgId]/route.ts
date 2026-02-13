@@ -9,7 +9,7 @@ const JWT_SECRET = process.env.JWT_SECRET!;
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { orgId: string } }
+  context: { params: Promise<{ orgId: string }> }
 ) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -20,6 +20,7 @@ export async function GET(
     const token = authHeader.split(' ')[1];
     jwt.verify(token, JWT_SECRET); // Verify token is valid
 
+    const params = await context.params;
     const orgId = parseInt(params.orgId);
     if (isNaN(orgId)) {
       return NextResponse.json({ error: 'Invalid organization ID' }, { status: 400 });
