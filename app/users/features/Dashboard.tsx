@@ -40,7 +40,7 @@ export default function Dashboard() {
   // Poll cache status for an organization
   const pollCacheStatus = async (orgId: number, token: string) => {
     try {
-      const res = await fetch(`/api/cache-status/${orgId}`, {
+      const res = await fetch(`/api/cache-status?orgId=${orgId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       const status = await res.json();
