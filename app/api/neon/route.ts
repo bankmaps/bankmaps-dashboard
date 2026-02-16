@@ -1,3 +1,4 @@
+// NEON_PROXY_ROUTE_UNIQUE_IDENTIFIER_67890
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -18,3 +19,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+// This route is specifically for live.html map queries
+export const runtime = 'edge';
