@@ -1,3 +1,4 @@
+// CHAT_ROUTE_UNIQUE_IDENTIFIER_12345
 import { NextRequest, NextResponse } from 'next/server';
 import { neon } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-http';
