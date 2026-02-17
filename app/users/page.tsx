@@ -7,6 +7,7 @@ import ManageUsers from "./features/ManageUsers";
 import DistributionLists from "./features/DistributionLists";
 import Dashboard from "./features/Dashboard";
 import AssessmentAreaMaps from "./features/AssessmentAreaMaps";
+import { OrganizationsProvider } from "./features/OrganizationsContext";
 
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
@@ -70,6 +71,7 @@ export default function UsersPage() {
   return (
     <Suspense fallback={<div className="flex h-screen bg-gray-100 items-center justify-center">Loading...</div>}>
       <TokenProvider>
+        <OrganizationsProvider>
         <div className="flex h-screen bg-gray-100">
           {/* Sidebar */}
           <div className="hidden md:block w-80 bg-[oklch(71.5%_0.143_215.221)] border-r border-[oklch(71.5%_0.143_215.221)/0.3] overflow-y-auto">
@@ -147,7 +149,8 @@ export default function UsersPage() {
               </main>
             </div>
           </div>
-        </TokenProvider>
+        </OrganizationsProvider>
+      </TokenProvider>
       </Suspense>
     );
 }

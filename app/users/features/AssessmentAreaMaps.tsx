@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+import { useOrganizations } from "./OrganizationsContext";
 
 // ─── Census vintage lookup ────────────────────────────────────────────────────
 const YEAR_TO_VINTAGE: Record<number, number> = {
@@ -66,6 +67,8 @@ export default function AssessmentAreaMaps() {
   const slideTimerRef    = useRef<NodeJS.Timeout | null>(null);
   const isPausedRef      = useRef(false);
 
+  const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg } = useOrganizations();
+
   const [mapLoaded,      setMapLoaded]      = useState(false);
   const [currentMapIdx,  setCurrentMapIdx]  = useState(0);
   const [isPlaying,      setIsPlaying]      = useState(true);
@@ -74,8 +77,6 @@ export default function AssessmentAreaMaps() {
   // Filters
   const [selectedYear,   setSelectedYear]   = useState(2024);
   const [showTractNums,  setShowTractNums]  = useState(false);
-  const [organizations,  setOrganizations]  = useState<any[]>([]);
-  const [selectedOrgId,  setSelectedOrgId]  = useState<number | null>(null);
   const [boundaries,     setBoundaries]     = useState<any[]>([]);
   const [censusData,     setCensusData]     = useState<any[]>([]);
 
@@ -86,32 +87,7 @@ export default function AssessmentAreaMaps() {
   const vintage    = YEAR_TO_VINTAGE[selectedYear] || 2024;
   const config     = CENSUS_CONFIG[vintage];
 
-  // ── Fetch organizations ───────────────────────────────────────────────────
-  useEffect(() => {
-    // Try multiple token key names
-    const token = localStorage.getItem("jwt_token") 
-               || localStorage.getItem("token")
-               || localStorage.getItem("authToken")
-               || localStorage.getItem("access_token");
-    
-    console.log("[MAP] Token found:", !!token);
-    if (!token) { 
-      console.error("[MAP] No auth token found in localStorage");
-      return; 
-    }
-
-    fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => { console.log("[MAP] /api/users status:", r.status); return r.json(); })
-      .then(data => {
-        console.log("[MAP] orgs received:", data.organizations?.length);
-        const orgs = data.organizations || [];
-        setOrganizations(orgs);
-        if (orgs.length > 0) setSelectedOrgId(orgs[0].id);
-      })
-      .catch(err => console.error("[MAP] fetch orgs error:", err));
-  }, []);
-
-  // ── Fetch boundaries when org/year changes ────────────────────────────────
+// ── Fetch boundaries when org/year changes ────────────────────────────────
   useEffect(() => {
     if (!selectedOrgId) return;
     const token = localStorage.getItem("jwt_token") 
@@ -327,7 +303,7 @@ export default function AssessmentAreaMaps() {
   const handlePrintAll     = () => { alert("Generating full PDF report... (coming soon)"); };
 
   // ── Selected org name ─────────────────────────────────────────────────────
-  const selectedOrg = organizations.find(o => o.id === selectedOrgId);
+
 
   return (
     <>
