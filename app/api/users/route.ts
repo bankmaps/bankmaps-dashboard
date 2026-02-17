@@ -1,5 +1,4 @@
-// app/api/users/route.ts - ASYNC WITH STATUS POLLING
-
+// app/api/users/route.ts
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
@@ -78,59 +77,45 @@ export async function POST(req: NextRequest) {
     const organization_id = newOrg.id;
     console.log(`[ORG] Created ${organization_id}`);
 
-    // Set initial cache status to 'processing'
-    await sql`
-      INSERT INTO cache_status (organization_id, status, started_at)
-      VALUES (${organization_id}, 'processing', NOW())
-      ON CONFLICT (organization_id) DO UPDATE SET status = 'processing', started_at = NOW()
-    `;
-
-    // Start background cache process - this continues even if user navigates away
-    startBackgroundCache(organization_id);
-
-    // Return immediately - user doesn't wait for cache
-    return NextResponse.json({
-      success: true,
-      message: 'Organization created! HMDA data is being cached...',
-      organization_id,
-      user_id: User.id,
-      cache_status: 'processing',
-      redirectTo: '/users'
-    }, { status: 201 });
-
-  } catch (error: any) {
-    console.error('ERROR:', error);
-    return NextResponse.json({ success: false, error: 'Failed', details: error.message }, { status: 500 });
-  }
-}
-
-// Background cache function - runs independently
-async function startBackgroundCache(organization_id: number) {
-  const sql = neon(process.env.NEON_DATABASE_URL!);
-  
-  try {
-    console.log(`[HMDA CACHE] START org=${organization_id}`);
-    
     await sql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id}`;
 
+    // ── Start background boundary generation (non-blocking) ──────────────────
+    const geographies = body.geographies || [];
+    if (geographies.length > 0) {
+      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bankmaps-dashboard.vercel.app';
+      fetch(`${baseUrl}/api/boundaries/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ organization_id, geographies })
+      }).catch((err: any) => console.error('[BOUNDARY] Failed to start:', err.message));
+      console.log(`[BOUNDARY] Started for org=${organization_id}`);
+    }
+
+    // ── Start background HMDA caching ────────────────────────────────────────
     const [org] = await sql`SELECT geographies FROM organizations WHERE id = ${organization_id}`;
     if (!org?.geographies?.[0]) {
-      await sql`UPDATE cache_status SET status = 'completed', completed_at = NOW(), record_count = 0 WHERE organization_id = ${organization_id}`;
-      console.log(`[HMDA CACHE] No geographies for org=${organization_id}`);
-      return;
+      return NextResponse.json({ success: true, organization_id, user_id: User.id, redirectTo: '/users' }, { status: 201 });
     }
 
     const geo = org.geographies[0];
-    const states = geo.state?.includes('__ALL__') ? [] : (geo.state || []);
-    const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []);
-    const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []);
+    const states  = geo.state?.includes('__ALL__')        ? [] : (geo.state        || []);
+    const counties = geo.county?.includes('__ALL__')      ? [] : (geo.county       || []);
+    const towns    = geo.town?.includes('__ALL__')        ? [] : (geo.town         || []);
 
     console.log('[HMDA] Filters:', { states, counties, towns });
 
     if (states.length === 0 && counties.length === 0 && towns.length === 0) {
-      await sql`UPDATE cache_status SET status = 'completed', completed_at = NOW(), record_count = 0 WHERE organization_id = ${organization_id}`;
       console.log('[HMDA] No filters - skipping');
-      return;
+      return NextResponse.json({
+        success: true,
+        message: 'Organization saved (no filters)',
+        organization_id,
+        user_id: User.id,
+        redirectTo: '/users'
+      }, { status: 201 });
     }
 
     // Case 1: state + county + town
@@ -169,7 +154,7 @@ async function startBackgroundCache(organization_id: number) {
           AND h.town = ANY(${towns})
       `;
     }
-    // Case 2: state + county (no town - "ALL TOWNS")
+    // Case 2: state + county (ALL TOWNS)
     else if (states.length > 0 && counties.length > 0 && towns.length === 0) {
       await sql`
         INSERT INTO cached_hmda (
@@ -240,14 +225,20 @@ async function startBackgroundCache(organization_id: number) {
     }
 
     const [count] = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
-    console.log(`[HMDA] ✅ ${count.cnt} records cached for org=${organization_id}`);
+    console.log(`[HMDA] ✅ ${count.cnt} records`);
 
-    // Update status to completed
-    await sql`UPDATE cache_status SET status = 'completed', completed_at = NOW(), record_count = ${count.cnt} WHERE organization_id = ${organization_id}`;
+    return NextResponse.json({
+      success: true,
+      message: `Cached ${count.cnt} HMDA records`,
+      organization_id,
+      user_id: User.id,
+      cached_records: count.cnt,
+      redirectTo: '/users'
+    }, { status: 201 });
 
   } catch (error: any) {
-    console.error(`[HMDA CACHE] ERROR for org=${organization_id}:`, error);
-    await sql`UPDATE cache_status SET status = 'failed', completed_at = NOW(), error_message = ${error.message} WHERE organization_id = ${organization_id}`;
+    console.error('ERROR:', error);
+    return NextResponse.json({ success: false, error: 'Failed', details: error.message }, { status: 500 });
   }
 }
 
