@@ -6,6 +6,7 @@ import ManageProfile from "./features/ManageProfile";
 import ManageUsers from "./features/ManageUsers";
 import DistributionLists from "./features/DistributionLists";
 import Dashboard from "./features/Dashboard";
+import AssessmentAreaMaps from "./features/AssessmentAreaMaps";
 
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
@@ -39,6 +40,7 @@ export default function UsersPage() {
     {
       title: "Live Reports",
       items: [
+        { id: "aa-maps", label: "Assessment Area Maps" },
         { id: "cra-reports", label: "CRA Reports" },
         { id: "fair-lending", label: "Fair Lending Reports" },
         { id: "outreach", label: "Outreach Activities" },
@@ -130,10 +132,11 @@ export default function UsersPage() {
               <main className="flex-1 p-8 overflow-auto">
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-8 min-h-[70vh]">
                   {activeItem === "dashboard" && <Dashboard />}
+                  {activeItem === "aa-maps" && <AssessmentAreaMaps />}
                   {activeItem === "manage-profile" && <ManageProfile />}
                   {activeItem === "manage-users" && <ManageUsers />}
                   {activeItem === "distrib-list" && <DistributionLists />}
-                  {!["dashboard", "manage-profile", "manage-users", "distrib-list"].includes(activeItem) && (
+                  {!["dashboard", "aa-maps", "manage-profile", "manage-users", "distrib-list"].includes(activeItem) && (
                     <div className="text-center py-20 text-gray-500">
                       <p className="text-xl font-medium">
                         {activeItem.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
