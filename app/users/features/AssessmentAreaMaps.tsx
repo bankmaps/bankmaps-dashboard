@@ -88,30 +88,46 @@ export default function AssessmentAreaMaps() {
 
   // ── Fetch organizations ───────────────────────────────────────────────────
   useEffect(() => {
-    const token = localStorage.getItem("jwt_token");
-    if (!token) return;
+    // Try multiple token key names
+    const token = localStorage.getItem("jwt_token") 
+               || localStorage.getItem("token")
+               || localStorage.getItem("authToken")
+               || localStorage.getItem("access_token");
+    
+    console.log("[MAP] Token found:", !!token);
+    if (!token) { 
+      console.error("[MAP] No auth token found in localStorage");
+      return; 
+    }
 
     fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.json())
+      .then(r => { console.log("[MAP] /api/users status:", r.status); return r.json(); })
       .then(data => {
+        console.log("[MAP] orgs received:", data.organizations?.length);
         const orgs = data.organizations || [];
         setOrganizations(orgs);
         if (orgs.length > 0) setSelectedOrgId(orgs[0].id);
       })
-      .catch(console.error);
+      .catch(err => console.error("[MAP] fetch orgs error:", err));
   }, []);
 
   // ── Fetch boundaries when org/year changes ────────────────────────────────
   useEffect(() => {
     if (!selectedOrgId) return;
-    const token = localStorage.getItem("jwt_token");
+    const token = localStorage.getItem("jwt_token") 
+               || localStorage.getItem("token")
+               || localStorage.getItem("authToken")
+               || localStorage.getItem("access_token");
 
     fetch(`/api/boundaries/generate?orgId=${selectedOrgId}&vintage=${vintage}`, {
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { Authorization: `Bearer ${token || ""}` }
     })
       .then(r => r.json())
-      .then(data => setBoundaries(data.boundaries || []))
-      .catch(console.error);
+      .then(data => {
+        console.log("[MAP] boundaries:", data.boundaries?.length);
+        setBoundaries(data.boundaries || []);
+      })
+      .catch(err => console.error("[MAP] fetch boundaries error:", err));
   }, [selectedOrgId, vintage]);
 
   // ── Fetch census data for choropleth ─────────────────────────────────────
@@ -315,7 +331,7 @@ export default function AssessmentAreaMaps() {
 
   return (
     <>
-      <div className="flex flex-col h-full" style={{ fontFamily: "'Georgia', serif" }}>
+      <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif", height: "100%", minHeight: "600px" }}>
 
         {/* ── Controls Bar ──────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
@@ -403,14 +419,16 @@ export default function AssessmentAreaMaps() {
 
         {/* ── Map Area ──────────────────────────────────────────────────── */}
         <div
-          className="flex-1 relative overflow-hidden"
+          className="relative overflow-hidden"
+          style={{ flex: 1, minHeight: "450px", position: "relative" }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           {/* Map container */}
           <div
             ref={mapContainerRef}
-            className={`absolute inset-0 transition-opacity duration-400 ${
+            style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+            className={`transition-opacity duration-400 ${
               isTransitioning ? "opacity-0" : "opacity-100"
             }`}
           />
