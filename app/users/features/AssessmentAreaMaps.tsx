@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 // ─── Census vintage lookup ────────────────────────────────────────────────────
 const YEAR_TO_VINTAGE: Record<number, number> = {
@@ -143,10 +145,6 @@ export default function AssessmentAreaMaps() {
 
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
     if (!token) { console.error("No Mapbox token"); return; }
-
-    // @ts-ignore
-    const mapboxgl = window.mapboxgl;
-    if (!mapboxgl) return;
 
     mapboxgl.accessToken = token;
 
@@ -317,10 +315,6 @@ export default function AssessmentAreaMaps() {
 
   return (
     <>
-      {/* Mapbox GL JS CDN */}
-      <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet" />
-      <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js" async />
-
       <div className="flex flex-col h-full" style={{ fontFamily: "'Georgia', serif" }}>
 
         {/* ── Controls Bar ──────────────────────────────────────────────── */}
