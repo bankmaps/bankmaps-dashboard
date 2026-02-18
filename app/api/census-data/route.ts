@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
 import { Pool } from 'pg';
 
+export const runtime = 'nodejs';
+
 const JWT_SECRET = process.env.JWT_SECRET!;
 
 // Whitelist allowed metrics for security
@@ -22,11 +24,10 @@ export async function GET(req: NextRequest) {
 
     jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
 
-    const orgId = req.nextUrl.searchParams.get('orgId');
     const year = req.nextUrl.searchParams.get('year');
     const metric = req.nextUrl.searchParams.get('metric');
 
-    if (!orgId || !year || !metric) {
+    if (!year || !metric) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
@@ -41,19 +42,14 @@ export async function GET(req: NextRequest) {
       ssl: { rejectUnauthorized: false }
     });
 
-    // Build query with whitelisted column name (safe to interpolate)
+    // Query ALL census tracts for the year - no org filter
     const query = `
-      SELECT DISTINCT c.geoid, c.${metric}
-      FROM census_us c
-      WHERE c.year = $1
-        AND c.geoid IN (
-          SELECT DISTINCT geoid 
-          FROM cached_hmda 
-          WHERE organization_id = $2
-        )
+      SELECT DISTINCT geoid, ${metric}
+      FROM census_us
+      WHERE year = $1
     `;
 
-    const result = await pool.query(query, [year, parseInt(orgId)]);
+    const result = await pool.query(query, [year]);
     await pool.end();
 
     return NextResponse.json({ rows: result.rows });
