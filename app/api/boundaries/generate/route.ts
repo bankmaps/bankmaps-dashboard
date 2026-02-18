@@ -71,6 +71,8 @@ async function startBackgroundBoundaryGeneration(
             `;
           } else if (states.length > 0 && counties.length > 0) {
             // Case 3: State + county (all towns)
+            console.log(`[BOUNDARY] Case 3: Querying census_us for state=${states} county=${counties} vintage=${vintage}`);
+            const startTime = Date.now();
             tractRows = await sql`
               SELECT DISTINCT ctb.geoid, ctb.geometry, ctb.aland, ctb.awater
               FROM census_tract_boundaries ctb
@@ -79,6 +81,8 @@ async function startBackgroundBoundaryGeneration(
                 AND c.state = ANY(${states})
                 AND c.county = ANY(${counties})
             `;
+            const queryTime = Date.now() - startTime;
+            console.log(`[BOUNDARY] Case 3: Query completed in ${queryTime}ms, found ${tractRows?.length || 0} tracts`);
           } else if (states.length > 0) {
             // Case 4: State only (all counties)
             tractRows = await sql`
@@ -226,6 +230,7 @@ async function startBackgroundBoundaryGeneration(
 
         } catch (vintageError: any) {
           console.error(`[BOUNDARY] ERROR "${geoName}" vintage ${vintage}:`, vintageError.message);
+          console.error(`[BOUNDARY] Full error:`, vintageError);
         }
       }
     }
