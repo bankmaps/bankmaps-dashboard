@@ -24,8 +24,8 @@ const MAPS = [
     id: "boundaries",
     title: "Assessment Area Boundaries",
     description: "Shaded footprint of your selected geography",
-    metric: null,
-    colorField: null,
+    metric: "in_assessment_area",  // Special metric we'll compute
+    colorField: "in_assessment_area",
   },
   {
     id: "income-level",
@@ -54,10 +54,19 @@ const INCOME_COLORS: Record<string, string> = {
   "Unknown":  "#cccccc",
 };
 
+const BOUNDARY_COLORS: Record<string, string> = {
+  "Inside":  "#91bfdb",  // Light blue for assessment area
+  "Outside": "#f7f7f7",  // Light gray for outside
+};
+
 const MINORITY_COLORS: Record<string, string> = {
-  "Yes": "#7b2d8b",
-  "No":  "#2d8b7b",
-  "Unknown": "#cccccc",
+  "White Majority": "#4575b4",           // Blue
+  "Asian Majority": "#fee090",           // Yellow
+  "Black Majority": "#d73027",           // Red
+  "Hispanic Majority": "#fc8d59",        // Orange
+  "Black+Hispanic Majority": "#e34a33",  // Dark Orange
+  "Combined Majority": "#7b2d8b",        // Purple
+  "NA": "#cccccc",                       // Gray
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -121,7 +130,12 @@ export default function AssessmentAreaMaps() {
     if (!selectedOrgId || currentMap.metric === null) return;
     const token = localStorage.getItem("jwt_token");
 
-    fetch(`/api/census-data?orgId=${selectedOrgId}&year=${selectedYear}&metric=${currentMap.metric}`, {
+    // Special handling for boundaries map (inside/outside assessment area)
+    const endpoint = currentMap.metric === "in_assessment_area"
+      ? `/api/assessment-area?orgId=${selectedOrgId}&year=${selectedYear}`
+      : `/api/census-data?year=${selectedYear}&metric=${currentMap.metric}`;
+
+    fetch(endpoint, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => r.json())
