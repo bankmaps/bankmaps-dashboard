@@ -98,6 +98,7 @@ async function startBackgroundBoundaryGeneration(
             
             // Skip the Turf.js section entirely - we have the merged geometry already
             tractRows = []; // Set empty to skip tract-by-tract processing below
+          }
 
           // ── Calculate center point ───────────────────────────────────────────
           
