@@ -121,20 +121,8 @@ export default function AssessmentAreaMaps() {
     if (!selectedOrgId || currentMap.metric === null) return;
     const token = localStorage.getItem("jwt_token");
 
-    fetch(`/api/neon`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({
-        sql: `
-          SELECT DISTINCT geoid, ${currentMap.metric}
-          FROM census_us
-          WHERE year = '${selectedYear}'
-            AND geoid IN (
-              SELECT DISTINCT geoid FROM cached_hmda 
-              WHERE organization_id = ${selectedOrgId}
-            )
-        `
-      })
+    fetch(`/api/census-data?orgId=${selectedOrgId}&year=${selectedYear}&metric=${currentMap.metric}`, {
+      headers: { Authorization: `Bearer ${token}` }
     })
       .then(r => r.json())
       .then(data => setCensusData(data.rows || []))
