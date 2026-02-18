@@ -73,44 +73,89 @@ async function startBackgroundBoundaryGeneration(
                 AND c.town = ANY(${towns})
             `;
           } else if (states.length > 0 && counties.length > 0) {
-            // Case 3: State + county (all towns) - Use PostGIS ST_Union
-            console.log(`[BOUNDARY] Using PostGIS ST_Union for state=${states[0]} county=${counties[0]}`);
-            
-            const unionResult = await sql`
-              SELECT 
-                ST_AsGeoJSON(ST_Union(ctb.geometry))::json as merged_geometry,
-                SUM(ctb.aland) as total_aland,
-                SUM(ctb.awater) as total_awater
+            // Case 3: State + county (all towns)
+            tractRows = await sql`
+              SELECT DISTINCT ctb.geoid, ctb.geometry, ctb.aland, ctb.awater
               FROM census_tract_boundaries ctb
               INNER JOIN census_us c ON c.geoid = ctb.geoid
               WHERE ctb.census_vintage = ${vintage}
                 AND c.state = ${states[0]}
                 AND c.county = ${counties[0]}
             `;
-            
-            if (!unionResult[0]?.merged_geometry) {
-              console.log(`[BOUNDARY] PostGIS union returned no geometry for "${geoName}" vintage ${vintage}`);
-              continue;
-            }
-            
-            boundaryGeoJSON = unionResult[0].merged_geometry;
-            totalAland = Number(unionResult[0].total_aland || 0);
-            totalAwater = Number(unionResult[0].total_awater || 0);
-            
-            console.log(`[BOUNDARY] PostGIS union successful, geometry type: ${boundaryGeoJSON.type}`);
-            
-            // Skip the Turf.js section entirely - we have the merged geometry already
-            tractRows = []; // Set empty to skip tract-by-tract processing below
           }
 
-          // ── Calculate center point ───────────────────────────────────────────
-          
+          if (tractRows.length === 0) {
+            console.log(`[BOUNDARY] No tracts found for "${geoName}" vintage ${vintage}`);
+            continue;
+          }
+
+          console.log(`[BOUNDARY] Found ${tractRows.length} tracts for "${geoName}" vintage ${vintage}`);
+
+          // ── Merge geometries using Turf.js with buffer fix ───────────────────
+
           const turf = await import('@turf/turf');
-          const center = turf.centroid({
-            type: 'Feature',
-            geometry: boundaryGeoJSON,
-            properties: {}
+
+          // Build features and buffer by 0 to fix topology
+          console.log(`[BOUNDARY] Buffering ${tractRows.length} tracts to fix topology`);
+          const features = tractRows
+            .filter(row => row.geometry)
+            .map(row => {
+              try {
+                const feature = {
+                  type: 'Feature' as const,
+                  geometry: row.geometry,
+                  properties: { geoid: row.geoid }
+                };
+                // Buffer by 0 to fix topology issues
+                return turf.buffer(feature, 0, { units: 'meters' });
+              } catch (e) {
+                console.error(`[BOUNDARY] Buffer failed for tract ${row.geoid}`);
+                return null;
+              }
+            })
+            .filter(f => f !== null);
+
+          if (features.length === 0) {
+            console.log(`[BOUNDARY] No valid geometries after buffering for "${geoName}" vintage ${vintage}`);
+            continue;
+          }
+
+          console.log(`[BOUNDARY] Buffered ${features.length} tracts, now unioning`);
+
+          // Union all buffered polygons
+          let mergedBoundary: any = features[0];
+          for (let i = 1; i < features.length; i++) {
+            try {
+              mergedBoundary = turf.union(mergedBoundary, features[i]);
+              if (i % 50 === 0) {
+                console.log(`[BOUNDARY] Unioned ${i}/${features.length} tracts`);
+              }
+            } catch (e: any) {
+              console.error(`[BOUNDARY] Union failed at tract ${i}: ${e.message}`);
+              break;
+            }
+          }
+
+          if (!mergedBoundary) {
+            console.log(`[BOUNDARY] Union failed for "${geoName}" vintage ${vintage}`);
+            continue;
+          }
+
+          console.log(`[BOUNDARY] Union complete, simplifying`);
+          const simplified = turf.simplify(mergedBoundary, { tolerance: 0.001, highQuality: false });
+          boundaryGeoJSON = simplified.geometry;
+
+          // Calculate area
+          totalAland = 0;
+          totalAwater = 0;
+          tractRows.forEach(row => {
+            totalAland += Number(row.aland || 0);
+            totalAwater += Number(row.awater || 0);
           });
+
+          // ── Calculate center point ───────────────────────────────────────────
+
+          const center = turf.centroid(simplified);
           const centerPoint = {
             lng: center.geometry.coordinates[0],
             lat: center.geometry.coordinates[1]
