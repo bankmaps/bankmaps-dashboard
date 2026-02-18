@@ -48,6 +48,9 @@ async function startBackgroundBoundaryGeneration(
           // ── Query matching tracts from census_tract_boundaries ──────────────
 
           let tractRows: any[] = [];
+          let boundaryGeoJSON: any;
+          let totalAland = 0;
+          let totalAwater = 0;
 
           if (tracts.length > 0) {
             // Case 1: Specific tracts selected
@@ -90,9 +93,9 @@ async function startBackgroundBoundaryGeneration(
               continue;
             }
             
-            const boundaryGeoJSON = unionResult[0].merged_geometry;
-            const totalAland = Number(unionResult[0].total_aland || 0);
-            const totalAwater = Number(unionResult[0].total_awater || 0);
+            boundaryGeoJSON = unionResult[0].merged_geometry;
+            totalAland = Number(unionResult[0].total_aland || 0);
+            totalAwater = Number(unionResult[0].total_awater || 0);
             
             console.log(`[BOUNDARY] PostGIS union successful, geometry type: ${boundaryGeoJSON.type}`);
             
