@@ -70,86 +70,43 @@ async function startBackgroundBoundaryGeneration(
                 AND c.town = ANY(${towns})
             `;
           } else if (states.length > 0 && counties.length > 0) {
-            // Case 3: State + county (all towns)
-            tractRows = await sql`
-              SELECT DISTINCT ctb.geoid, ctb.geometry, ctb.aland, ctb.awater
+            // Case 3: State + county (all towns) - Use PostGIS ST_Union
+            console.log(`[BOUNDARY] Using PostGIS ST_Union for state=${states[0]} county=${counties[0]}`);
+            
+            const unionResult = await sql`
+              SELECT 
+                ST_AsGeoJSON(ST_Union(ctb.geometry))::json as merged_geometry,
+                SUM(ctb.aland) as total_aland,
+                SUM(ctb.awater) as total_awater
               FROM census_tract_boundaries ctb
               INNER JOIN census_us c ON c.geoid = ctb.geoid
               WHERE ctb.census_vintage = ${vintage}
-                AND c.state = ANY(ARRAY[${states[0]}])
-                AND c.county = ANY(ARRAY[${counties[0]}])
+                AND c.state = ${states[0]}
+                AND c.county = ${counties[0]}
             `;
-          } else if (states.length > 0) {
-            // Case 4: State only (all counties)
-            tractRows = await sql`
-              SELECT geoid, geometry, aland, awater
-              FROM census_tract_boundaries
-              WHERE census_vintage = ${vintage}
-                AND LEFT(geoid, 2) = ANY(${states.map((s: string) => getStateFips(s))})
-            `;
-          }
-
-          if (tractRows.length === 0) {
-            console.log(`[BOUNDARY] No tracts found for "${geoName}" vintage ${vintage}`);
-            continue;
-          }
-
-          console.log(`[BOUNDARY] Found ${tractRows.length} tracts for "${geoName}" vintage ${vintage}`);
-
-          // ── Merge geometries using Turf.js ───────────────────────────────────
-
-          const turf = await import('@turf/turf');
-
-          // Build feature collection from tract geometries
-          const features = tractRows
-            .filter(row => row.geometry)
-            .map(row => ({
-              type: 'Feature' as const,
-              geometry: row.geometry,
-              properties: { geoid: row.geoid }
-            }));
-
-          if (features.length === 0) {
-            console.log(`[BOUNDARY] No valid geometries for "${geoName}" vintage ${vintage}`);
-            continue;
-          }
-
-          const featureCollection = turf.featureCollection(features);
-
-          // Union all tract polygons into one boundary
-          let mergedBoundary: any;
-          try {
-            if (features.length === 1) {
-              mergedBoundary = features[0];
-            } else {
-              // Dissolve/union all features
-              mergedBoundary = features.reduce((acc: any, curr: any) => {
-                if (!acc) return curr;
-                try {
-                  return turf.union(acc, curr);
-                } catch {
-                  return acc;
-                }
-              }, null);
+            
+            if (!unionResult[0]?.merged_geometry) {
+              console.log(`[BOUNDARY] PostGIS union returned no geometry for "${geoName}" vintage ${vintage}`);
+              continue;
             }
-          } catch (unionError: any) {
-            console.error(`[BOUNDARY] Union failed for "${geoName}" vintage ${vintage}:`, unionError.message);
-            // Fallback: use convex hull of all features
-            mergedBoundary = turf.convex(featureCollection);
-          }
-
-          if (!mergedBoundary) {
-            console.log(`[BOUNDARY] Could not merge boundary for "${geoName}" vintage ${vintage}`);
-            continue;
-          }
-
-          // Simplify boundary (reduce points for performance)
-          const simplified = turf.simplify(mergedBoundary, { tolerance: 0.001, highQuality: false });
-          const boundaryGeoJSON = simplified.geometry;
+            
+            const boundaryGeoJSON = unionResult[0].merged_geometry;
+            const totalAland = Number(unionResult[0].total_aland || 0);
+            const totalAwater = Number(unionResult[0].total_awater || 0);
+            
+            console.log(`[BOUNDARY] PostGIS union successful, geometry type: ${boundaryGeoJSON.type}`);
+            
+            // Skip the Turf.js section entirely - we have the merged geometry already
+            tractRows = []; // Set empty to skip tract-by-tract processing below
 
           // ── Calculate center point ───────────────────────────────────────────
-
-          const center = turf.center(featureCollection);
+          
+          const turf = await import('@turf/turf');
+          const center = turf.centroid({
+            type: 'Feature',
+            geometry: boundaryGeoJSON,
+            properties: {}
+          });
           const centerPoint = {
             lng: center.geometry.coordinates[0],
             lat: center.geometry.coordinates[1]
@@ -157,7 +114,11 @@ async function startBackgroundBoundaryGeneration(
 
           // ── Calculate optimal zoom level ─────────────────────────────────────
 
-          const bbox = turf.bbox(featureCollection); // [minLng, minLat, maxLng, maxLat]
+          const bbox = turf.bbox({
+            type: 'Feature',
+            geometry: boundaryGeoJSON,
+            properties: {}
+          }); // [minLng, minLat, maxLng, maxLat]
           const bboxWidth  = bbox[2] - bbox[0]; // longitude span
           const bboxHeight = bbox[3] - bbox[1]; // latitude span
           const maxSpan = Math.max(bboxWidth, bboxHeight);
@@ -173,13 +134,7 @@ async function startBackgroundBoundaryGeneration(
           else                    zoomLevel = 12.5;
 
           // ── Calculate area ───────────────────────────────────────────────────
-
-          let totalAland  = 0;
-          let totalAwater = 0;
-          tractRows.forEach(row => {
-            totalAland  += Number(row.aland  || 0);
-            totalAwater += Number(row.awater || 0);
-          });
+          // Area already calculated by PostGIS (or from tract rows if not using PostGIS)
 
           const landSqMiles  = Number((totalAland  * SQ_METERS_TO_SQ_MILES).toFixed(2));
           const waterSqMiles = Number((totalAwater * SQ_METERS_TO_SQ_MILES).toFixed(2));
