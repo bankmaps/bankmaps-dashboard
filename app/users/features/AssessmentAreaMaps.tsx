@@ -67,9 +67,19 @@ export default function AssessmentAreaMaps() {
   const slideTimerRef    = useRef<NodeJS.Timeout | null>(null);
   const isPausedRef      = useRef(false);
 
-  const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg } = useOrganizations();
+  const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg, loading } = useOrganizations();
 
   const [mapLoaded,      setMapLoaded]      = useState(false);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log("[MAP] Organizations context:", { 
+      count: organizations.length, 
+      selectedOrgId, 
+      selectedOrg: selectedOrg?.name,
+      loading 
+    });
+  }, [organizations, selectedOrgId, selectedOrg, loading]);
   const [currentMapIdx,  setCurrentMapIdx]  = useState(0);
   const [isPlaying,      setIsPlaying]      = useState(true);
   const [isTransitioning,setIsTransitioning]= useState(false);
@@ -223,10 +233,21 @@ export default function AssessmentAreaMaps() {
       return;
     }
 
-    map.getSource("user-boundary")?.setData({
-      type: "Feature",
-      geometry: boundary.boundary_geojson,
-      properties: {}
+    // Wrap in FeatureCollection to handle MultiPolygon correctly
+    const geojsonData = {
+      type: "FeatureCollection",
+      features: [{
+        type: "Feature",
+        geometry: boundary.boundary_geojson,
+        properties: {}
+      }]
+    };
+    
+    map.getSource("user-boundary")?.setData(geojsonData);
+    
+    console.log("[MAP] Boundary loaded:", {
+      type: boundary.boundary_geojson.type,
+      area: boundary.total_area_sq_miles
     });
 
     // Fly to geography
@@ -309,6 +330,23 @@ export default function AssessmentAreaMaps() {
     <>
       <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif", height: "100%", minHeight: "600px" }}>
 
+        {/* Loading state */}
+        {loading && (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">Loading organizations...</p>
+          </div>
+        )}
+
+        {/* No orgs state */}
+        {!loading && organizations.length === 0 && (
+          <div className="flex items-center justify-center h-full">
+            <p className="text-gray-500">No organizations found. Please create one first.</p>
+          </div>
+        )}
+
+        {/* Main content */}
+        {!loading && organizations.length > 0 && (
+        <>
         {/* ── Controls Bar ──────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
 
@@ -521,6 +559,9 @@ export default function AssessmentAreaMaps() {
           .print-target { display: block !important; }
         }
       `}</style>
+      </>
+      )}
+      </div>
     </>
   );
 }
