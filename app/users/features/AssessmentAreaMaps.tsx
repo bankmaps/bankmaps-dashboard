@@ -192,7 +192,7 @@ export default function AssessmentAreaMaps() {
         id: "user-boundary-fill",
         type: "fill",
         source: "user-boundary",
-        paint: { "fill-color": "#0066FF", "fill-opacity": 0.08 },
+        paint: { "fill-color": "#0066FF", "fill-opacity": 0 },
       });
       map.addLayer({
         id: "user-boundary-line",
