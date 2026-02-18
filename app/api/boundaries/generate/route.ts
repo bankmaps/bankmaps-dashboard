@@ -183,7 +183,7 @@ async function startBackgroundBoundaryGeneration(
               ${organization_id},
               ${geoName},
               ${vintage},
-              ${simplified.geometry}::jsonb,
+              ${boundaryGeoJSON}::jsonb,
               ${centerPoint}::jsonb,
               ${zoomLevel},
               ${landSqMiles},
