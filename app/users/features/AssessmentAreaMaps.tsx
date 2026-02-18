@@ -517,50 +517,11 @@ export default function AssessmentAreaMaps() {
 
           {/* Progress indicator */}
           <span className="text-xs text-gray-400">
-            {currentMapIdx + 1} / {MAPS.length}
+          {currentMapIdx + 1} / {MAPS.length}
           </span>
         </div>
-      </div>
-
-      {/* ── Print Modal ──────────────────────────────────────────────────── */}
-      {showPrintModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-80">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Print / Save PDF</h3>
-            <p className="text-sm text-gray-500 mb-6">Choose what to print or save:</p>
-            <div className="space-y-3">
-              <button
-                onClick={() => { setShowPrintModal(false); handlePrintCurrent(); }}
-                className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
-              >
-                🖨️ Print Current Map
-              </button>
-              <button
-                onClick={() => { setShowPrintModal(false); handlePrintAll(); }}
-                className="w-full px-4 py-3 bg-gray-800 text-white rounded-lg text-sm font-medium hover:bg-gray-900 transition-colors"
-              >
-                📄 Save All Maps as PDF
-              </button>
-              <button
-                onClick={() => setShowPrintModal(false)}
-                className="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Print styles */}
-      <style>{`
-        @media print {
-          body > *:not(.print-target) { display: none !important; }
-          .print-target { display: block !important; }
-        }
-      `}</style>
-      </>
-      )}
+        </>
+        )}
       </div>
     </>
   );
