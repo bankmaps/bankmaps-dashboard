@@ -1,7 +1,7 @@
 // app/api/census-data/route.ts
-import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
 import jwt from 'jsonwebtoken';
+import { Pool } from 'pg';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -35,7 +35,11 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid metric' }, { status: 400 });
     }
 
-    const sql = neon(process.env.NEON_DATABASE_URL!);
+    // Use pg Pool for raw SQL
+    const pool = new Pool({
+      connectionString: process.env.NEON_DATABASE_URL,
+      ssl: { rejectUnauthorized: false }
+    });
 
     // Build query with whitelisted column name (safe to interpolate)
     const query = `
@@ -49,10 +53,10 @@ export async function GET(req: NextRequest) {
         )
     `;
 
-    // Execute with parameterized values
-    const rows = await sql(query, [year, parseInt(orgId)]);
+    const result = await pool.query(query, [year, parseInt(orgId)]);
+    await pool.end();
 
-    return NextResponse.json({ rows });
+    return NextResponse.json({ rows: result.rows });
 
   } catch (error: any) {
     console.error('[CENSUS] Error:', error);
