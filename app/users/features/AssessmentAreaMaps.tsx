@@ -98,6 +98,7 @@ export default function AssessmentAreaMaps() {
   const [showTractNums,  setShowTractNums]  = useState(false);
   const [boundaries,     setBoundaries]     = useState<any[]>([]);
   const [censusData,     setCensusData]     = useState<any[]>([]);
+  const [censusCache,    setCensusCache]    = useState<Record<string, any[]>>({});
 
   // Print modal
   const [showPrintModal, setShowPrintModal] = useState(false);
