@@ -233,14 +233,11 @@ export default function AssessmentAreaMaps() {
       return;
     }
 
-    // Wrap in FeatureCollection to handle MultiPolygon correctly
+    // Wrap geometry in Feature for Mapbox
     const geojsonData = {
-      type: "FeatureCollection",
-      features: [{
-        type: "Feature",
-        geometry: boundary.boundary_geojson,
-        properties: {}
-      }]
+      type: "Feature",
+      geometry: boundary.boundary_geojson,
+      properties: {}
     };
     
     map.getSource("user-boundary")?.setData(geojsonData);

@@ -120,11 +120,37 @@ async function startBackgroundBoundaryGeneration(
 
           const featureCollection = turf.featureCollection(features);
 
-          // Instead of merging, store all tract boundaries as a FeatureCollection
-          // This avoids union failures and renders all tracts correctly in Mapbox
-          const boundaryGeoJSON = featureCollection;
+          // Use Turf dissolve to merge all tract polygons into one boundary
+          let mergedBoundary: any;
+          try {
+            console.log(`[BOUNDARY] Dissolving ${features.length} tract polygons`);
+            
+            // Dissolve merges all features into one
+            const dissolved = turf.dissolve(featureCollection);
+            
+            if (!dissolved || !dissolved.features || dissolved.features.length === 0) {
+              console.error(`[BOUNDARY] Dissolve returned no features for "${geoName}" vintage ${vintage}`);
+              continue;
+            }
+            
+            // Take the first (and should be only) feature from dissolved result
+            mergedBoundary = dissolved.features[0];
+            
+            console.log(`[BOUNDARY] Dissolve successful, result type: ${mergedBoundary?.geometry?.type}`);
+            
+          } catch (dissolveError: any) {
+            console.error(`[BOUNDARY] Dissolve failed for "${geoName}" vintage ${vintage}:`, dissolveError.message);
+            continue;
+          }
           
-          console.log(`[BOUNDARY] Created FeatureCollection with ${features.length} tract polygons`);
+          if (!mergedBoundary || !mergedBoundary.geometry) {
+            console.log(`[BOUNDARY] No valid boundary after dissolve for "${geoName}" vintage ${vintage}`);
+            continue;
+          }
+          
+          // Simplify boundary (reduce points for performance)
+          const simplified = turf.simplify(mergedBoundary, { tolerance: 0.001, highQuality: false });
+          const boundaryGeoJSON = simplified.geometry;
 
           // ── Calculate center point ───────────────────────────────────────────
 
