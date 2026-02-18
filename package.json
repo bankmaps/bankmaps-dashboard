@@ -17,6 +17,7 @@
     "mapbox-gl": "^3.18.1",
     "mysql2": "^3.17.0",
     "next": "16.1.6",
+    "pg": "^8.18.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-select": "^5.10.2"
@@ -25,6 +26,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/mapbox-gl": "^3.4.1",
     "@types/node": "^20",
+    "@types/pg": "^8.16.0",
     "@types/postmark": "^1.4.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
