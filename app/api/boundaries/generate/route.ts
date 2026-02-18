@@ -70,42 +70,15 @@ async function startBackgroundBoundaryGeneration(
                 AND c.town = ANY(${towns})
             `;
           } else if (states.length > 0 && counties.length > 0) {
-            // Case 3: State + county (all towns) - Two-step approach
-            console.log(`[BOUNDARY] Case 3: Getting GEOIDs for state=${states[0]} county=${counties[0]}`);
-            
-            // Step 1: Get GEOIDs from census_us (fast, no geometry)
-            let geoidRows;
-            try {
-              geoidRows = await sql`
-                SELECT DISTINCT geoid
-                FROM census_us
-                WHERE state = ${states[0]}
-                  AND county = ${counties[0]}
-              `;
-              console.log(`[BOUNDARY] Found ${geoidRows.length} unique GEOIDs`);
-            } catch (geoidError: any) {
-              console.error(`[BOUNDARY] GEOID query failed:`, geoidError.message);
-              console.error(`[BOUNDARY] Full error:`, geoidError);
-              continue;
-            }
-            
-            if (geoidRows.length === 0) {
-              console.log(`[BOUNDARY] No GEOIDs found, skipping`);
-              continue;
-            }
-            
-            // Step 2: Get geometries for those GEOIDs
-            const geoidList = geoidRows.map(r => r.geoid);
-            console.log(`[BOUNDARY] Fetching geometries for ${geoidList.length} tracts`);
-            
+            // Case 3: State + county (all towns)
             tractRows = await sql`
-              SELECT geoid, geometry, aland, awater
-              FROM census_tract_boundaries
-              WHERE census_vintage = ${vintage}
-                AND geoid = ANY(${geoidList}::text[])
+              SELECT DISTINCT ctb.geoid, ctb.geometry, ctb.aland, ctb.awater
+              FROM census_tract_boundaries ctb
+              INNER JOIN census_us c ON c.geoid = ctb.geoid
+              WHERE ctb.census_vintage = ${vintage}
+                AND c.state = ANY(ARRAY[${states[0]}])
+                AND c.county = ANY(ARRAY[${counties[0]}])
             `;
-            
-            console.log(`[BOUNDARY] Case 3: Got ${tractRows?.length || 0} tract geometries`);
           } else if (states.length > 0) {
             // Case 4: State only (all counties)
             tractRows = await sql`
@@ -143,34 +116,33 @@ async function startBackgroundBoundaryGeneration(
 
           const featureCollection = turf.featureCollection(features);
 
-          // Use Turf dissolve to merge all tract polygons into one boundary
+          // Union all tract polygons into one boundary
           let mergedBoundary: any;
           try {
-            console.log(`[BOUNDARY] Dissolving ${features.length} tract polygons`);
-            
-            // Dissolve merges all features into one
-            const dissolved = turf.dissolve(featureCollection);
-            
-            if (!dissolved || !dissolved.features || dissolved.features.length === 0) {
-              console.error(`[BOUNDARY] Dissolve returned no features for "${geoName}" vintage ${vintage}`);
-              continue;
+            if (features.length === 1) {
+              mergedBoundary = features[0];
+            } else {
+              // Dissolve/union all features
+              mergedBoundary = features.reduce((acc: any, curr: any) => {
+                if (!acc) return curr;
+                try {
+                  return turf.union(acc, curr);
+                } catch {
+                  return acc;
+                }
+              }, null);
             }
-            
-            // Take the first (and should be only) feature from dissolved result
-            mergedBoundary = dissolved.features[0];
-            
-            console.log(`[BOUNDARY] Dissolve successful, result type: ${mergedBoundary?.geometry?.type}`);
-            
-          } catch (dissolveError: any) {
-            console.error(`[BOUNDARY] Dissolve failed for "${geoName}" vintage ${vintage}:`, dissolveError.message);
+          } catch (unionError: any) {
+            console.error(`[BOUNDARY] Union failed for "${geoName}" vintage ${vintage}:`, unionError.message);
+            // Fallback: use convex hull of all features
+            mergedBoundary = turf.convex(featureCollection);
+          }
+
+          if (!mergedBoundary) {
+            console.log(`[BOUNDARY] Could not merge boundary for "${geoName}" vintage ${vintage}`);
             continue;
           }
-          
-          if (!mergedBoundary || !mergedBoundary.geometry) {
-            console.log(`[BOUNDARY] No valid boundary after dissolve for "${geoName}" vintage ${vintage}`);
-            continue;
-          }
-          
+
           // Simplify boundary (reduce points for performance)
           const simplified = turf.simplify(mergedBoundary, { tolerance: 0.001, highQuality: false });
           const boundaryGeoJSON = simplified.geometry;
