@@ -1,6 +1,8 @@
-// NEON_PROXY_ROUTE_UNIQUE_IDENTIFIER_67890
+// NEON_ROUTE_UNIQUE_12345
 import { neon } from '@neondatabase/serverless';
 import { NextRequest, NextResponse } from 'next/server';
+
+export const runtime = 'edge';
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,8 +12,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No SQL query provided' }, { status: 400 });
     }
 
-    const sql = neon(process.env.NEON_DATABASE_URL!);
-    const rows = await sql(query);
+    const sql = neon(process.env.NEON_DATABASE_URL!, {
+      fullResults: true,
+      arrayMode: false
+    });
+    
+    // Execute raw SQL - neon() with fullResults handles raw strings
+    const result = await sql(query);
+    const rows = result.rows || [];
     
     return NextResponse.json({ rows });
   } catch (error: any) {
@@ -19,6 +27,3 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
-
-// This route is specifically for live.html map queries
-export const runtime = 'edge';
