@@ -293,8 +293,13 @@ export default function AssessmentAreaMaps() {
       : MINORITY_COLORS;
     const field  = currentMap.colorField!;
 
+    // Deduplicate censusData by geoid (keep first occurrence)
+    const uniqueData = Array.from(
+      new Map(censusData.map(row => [row.geoid, row])).values()
+    );
+
     const colorExpr: any[] = ["match", ["get", "GEOID"]];
-    censusData.forEach(row => {
+    uniqueData.forEach(row => {
       const color = colors[row[field]] || "#cccccc";
       colorExpr.push(row.geoid, color);
     });
