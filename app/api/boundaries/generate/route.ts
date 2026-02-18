@@ -74,14 +74,20 @@ async function startBackgroundBoundaryGeneration(
             console.log(`[BOUNDARY] Case 3: Getting GEOIDs for state=${states[0]} county=${counties[0]}`);
             
             // Step 1: Get GEOIDs from census_us (fast, no geometry)
-            const geoidRows = await sql`
-              SELECT DISTINCT geoid
-              FROM census_us
-              WHERE state = ${states[0]}
-                AND county = ${counties[0]}
-            `;
-            
-            console.log(`[BOUNDARY] Found ${geoidRows.length} unique GEOIDs`);
+            let geoidRows;
+            try {
+              geoidRows = await sql`
+                SELECT DISTINCT geoid
+                FROM census_us
+                WHERE state = ${states[0]}
+                  AND county = ${counties[0]}
+              `;
+              console.log(`[BOUNDARY] Found ${geoidRows.length} unique GEOIDs`);
+            } catch (geoidError: any) {
+              console.error(`[BOUNDARY] GEOID query failed:`, geoidError.message);
+              console.error(`[BOUNDARY] Full error:`, geoidError);
+              continue;
+            }
             
             if (geoidRows.length === 0) {
               console.log(`[BOUNDARY] No GEOIDs found, skipping`);
