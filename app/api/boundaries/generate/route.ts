@@ -78,8 +78,8 @@ async function startBackgroundBoundaryGeneration(
               FROM census_tract_boundaries ctb
               INNER JOIN census_us c ON c.geoid = ctb.geoid
               WHERE ctb.census_vintage = ${vintage}
-                AND c.state = ANY(${states})
-                AND c.county = ANY(${counties})
+                AND c.state = ${states[0]}
+                AND c.county = ${counties[0]}
             `;
             const queryTime = Date.now() - startTime;
             console.log(`[BOUNDARY] Case 3: Query completed in ${queryTime}ms, found ${tractRows?.length || 0} tracts`);
