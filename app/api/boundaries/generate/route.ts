@@ -120,35 +120,11 @@ async function startBackgroundBoundaryGeneration(
 
           const featureCollection = turf.featureCollection(features);
 
-          // Union all tract polygons into one boundary
-          let mergedBoundary: any;
-          try {
-            if (features.length === 1) {
-              mergedBoundary = features[0];
-            } else {
-              // Dissolve/union all features
-              mergedBoundary = features.reduce((acc: any, curr: any) => {
-                if (!acc) return curr;
-                try {
-                  return turf.union(acc, curr);
-                } catch {
-                  return acc;
-                }
-              }, null);
-            }
-          } catch (unionError: any) {
-            console.error(`[BOUNDARY] Union failed for "${geoName}" vintage ${vintage}:`, unionError.message);
-            // Fallback: use convex hull of all features
-            mergedBoundary = turf.convex(featureCollection);
-          }
-
-          if (!mergedBoundary) {
-            console.log(`[BOUNDARY] Could not merge boundary for "${geoName}" vintage ${vintage}`);
-            continue;
-          }
-
-          // Simplify boundary (reduce points for performance)
-          const simplified = turf.simplify(mergedBoundary, { tolerance: 0.001, highQuality: false });
+          // Instead of merging, store all tract boundaries as a FeatureCollection
+          // This avoids union failures and renders all tracts correctly in Mapbox
+          const boundaryGeoJSON = featureCollection;
+          
+          console.log(`[BOUNDARY] Created FeatureCollection with ${features.length} tract polygons`);
 
           // ── Calculate center point ───────────────────────────────────────────
 
