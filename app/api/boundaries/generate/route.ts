@@ -120,26 +120,22 @@ async function startBackgroundBoundaryGeneration(
 
           const featureCollection = turf.featureCollection(features);
 
-          // Union all tract polygons into one boundary
+          // Create convex hull boundary (simple polygon envelope)
+          // This renders reliably in Mapbox unlike complex MultiPolygons from union
           let mergedBoundary: any;
           try {
-            if (features.length === 1) {
-              mergedBoundary = features[0];
-            } else {
-              // Dissolve/union all features
-              mergedBoundary = features.reduce((acc: any, curr: any) => {
-                if (!acc) return curr;
-                try {
-                  return turf.union(acc, curr);
-                } catch {
-                  return acc;
-                }
-              }, null);
-            }
-          } catch (unionError: any) {
-            console.error(`[BOUNDARY] Union failed for "${geoName}" vintage ${vintage}:`, unionError.message);
-            // Fallback: use convex hull of all features
+            console.log(`[BOUNDARY] Creating convex hull for ${features.length} tracts`);
             mergedBoundary = turf.convex(featureCollection);
+            
+            if (!mergedBoundary) {
+              console.error(`[BOUNDARY] Convex hull returned null for "${geoName}" vintage ${vintage}`);
+              continue;
+            }
+            
+            console.log(`[BOUNDARY] Convex hull created successfully, type: ${mergedBoundary.geometry?.type}`);
+          } catch (hullError: any) {
+            console.error(`[BOUNDARY] Convex hull failed for "${geoName}" vintage ${vintage}:`, hullError.message);
+            continue;
           }
 
           if (!mergedBoundary) {
@@ -147,8 +143,8 @@ async function startBackgroundBoundaryGeneration(
             continue;
           }
 
-          // Simplify boundary (reduce points for performance)
-          const simplified = turf.simplify(mergedBoundary, { tolerance: 0.001, highQuality: false });
+          // Convex hull is already simple, no need to simplify further
+          const simplified = mergedBoundary;
 
           // ── Calculate center point ───────────────────────────────────────────
 
