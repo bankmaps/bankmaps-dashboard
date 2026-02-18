@@ -70,19 +70,36 @@ async function startBackgroundBoundaryGeneration(
                 AND c.town = ANY(${towns})
             `;
           } else if (states.length > 0 && counties.length > 0) {
-            // Case 3: State + county (all towns)
-            console.log(`[BOUNDARY] Case 3: Querying census_us for state=${states} county=${counties} vintage=${vintage}`);
-            const startTime = Date.now();
-            tractRows = await sql`
-              SELECT DISTINCT ctb.geoid, ctb.geometry, ctb.aland, ctb.awater
-              FROM census_tract_boundaries ctb
-              INNER JOIN census_us c ON c.geoid = ctb.geoid
-              WHERE ctb.census_vintage = ${vintage}
-                AND c.state = ${states[0]}
-                AND c.county = ${counties[0]}
+            // Case 3: State + county (all towns) - Two-step approach
+            console.log(`[BOUNDARY] Case 3: Getting GEOIDs for state=${states[0]} county=${counties[0]}`);
+            
+            // Step 1: Get GEOIDs from census_us (fast, no geometry)
+            const geoidRows = await sql`
+              SELECT DISTINCT geoid
+              FROM census_us
+              WHERE state = ${states[0]}
+                AND county = ${counties[0]}
             `;
-            const queryTime = Date.now() - startTime;
-            console.log(`[BOUNDARY] Case 3: Query completed in ${queryTime}ms, found ${tractRows?.length || 0} tracts`);
+            
+            console.log(`[BOUNDARY] Found ${geoidRows.length} unique GEOIDs`);
+            
+            if (geoidRows.length === 0) {
+              console.log(`[BOUNDARY] No GEOIDs found, skipping`);
+              continue;
+            }
+            
+            // Step 2: Get geometries for those GEOIDs
+            const geoidList = geoidRows.map(r => r.geoid);
+            console.log(`[BOUNDARY] Fetching geometries for ${geoidList.length} tracts`);
+            
+            tractRows = await sql`
+              SELECT geoid, geometry, aland, awater
+              FROM census_tract_boundaries
+              WHERE census_vintage = ${vintage}
+                AND geoid = ANY(${geoidList}::text[])
+            `;
+            
+            console.log(`[BOUNDARY] Case 3: Got ${tractRows?.length || 0} tract geometries`);
           } else if (states.length > 0) {
             // Case 4: State only (all counties)
             tractRows = await sql`
