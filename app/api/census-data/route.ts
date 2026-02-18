@@ -5,6 +5,14 @@ import jwt from 'jsonwebtoken';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
+// Whitelist allowed metrics for security
+const ALLOWED_METRICS = [
+  'income_level',
+  'majority_minority',
+  'tract_population',
+  'median_family_income'
+];
+
 export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -22,19 +30,27 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing parameters' }, { status: 400 });
     }
 
+    // Validate metric is in whitelist
+    if (!ALLOWED_METRICS.includes(metric)) {
+      return NextResponse.json({ error: 'Invalid metric' }, { status: 400 });
+    }
+
     const sql = neon(process.env.NEON_DATABASE_URL!);
 
-    // Query census data for the org's geography
-    const rows = await sql`
-      SELECT DISTINCT c.geoid, c.${sql(metric)}
+    // Build query with whitelisted column name (safe to interpolate)
+    const query = `
+      SELECT DISTINCT c.geoid, c.${metric}
       FROM census_us c
-      WHERE c.year = ${year}
+      WHERE c.year = $1
         AND c.geoid IN (
           SELECT DISTINCT geoid 
           FROM cached_hmda 
-          WHERE organization_id = ${parseInt(orgId)}
+          WHERE organization_id = $2
         )
     `;
+
+    // Execute with parameterized values
+    const rows = await sql(query, [year, parseInt(orgId)]);
 
     return NextResponse.json({ rows });
 
