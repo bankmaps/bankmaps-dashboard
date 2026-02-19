@@ -429,7 +429,7 @@ export default function AssessmentAreaMaps() {
                     const isSelected = geo.name === selectedGeographyName;
                     return (
                       <option key={idx} value={idx} selected={isSelected}>
-                        {geo.name.toUpperCase()}
+                        {geo.name}
                       </option>
                     );
                   })}
