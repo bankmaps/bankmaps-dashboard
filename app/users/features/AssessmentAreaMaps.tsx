@@ -116,16 +116,16 @@ export default function AssessmentAreaMaps() {
                || localStorage.getItem("authToken")
                || localStorage.getItem("access_token");
 
-    fetch(`/api/boundaries/generate?orgId=${selectedOrgId}&vintage=${vintage}`, {
+    fetch(`/api/boundaries?orgId=${selectedOrgId}&vintage=${vintage}&geography=${selectedGeographyName}`, {
       headers: { Authorization: `Bearer ${token || ""}` }
     })
       .then(r => r.json())
       .then(data => {
-        console.log("[MAP] boundaries:", data.boundaries?.length);
+        console.log("[MAP] boundaries for geography '${selectedGeographyName}':", data.boundaries?.length);
         setBoundaries(data.boundaries || []);
       })
       .catch(err => console.error("[MAP] fetch boundaries error:", err));
-  }, [selectedOrgId, vintage]);
+  }, [selectedOrgId, vintage, selectedGeographyName]);
 
   // ── Fetch census data for choropleth (with caching) ──────────────────────
   useEffect(() => {
