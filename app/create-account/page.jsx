@@ -411,6 +411,7 @@ const handleSave = async () => {
     states: selectedStates,
     geographies: selectedGeographies,
     customContext: customContext.trim(),
+	linked: selectedLenderPerSource,
   };
 
   try {
