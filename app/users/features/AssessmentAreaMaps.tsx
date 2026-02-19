@@ -116,7 +116,7 @@ export default function AssessmentAreaMaps() {
                || localStorage.getItem("authToken")
                || localStorage.getItem("access_token");
 
-    fetch(`/api/boundaries?orgId=${selectedOrgId}&vintage=${vintage}&geography=${selectedGeographyName}`, {
+    fetch(`/api/boundaries/generate?orgId=${selectedOrgId}&vintage=${vintage}&geography=${selectedGeographyName}`, {
       headers: { Authorization: `Bearer ${token || ""}` }
     })
       .then(r => r.json())
