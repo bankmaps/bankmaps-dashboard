@@ -75,6 +75,7 @@ export default function AssessmentAreaMaps() {
   const mapRef           = useRef<any>(null);
   const slideTimerRef    = useRef<NodeJS.Timeout | null>(null);
   const isPausedRef      = useRef(false);
+  const geographiesRef   = useRef<any[]>([]);
 
   const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg, loading } = useOrganizations();
 
@@ -83,6 +84,7 @@ export default function AssessmentAreaMaps() {
   // Initialize geography name from first geography when org changes
   useEffect(() => {
     if (selectedOrg && selectedOrg.geographies && selectedOrg.geographies.length > 0) {
+      geographiesRef.current = selectedOrg.geographies;
       const firstGeoName = selectedOrg.geographies[0]?.name || "";
       console.log("[MAP] Initializing geography to:", firstGeoName);
       setSelectedGeographyName(firstGeoName);
@@ -416,8 +418,9 @@ export default function AssessmentAreaMaps() {
                   value={selectedGeographyName}
                   onChange={e => {
                     const idx = parseInt(e.target.value);
-                    const geoName = selectedOrg.geographies[idx]?.name;
+                    const geoName = geographiesRef.current[idx]?.name;
                     console.log("[MAP] Geography selected by index:", idx, "->", geoName);
+                    console.log("[MAP] Full geo object:", geographiesRef.current[idx]);
                     setSelectedGeographyName(geoName);
                   }}
                   className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
