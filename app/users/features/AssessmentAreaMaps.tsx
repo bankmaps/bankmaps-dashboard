@@ -91,7 +91,7 @@ export default function AssessmentAreaMaps() {
   }, [organizations, selectedOrgId, selectedOrg, loading]);
   const [currentMapIdx,  setCurrentMapIdx]  = useState(0);
   const [isPlaying,      setIsPlaying]      = useState(true);
-  const [isTransitioning,setIsTransitioning]= useState(false);
+  const [isTransitioning,setIsTransitioning]= useState(false); // Disabled for testing
 
   // Filters
   const [selectedYear,   setSelectedYear]   = useState(2024);
@@ -320,10 +320,10 @@ export default function AssessmentAreaMaps() {
 
   // ── Slideshow timer ───────────────────────────────────────────────────────
   const goToMap = useCallback((idx: number) => {
-    setIsTransitioning(true);
+    // setIsTransitioning(true); // DISABLED FOR TESTING
     setTimeout(() => {
       setCurrentMapIdx(idx);
-      setIsTransitioning(false);
+      // setIsTransitioning(false); // DISABLED FOR TESTING
     }, 400);
   }, []);
 
