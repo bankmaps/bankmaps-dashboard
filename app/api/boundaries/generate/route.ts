@@ -289,6 +289,8 @@ export async function GET(req: NextRequest) {
     const orgId   = req.nextUrl.searchParams.get('orgId');
     const vintage = req.nextUrl.searchParams.get('vintage');
     const geoName = req.nextUrl.searchParams.get('geography');
+    
+    console.log('[BOUNDARY GET] Params:', { orgId, vintage, geoName });
 
     if (!orgId) {
       return NextResponse.json({ error: 'Missing orgId' }, { status: 400 });
@@ -307,6 +309,7 @@ export async function GET(req: NextRequest) {
           AND geography_name   = ${geoName}
         LIMIT 1
       `;
+      console.log('[BOUNDARY GET] Query result:', boundaries.length, 'rows');
     } else {
       // Fetch all boundaries for this org
       boundaries = await sql`
