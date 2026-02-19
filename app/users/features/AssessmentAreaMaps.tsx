@@ -116,12 +116,17 @@ export default function AssessmentAreaMaps() {
                || localStorage.getItem("authToken")
                || localStorage.getItem("access_token");
 
+    console.log(`[MAP] Fetching boundaries: orgId=${selectedOrgId}, vintage=${vintage}, geography=${selectedGeographyName}`);
+    
     fetch(`/api/boundaries/generate?orgId=${selectedOrgId}&vintage=${vintage}&geography=${selectedGeographyName}`, {
       headers: { Authorization: `Bearer ${token || ""}` }
     })
-      .then(r => r.json())
+      .then(r => {
+        console.log("[MAP] Boundary response status:", r.status);
+        return r.json();
+      })
       .then(data => {
-        console.log("[MAP] boundaries for geography '${selectedGeographyName}':", data.boundaries?.length);
+        console.log("[MAP] Boundary data received:", data);
         setBoundaries(data.boundaries || []);
       })
       .catch(err => console.error("[MAP] fetch boundaries error:", err));
@@ -400,7 +405,10 @@ export default function AssessmentAreaMaps() {
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Area</label>
                 <select
                   value={selectedGeographyName}
-                  onChange={e => setSelectedGeographyName(e.target.value)}
+                  onChange={e => {
+                    console.log("[MAP] Geography selected:", e.target.value);
+                    setSelectedGeographyName(e.target.value);
+                  }}
                   className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                 >
                   {selectedOrg.geographies.map((geo: any) => (
