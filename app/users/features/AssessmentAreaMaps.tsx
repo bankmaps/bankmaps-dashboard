@@ -90,7 +90,7 @@ export default function AssessmentAreaMaps() {
     });
   }, [organizations, selectedOrgId, selectedOrg, loading]);
   const [currentMapIdx,  setCurrentMapIdx]  = useState(0);
-  const [isPlaying,      setIsPlaying]      = useState(true);
+  const [isPlaying,      setIsPlaying]      = useState(false); // Disabled for testing
   const [isTransitioning,setIsTransitioning]= useState(false); // Disabled for testing
 
   // Filters
@@ -271,7 +271,7 @@ export default function AssessmentAreaMaps() {
       map.flyTo({
         center: [boundary.center_point.lng, boundary.center_point.lat],
         zoom: boundary.zoom_level || 10,
-        duration: 1500,
+        duration: 0,
       });
     }
   }, [mapLoaded, boundaries]);
@@ -332,12 +332,14 @@ export default function AssessmentAreaMaps() {
   }, [currentMapIdx, goToMap]);
 
   useEffect(() => {
-    if (!isPlaying) {
-      if (slideTimerRef.current) clearInterval(slideTimerRef.current);
-      return;
-    }
-    slideTimerRef.current = setInterval(nextMap, 5000);
-    return () => { if (slideTimerRef.current) clearInterval(slideTimerRef.current); };
+    // AUTO-ADVANCE DISABLED FOR TESTING
+    // if (!isPlaying) {
+    //   if (slideTimerRef.current) clearInterval(slideTimerRef.current);
+    //   return;
+    // }
+    // slideTimerRef.current = setInterval(nextMap, 5000);
+    // return () => { if (slideTimerRef.current) clearInterval(slideTimerRef.current); };
+    if (slideTimerRef.current) clearInterval(slideTimerRef.current);
   }, [isPlaying, nextMap]);
 
   // ── Pause on hover ────────────────────────────────────────────────────────
@@ -429,7 +431,7 @@ export default function AssessmentAreaMaps() {
           {/* Tract numbers toggle */}
           <button
             onClick={() => setShowTractNums(!showTractNums)}
-            className={`text-xs px-3 py-1 rounded-full border font-medium transition-colors ${
+            className={`text-xs px-3 py-1 rounded-full border font-medium  ${
               showTractNums
                 ? "bg-blue-600 text-white border-blue-600"
                 : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
@@ -449,7 +451,7 @@ export default function AssessmentAreaMaps() {
               mapRef.current.setLayoutProperty("user-boundary-line", "visibility", next);
               mapRef.current.setLayoutProperty("user-boundary-fill", "visibility", next);
             }}
-            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 transition-colors"
+            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 "
           >
             🗺️ Boundary
           </button>
@@ -459,7 +461,7 @@ export default function AssessmentAreaMaps() {
           {/* Print button */}
           <button
             onClick={() => setShowPrintModal(true)}
-            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 transition-colors"
+            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 "
           >
             🖨️ Print / Save
           </button>
@@ -467,7 +469,7 @@ export default function AssessmentAreaMaps() {
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
         <div
-          className={`px-6 py-3 bg-white border-b border-gray-100 transition-opacity duration-400 ${
+          className={`px-6 py-3 bg-white border-b border-gray-100  ${
             isTransitioning ? "opacity-0" : "opacity-100"
           }`}
         >
@@ -488,7 +490,7 @@ export default function AssessmentAreaMaps() {
           <div
             ref={mapContainerRef}
             style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
-            className={`transition-opacity duration-400 ${
+            className={` ${
               isTransitioning ? "opacity-0" : "opacity-100"
             }`}
           />
@@ -526,7 +528,7 @@ export default function AssessmentAreaMaps() {
               <button
                 key={m.id}
                 onClick={() => { setIsPlaying(false); goToMap(idx); }}
-                className={`transition-all duration-200 rounded-full text-xs font-medium px-3 py-1 ${
+                className={` rounded-full text-xs font-medium px-3 py-1 ${
                   idx === currentMapIdx
                     ? "bg-blue-600 text-white"
                     : "bg-white text-gray-500 border border-gray-300 hover:border-gray-400"
@@ -542,7 +544,7 @@ export default function AssessmentAreaMaps() {
           {/* Play/Pause */}
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400 transition-colors"
+            className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400 "
           >
             {isPlaying ? "⏸ Pause" : "▶ Play"}
           </button>
