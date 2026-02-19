@@ -61,20 +61,8 @@ async function startBackgroundBoundaryGeneration(
                 AND geoid = ANY(${tracts})
             `;
           } else if (states.length > 0 && counties.length > 0 && towns.length > 0) {
-            // Case 2: State + county + town filter
-            // Join with census_us (covers ALL tracts, not just those with HMDA activity)
-            tractRows = await sql`
-              SELECT DISTINCT ctb.geoid, ctb.geometry, ctb.aland, ctb.awater
-              FROM census_tract_boundaries ctb
-              INNER JOIN census_us c ON c.geoid = ctb.geoid
-              WHERE ctb.census_vintage = ${vintage}
-                AND c.state = ANY(${states})
-                AND c.county = ANY(${counties})
-                AND c.town = ANY(${towns})
-            `;
-          } else if (states.length > 0 && counties.length > 0) {
-            // Case 3: State + county (all towns) - Use PostGIS ST_Union
-            console.log(`[BOUNDARY] Using PostGIS ST_Union for state=${states[0]} county=${counties[0]} vintage=${vintage}`);
+            // Case 2: State + county + town filter - Use PostGIS ST_Union
+            console.log(`[BOUNDARY] Using PostGIS ST_Union for towns vintage=${vintage}`);
             
             const unionResult = await sql`
               SELECT 
@@ -84,8 +72,35 @@ async function startBackgroundBoundaryGeneration(
               FROM census_tract_boundaries ctb
               INNER JOIN census_us c ON c.geoid = ctb.geoid
               WHERE ctb.census_vintage = ${vintage}
-                AND c.state = ${states[0]}
-                AND c.county = ${counties[0]}
+                AND c.state = ANY(${states})
+                AND c.county = ANY(${counties})
+                AND c.town = ANY(${towns})
+            `;
+            
+            if (!unionResult || unionResult.length === 0 || !unionResult[0]?.merged_geometry) {
+              console.error(`[BOUNDARY] PostGIS ST_Union returned no results for "${geoName}" vintage ${vintage}`);
+              continue;
+            }
+            
+            boundaryGeoJSON = unionResult[0].merged_geometry;
+            totalAland = Number(unionResult[0].total_aland || 0);
+            totalAwater = Number(unionResult[0].total_awater || 0);
+            
+            console.log(`[BOUNDARY] PostGIS union successful for towns: ${boundaryGeoJSON.type}`);
+          } else if (states.length > 0 && counties.length > 0) {
+            // Case 3: State + county (all towns) - Use PostGIS ST_Union
+            console.log(`[BOUNDARY] Using PostGIS ST_Union for states=${states.join(',')} counties=${counties.join(',')} vintage=${vintage}`);
+            
+            const unionResult = await sql`
+              SELECT 
+                ST_AsGeoJSON(ST_Union(ctb.geometry_postgis))::json as merged_geometry,
+                SUM(ctb.aland) as total_aland,
+                SUM(ctb.awater) as total_awater
+              FROM census_tract_boundaries ctb
+              INNER JOIN census_us c ON c.geoid = ctb.geoid
+              WHERE ctb.census_vintage = ${vintage}
+                AND c.state = ANY(${states})
+                AND c.county = ANY(${counties})
             `;
             
             if (!unionResult || unionResult.length === 0 || !unionResult[0]?.merged_geometry) {
