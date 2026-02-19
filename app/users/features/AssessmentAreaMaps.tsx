@@ -411,11 +411,14 @@ export default function AssessmentAreaMaps() {
                   }}
                   className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                 >
-                  {selectedOrg.geographies.map((geo: any) => (
-                    <option key={geo.name} value={geo.name}>
-                      {geo.name.toUpperCase()}
-                    </option>
-                  ))}
+                  {selectedOrg.geographies.map((geo: any) => {
+                    console.log("[MAP] Rendering option:", geo.name);
+                    return (
+                      <option key={geo.name} value={geo.name}>
+                        {geo.name.toUpperCase()}
+                      </option>
+                    );
+                  })}
                 </select>
               </div>
               <div className="w-px h-5 bg-gray-300" />
