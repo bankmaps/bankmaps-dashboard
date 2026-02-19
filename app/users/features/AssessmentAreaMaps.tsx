@@ -406,15 +406,17 @@ export default function AssessmentAreaMaps() {
                 <select
                   value={selectedGeographyName}
                   onChange={e => {
-                    console.log("[MAP] Geography selected:", e.target.value);
-                    setSelectedGeographyName(e.target.value);
+                    const idx = parseInt(e.target.value);
+                    const geoName = selectedOrg.geographies[idx]?.name;
+                    console.log("[MAP] Geography selected by index:", idx, "->", geoName);
+                    setSelectedGeographyName(geoName);
                   }}
                   className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                 >
-                  {selectedOrg.geographies.map((geo: any) => {
-                    console.log("[MAP] Rendering option:", geo.name);
+                  {selectedOrg.geographies.map((geo: any, idx: number) => {
+                    const isSelected = geo.name === selectedGeographyName;
                     return (
-                      <option key={geo.name} value={geo.name}>
+                      <option key={idx} value={idx} selected={isSelected}>
                         {geo.name.toUpperCase()}
                       </option>
                     );
