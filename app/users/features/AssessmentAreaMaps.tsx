@@ -80,6 +80,15 @@ export default function AssessmentAreaMaps() {
 
   const [mapLoaded,      setMapLoaded]      = useState(false);
   
+  // Initialize geography name from first geography when org changes
+  useEffect(() => {
+    if (selectedOrg && selectedOrg.geographies && selectedOrg.geographies.length > 0) {
+      const firstGeoName = selectedOrg.geographies[0]?.name || "";
+      console.log("[MAP] Initializing geography to:", firstGeoName);
+      setSelectedGeographyName(firstGeoName);
+    }
+  }, [selectedOrg]);
+  
   // Debug logging
   useEffect(() => {
     console.log("[MAP] Organizations context:", { 
@@ -95,7 +104,7 @@ export default function AssessmentAreaMaps() {
 
   // Filters
   const [selectedYear,   setSelectedYear]   = useState(2024);
-  const [selectedGeographyName, setSelectedGeographyName] = useState<string>("aa");
+  const [selectedGeographyName, setSelectedGeographyName] = useState<string>("");
   const [showTractNums,  setShowTractNums]  = useState(false);
   const [boundaries,     setBoundaries]     = useState<any[]>([]);
   const [censusData,     setCensusData]     = useState<any[]>([]);
