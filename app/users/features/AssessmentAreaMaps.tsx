@@ -95,6 +95,7 @@ export default function AssessmentAreaMaps() {
 
   // Filters
   const [selectedYear,   setSelectedYear]   = useState(2024);
+  const [selectedGeographyName, setSelectedGeographyName] = useState<string>("aa");
   const [showTractNums,  setShowTractNums]  = useState(false);
   const [boundaries,     setBoundaries]     = useState<any[]>([]);
   const [censusData,     setCensusData]     = useState<any[]>([]);
@@ -374,9 +375,9 @@ export default function AssessmentAreaMaps() {
         {/* ── Controls Bar ──────────────────────────────────────────────── */}
         <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
 
-          {/* Geography selector */}
+          {/* Organization selector */}
           <div className="flex items-center gap-2">
-            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Geography</label>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Organization</label>
             <select
               value={selectedOrgId || ""}
               onChange={e => setSelectedOrgId(Number(e.target.value))}
@@ -389,6 +390,27 @@ export default function AssessmentAreaMaps() {
           </div>
 
           <div className="w-px h-5 bg-gray-300" />
+
+          {/* Geography selector (within selected org) */}
+          {selectedOrg && selectedOrg.geographies && selectedOrg.geographies.length > 1 && (
+            <>
+              <div className="flex items-center gap-2">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Area</label>
+                <select
+                  value={selectedGeographyName}
+                  onChange={e => setSelectedGeographyName(e.target.value)}
+                  className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+                >
+                  {selectedOrg.geographies.map((geo: any) => (
+                    <option key={geo.name} value={geo.name}>
+                      {geo.name.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="w-px h-5 bg-gray-300" />
+            </>
+          )}
 
           {/* Year selector */}
           <div className="flex items-center gap-2">
