@@ -948,7 +948,7 @@ const renderStep3 = () => (
             disabled={isSaving}
             style={{
               padding: '12px 28px',
-              background: isSaving ? '#ccc' : '#28a745',
+              background: isSaving ? '#1e90ff' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
@@ -969,7 +969,7 @@ const renderStep3 = () => (
                 animation: 'spin 0.6s linear infinite',
               }} />
             )}
-            {isSaving ? 'Creating Organization...' : 'Save & Continue'}
+            {isSaving ? 'Please allow a few seconds while your account is created' : 'Save & Continue'}
           </button>
         )}
       </div>
