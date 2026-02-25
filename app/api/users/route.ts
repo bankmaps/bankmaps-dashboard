@@ -85,6 +85,8 @@ export async function POST(req: NextRequest) {
       // Small delay to ensure the org transaction has committed
       setTimeout(() => {
         const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bankmaps-dashboard.vercel.app';
+        
+        // Trigger boundary generation
         fetch(`${baseUrl}/api/boundaries/generate`, {
           method: 'POST',
           headers: {
@@ -94,6 +96,17 @@ export async function POST(req: NextRequest) {
           body: JSON.stringify({ organization_id, geographies })
         }).catch((err: any) => console.error('[BOUNDARY] Failed to start:', err.message));
         console.log(`[BOUNDARY] Started for org=${organization_id}`);
+        
+        // Trigger geography_tracts population (separate process)
+        fetch(`${baseUrl}/api/geography-tracts/populate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ organization_id, geographies })
+        }).catch((err: any) => console.error('[GEOGRAPHY_TRACTS] Failed to start:', err.message));
+        console.log(`[GEOGRAPHY_TRACTS] Started for org=${organization_id}`);
       }, 1000); // 1 second delay
     }
 
