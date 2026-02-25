@@ -95,16 +95,21 @@ export async function POST(req: NextRequest) {
         // Get color from geography definition (or use default)
         const geoColor = geo.color || '#91bfdb';
 
-        // Insert all geoids
+        // Insert all geoids in batches
         if (geoidList.length > 0) {
-          console.log(`[GEOGRAPHY_TRACTS] Inserting ${geoidList.length} geoids...`);
+          console.log(`[GEOGRAPHY_TRACTS] Inserting ${geoidList.length} geoids in batches...`);
           
-          for (const geoid of geoidList) {
+          const batchSize = 100;
+          for (let i = 0; i < geoidList.length; i += batchSize) {
+            const batch = geoidList.slice(i, i + batchSize);
+            const records = batch.map(geoid => ({ organization_id, geography_name: geoName, geoid, color: geoColor }));
+            
             await sql`
-              INSERT INTO geography_tracts (organization_id, geography_name, geoid, color)
-              VALUES (${organization_id}, ${geoName}, ${geoid}, ${geoColor})
+              INSERT INTO geography_tracts ${sql(records)}
               ON CONFLICT (organization_id, geography_name, geoid) DO NOTHING
             `;
+            
+            console.log(`[GEOGRAPHY_TRACTS] Inserted batch ${Math.floor(i/batchSize) + 1}: ${batch.length} rows`);
           }
 
           console.log(`[GEOGRAPHY_TRACTS] ✅ Inserted ${geoidList.length} tracts for "${geoName}"`);
