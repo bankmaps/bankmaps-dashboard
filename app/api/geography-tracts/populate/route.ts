@@ -103,19 +103,16 @@ export async function POST(req: NextRequest) {
           for (let i = 0; i < geoidList.length; i += batchSize) {
             const batch = geoidList.slice(i, i + batchSize);
             
-            // Build parameterized VALUES clause
-            const values = batch.map((_, idx) => 
-              `($${idx*4 + 1}, $${idx*4 + 2}, $${idx*4 + 3}, $${idx*4 + 4})`
+            // Build VALUES clause with proper escaping
+            const values = batch.map(geoid => 
+              `(${organization_id}, '${geoName.replace(/'/g, "''")}', '${geoid.replace(/'/g, "''")}', '${geoColor.replace(/'/g, "''")}')`
             ).join(', ');
             
-            const params = batch.flatMap(geoid => [organization_id, geoName, geoid, geoColor]);
-            
-            await sql(
-              `INSERT INTO geography_tracts (organization_id, geography_name, geoid, color)
-               VALUES ${values}
-               ON CONFLICT (organization_id, geography_name, geoid) DO NOTHING`,
-              params
-            );
+            await sql.unsafe(`
+              INSERT INTO geography_tracts (organization_id, geography_name, geoid, color)
+              VALUES ${values}
+              ON CONFLICT (organization_id, geography_name, geoid) DO NOTHING
+            `);
             
             console.log(`[GEOGRAPHY_TRACTS] Inserted batch ${Math.floor(i/batchSize) + 1}: ${batch.length} rows`);
           }
