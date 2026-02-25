@@ -207,6 +207,8 @@ async function startBackgroundBoundaryGeneration(
         }
       }
       
+      console.log(`[BOUNDARY] DEBUG: Finished all vintages for "${geoName}", now starting geography_tracts`);
+      
       // ── Populate geography_tracts table (after all vintages processed) ──────────
       console.log(`[BOUNDARY] Populating geography_tracts for "${geoName}"`);
       
