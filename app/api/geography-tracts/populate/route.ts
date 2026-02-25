@@ -47,16 +47,24 @@ export async function POST(req: NextRequest) {
             AND geography_name = ${geoName}
         `;
 
-        // Get all geoids for this geography from census_us (use year 2024 as reference)
-        let geoidList: string[] = [];
+        // Get color from geography definition (or use default)
+        const geoColor = geo.color || '#91bfdb';
 
+        // INSERT INTO ... SELECT pattern (like cached_hmda)
         if (tracts.length > 0) {
           // Case 1: Specific tracts
-          geoidList = tracts;
+          await sql`
+            INSERT INTO geography_tracts (organization_id, geography_name, geoid, color)
+            SELECT ${organization_id}, ${geoName}, ctb.geoid, ${geoColor}
+            FROM census_tract_boundaries ctb
+            WHERE ctb.census_vintage = 2024
+              AND ctb.geoid = ANY(${tracts})
+          `;
         } else if (states.length > 0 && counties.length > 0 && towns.length > 0) {
           // Case 2: State + county + towns
-          const geoidRows = await sql`
-            SELECT DISTINCT ctb.geoid 
+          await sql`
+            INSERT INTO geography_tracts (organization_id, geography_name, geoid, color)
+            SELECT ${organization_id}, ${geoName}, ctb.geoid, ${geoColor}
             FROM census_tract_boundaries ctb
             INNER JOIN census_us c ON c.geoid = ctb.geoid
             WHERE ctb.census_vintage = 2024
@@ -64,63 +72,37 @@ export async function POST(req: NextRequest) {
               AND TRIM(c.county) = ANY(${counties})
               AND TRIM(c.town) = ANY(${towns})
           `;
-          geoidList = geoidRows.map((r: any) => r.geoid);
         } else if (states.length > 0 && counties.length > 0) {
           // Case 3: State + county (all towns)
-          console.log(`[GEOGRAPHY_TRACTS] Querying census_us: year=2024, states=${JSON.stringify(states)}, counties=${JSON.stringify(counties)}`);
-          
-          const geoidRows = await sql`
-            SELECT DISTINCT ctb.geoid 
+          await sql`
+            INSERT INTO geography_tracts (organization_id, geography_name, geoid, color)
+            SELECT ${organization_id}, ${geoName}, ctb.geoid, ${geoColor}
             FROM census_tract_boundaries ctb
             INNER JOIN census_us c ON c.geoid = ctb.geoid
             WHERE ctb.census_vintage = 2024
               AND TRIM(c.state) = ANY(${states})
               AND TRIM(c.county) = ANY(${counties})
           `;
-          
-          console.log(`[GEOGRAPHY_TRACTS] Query returned ${geoidRows.length} rows`);
-          geoidList = geoidRows.map((r: any) => r.geoid);
         } else if (states.length > 0) {
           // Case 4: State only
-          const geoidRows = await sql`
-            SELECT DISTINCT ctb.geoid 
+          await sql`
+            INSERT INTO geography_tracts (organization_id, geography_name, geoid, color)
+            SELECT ${organization_id}, ${geoName}, ctb.geoid, ${geoColor}
             FROM census_tract_boundaries ctb
             INNER JOIN census_us c ON c.geoid = ctb.geoid
             WHERE ctb.census_vintage = 2024
               AND TRIM(c.state) = ANY(${states})
           `;
-          geoidList = geoidRows.map((r: any) => r.geoid);
         }
 
-        // Get color from geography definition (or use default)
-        const geoColor = geo.color || '#91bfdb';
-
-        // Insert all geoids in batches
-        if (geoidList.length > 0) {
-          console.log(`[GEOGRAPHY_TRACTS] Inserting ${geoidList.length} geoids in batches...`);
-          
-          const batchSize = 100;
-          for (let i = 0; i < geoidList.length; i += batchSize) {
-            const batch = geoidList.slice(i, i + batchSize);
-            
-            // Build VALUES clause with proper escaping
-            const values = batch.map(geoid => 
-              `(${organization_id}, '${geoName.replace(/'/g, "''")}', '${geoid.replace(/'/g, "''")}', '${geoColor.replace(/'/g, "''")}')`
-            ).join(', ');
-            
-            await sql.unsafe(`
-              INSERT INTO geography_tracts (organization_id, geography_name, geoid, color)
-              VALUES ${values}
-              ON CONFLICT (organization_id, geography_name, geoid) DO NOTHING
-            `);
-            
-            console.log(`[GEOGRAPHY_TRACTS] Inserted batch ${Math.floor(i/batchSize) + 1}: ${batch.length} rows`);
-          }
-
-          console.log(`[GEOGRAPHY_TRACTS] ✅ Inserted ${geoidList.length} tracts for "${geoName}"`);
-        } else {
-          console.log(`[GEOGRAPHY_TRACTS] No geoids found for "${geoName}"`);
-        }
+        const countResult = await sql`
+          SELECT COUNT(*) as count 
+          FROM geography_tracts 
+          WHERE organization_id = ${organization_id} 
+            AND geography_name = ${geoName}
+        `;
+        
+        console.log(`[GEOGRAPHY_TRACTS] ✅ Inserted ${countResult[0].count} tracts for "${geoName}"`);
 
       } catch (error: any) {
         console.error(`[GEOGRAPHY_TRACTS] ERROR for "${geoName}":`, error.message);
