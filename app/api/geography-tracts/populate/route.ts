@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
             FROM census_tract_boundaries ctb
             WHERE ctb.census_vintage = 2024
               AND ctb.geoid = ANY(${tracts})
+            ON CONFLICT (organization_id, geography_name, geoid) DO NOTHING
           `;
         } else if (states.length > 0 && counties.length > 0 && towns.length > 0) {
           // Case 2: State + county + towns
@@ -71,6 +72,7 @@ export async function POST(req: NextRequest) {
               AND TRIM(c.state) = ANY(${states})
               AND TRIM(c.county) = ANY(${counties})
               AND TRIM(c.town) = ANY(${towns})
+            ON CONFLICT (organization_id, geography_name, geoid) DO NOTHING
           `;
         } else if (states.length > 0 && counties.length > 0) {
           // Case 3: State + county (all towns)
@@ -82,6 +84,7 @@ export async function POST(req: NextRequest) {
             WHERE ctb.census_vintage = 2024
               AND TRIM(c.state) = ANY(${states})
               AND TRIM(c.county) = ANY(${counties})
+            ON CONFLICT (organization_id, geography_name, geoid) DO NOTHING
           `;
         } else if (states.length > 0) {
           // Case 4: State only
@@ -92,6 +95,7 @@ export async function POST(req: NextRequest) {
             INNER JOIN census_us c ON c.geoid = ctb.geoid
             WHERE ctb.census_vintage = 2024
               AND TRIM(c.state) = ANY(${states})
+            ON CONFLICT (organization_id, geography_name, geoid) DO NOTHING
           `;
         }
 
