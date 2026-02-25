@@ -56,12 +56,13 @@ export async function POST(req: NextRequest) {
         } else if (states.length > 0 && counties.length > 0 && towns.length > 0) {
           // Case 2: State + county + towns
           const geoidRows = await sql`
-            SELECT DISTINCT geoid 
-            FROM census_us 
-            WHERE year = '2024'
-              AND TRIM(state) = ANY(${states})
-              AND TRIM(county) = ANY(${counties})
-              AND TRIM(town) = ANY(${towns})
+            SELECT DISTINCT ctb.geoid 
+            FROM census_tract_boundaries ctb
+            INNER JOIN census_us c ON c.geoid = ctb.geoid
+            WHERE ctb.census_vintage = 2024
+              AND TRIM(c.state) = ANY(${states})
+              AND TRIM(c.county) = ANY(${counties})
+              AND TRIM(c.town) = ANY(${towns})
           `;
           geoidList = geoidRows.map((r: any) => r.geoid);
         } else if (states.length > 0 && counties.length > 0) {
@@ -69,11 +70,12 @@ export async function POST(req: NextRequest) {
           console.log(`[GEOGRAPHY_TRACTS] Querying census_us: year=2024, states=${JSON.stringify(states)}, counties=${JSON.stringify(counties)}`);
           
           const geoidRows = await sql`
-            SELECT DISTINCT geoid 
-            FROM census_us 
-            WHERE year = '2024'
-              AND TRIM(state) = ANY(${states})
-              AND TRIM(county) = ANY(${counties})
+            SELECT DISTINCT ctb.geoid 
+            FROM census_tract_boundaries ctb
+            INNER JOIN census_us c ON c.geoid = ctb.geoid
+            WHERE ctb.census_vintage = 2024
+              AND TRIM(c.state) = ANY(${states})
+              AND TRIM(c.county) = ANY(${counties})
           `;
           
           console.log(`[GEOGRAPHY_TRACTS] Query returned ${geoidRows.length} rows`);
@@ -81,10 +83,11 @@ export async function POST(req: NextRequest) {
         } else if (states.length > 0) {
           // Case 4: State only
           const geoidRows = await sql`
-            SELECT DISTINCT geoid 
-            FROM census_us 
-            WHERE year = '2024'
-              AND TRIM(state) = ANY(${states})
+            SELECT DISTINCT ctb.geoid 
+            FROM census_tract_boundaries ctb
+            INNER JOIN census_us c ON c.geoid = ctb.geoid
+            WHERE ctb.census_vintage = 2024
+              AND TRIM(c.state) = ANY(${states})
           `;
           geoidList = geoidRows.map((r: any) => r.geoid);
         }
