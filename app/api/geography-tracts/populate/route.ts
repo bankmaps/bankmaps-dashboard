@@ -66,6 +66,8 @@ export async function POST(req: NextRequest) {
           geoidList = geoidRows.map((r: any) => r.geoid);
         } else if (states.length > 0 && counties.length > 0) {
           // Case 3: State + county (all towns)
+          console.log(`[GEOGRAPHY_TRACTS] Querying census_us: year=2024, states=${JSON.stringify(states)}, counties=${JSON.stringify(counties)}`);
+          
           const geoidRows = await sql`
             SELECT DISTINCT geoid 
             FROM census_us 
@@ -73,6 +75,8 @@ export async function POST(req: NextRequest) {
               AND state = ANY(${states})
               AND county = ANY(${counties})
           `;
+          
+          console.log(`[GEOGRAPHY_TRACTS] Query returned ${geoidRows.length} rows`);
           geoidList = geoidRows.map((r: any) => r.geoid);
         } else if (states.length > 0) {
           // Case 4: State only
