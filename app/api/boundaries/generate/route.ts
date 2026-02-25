@@ -72,9 +72,9 @@ async function startBackgroundBoundaryGeneration(
               FROM census_tract_boundaries ctb
               INNER JOIN census_us c ON c.geoid = ctb.geoid
               WHERE ctb.census_vintage = ${vintage}
-                AND c.state = ANY(${states})
-                AND c.county = ANY(${counties})
-                AND c.town = ANY(${towns})
+                AND TRIM(c.state) = ANY(${states})
+                AND TRIM(c.county) = ANY(${counties})
+                AND TRIM(c.town) = ANY(${towns})
             `;
             
             if (!unionResult || unionResult.length === 0 || !unionResult[0]?.merged_geometry) {
@@ -99,8 +99,8 @@ async function startBackgroundBoundaryGeneration(
               FROM census_tract_boundaries ctb
               INNER JOIN census_us c ON c.geoid = ctb.geoid
               WHERE ctb.census_vintage = ${vintage}
-                AND c.state = ANY(${states})
-                AND c.county = ANY(${counties})
+                AND TRIM(c.state) = ANY(${states})
+                AND TRIM(c.county) = ANY(${counties})
             `;
             
             if (!unionResult || unionResult.length === 0 || !unionResult[0]?.merged_geometry) {

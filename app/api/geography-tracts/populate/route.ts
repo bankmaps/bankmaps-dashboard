@@ -59,9 +59,9 @@ export async function POST(req: NextRequest) {
             SELECT DISTINCT geoid 
             FROM census_us 
             WHERE year = '2024'
-              AND state = ANY(${states})
-              AND county = ANY(${counties})
-              AND town = ANY(${towns})
+              AND TRIM(state) = ANY(${states})
+              AND TRIM(county) = ANY(${counties})
+              AND TRIM(town) = ANY(${towns})
           `;
           geoidList = geoidRows.map((r: any) => r.geoid);
         } else if (states.length > 0 && counties.length > 0) {
@@ -72,8 +72,8 @@ export async function POST(req: NextRequest) {
             SELECT DISTINCT geoid 
             FROM census_us 
             WHERE year = '2024'
-              AND state = ANY(${states})
-              AND county = ANY(${counties})
+              AND TRIM(state) = ANY(${states})
+              AND TRIM(county) = ANY(${counties})
           `;
           
           console.log(`[GEOGRAPHY_TRACTS] Query returned ${geoidRows.length} rows`);
@@ -84,7 +84,7 @@ export async function POST(req: NextRequest) {
             SELECT DISTINCT geoid 
             FROM census_us 
             WHERE year = '2024'
-              AND state = ANY(${states})
+              AND TRIM(state) = ANY(${states})
           `;
           geoidList = geoidRows.map((r: any) => r.geoid);
         }
