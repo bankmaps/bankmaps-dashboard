@@ -27,9 +27,9 @@ export async function POST(req: NextRequest) {
 
     for (const geo of geographies) {
       const geoName = geo.name || 'Assessment Area';
-      const states = geo.state?.includes('__ALL__') ? [] : (geo.state || []);
-      const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []);
-      const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []);
+      const states = geo.state?.includes('__ALL__') ? [] : (geo.state || []).map((s: string) => s.trim());
+      const counties = geo.county?.includes('__ALL__') ? [] : (geo.county || []).map((c: string) => c.trim());
+      const towns = geo.town?.includes('__ALL__') ? [] : (geo.town || []).map((t: string) => t.trim());
       const tracts = geo.tract_number?.includes('__ALL__') ? [] : (geo.tract_number || []);
 
       console.log(`[GEOGRAPHY_TRACTS] Processing geography: "${geoName}"`, { states, counties, towns, tracts: tracts.length });

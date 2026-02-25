@@ -117,9 +117,9 @@ export async function POST(req: NextRequest) {
     }
 
     const geo = org.geographies[0];
-    const states  = geo.state?.includes('__ALL__')        ? [] : (geo.state        || []);
-    const counties = geo.county?.includes('__ALL__')      ? [] : (geo.county       || []);
-    const towns    = geo.town?.includes('__ALL__')        ? [] : (geo.town         || []);
+    const states  = geo.state?.includes('__ALL__')        ? [] : (geo.state        || []).map((s: string) => s.trim());
+    const counties = geo.county?.includes('__ALL__')      ? [] : (geo.county       || []).map((c: string) => c.trim());
+    const towns    = geo.town?.includes('__ALL__')        ? [] : (geo.town         || []).map((t: string) => t.trim());
 
     console.log('[HMDA] Filters:', { states, counties, towns });
 

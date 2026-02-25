@@ -47,9 +47,9 @@ export async function GET(req: NextRequest) {
 
     // For now, use the first geography (typically "aa" assessment area)
     const geo = geographies[0];
-    const states = Array.isArray(geo.state) ? geo.state : [];
-    const counties = Array.isArray(geo.county) ? geo.county : [];
-    const towns = Array.isArray(geo.town) ? geo.town.filter((t: string) => t !== '__ALL__') : [];
+    const states = Array.isArray(geo.state) ? geo.state.map((s: string) => s.trim()) : [];
+    const counties = Array.isArray(geo.county) ? geo.county.map((c: string) => c.trim()) : [];
+    const towns = Array.isArray(geo.town) ? geo.town.filter((t: string) => t !== '__ALL__').map((t: string) => t.trim()) : [];
     const tracts = Array.isArray(geo.tract) ? geo.tract : [];
 
     // Build query to match tracts in this geography
