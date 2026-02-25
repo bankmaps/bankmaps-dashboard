@@ -200,6 +200,74 @@ async function startBackgroundBoundaryGeneration(
           `;
 
           console.log(`[BOUNDARY] ✅ "${geoName}" vintage ${vintage}: ${totalSqMiles} sq miles, center: ${centerPoint.lat.toFixed(4)}, ${centerPoint.lng.toFixed(4)}, zoom: ${zoomLevel}`);
+          
+          // ── Populate geography_tracts table (only for first vintage to avoid duplicates) ──
+          if (vintage === CENSUS_VINTAGES[0]) {
+            console.log(`[BOUNDARY] Populating geography_tracts for "${geoName}"`);
+            
+            // Delete existing tracts for this org + geography
+            await sql`
+              DELETE FROM geography_tracts 
+              WHERE organization_id = ${organization_id} 
+                AND geography_name = ${geoName}
+            `;
+            
+            // Get all geoids for this geography from census_us (use year 2024 as reference)
+            let geoidList: string[] = [];
+            
+            if (tracts.length > 0) {
+              // Case 1: Specific tracts
+              geoidList = tracts;
+            } else if (states.length > 0 && counties.length > 0 && towns.length > 0) {
+              // Case 2: State + county + towns
+              const geoidRows = await sql`
+                SELECT DISTINCT geoid 
+                FROM census_us 
+                WHERE year = '2024'
+                  AND state = ANY(${states})
+                  AND county = ANY(${counties})
+                  AND town = ANY(${towns})
+              `;
+              geoidList = geoidRows.map((r: any) => r.geoid);
+            } else if (states.length > 0 && counties.length > 0) {
+              // Case 3: State + county (all towns)
+              const geoidRows = await sql`
+                SELECT DISTINCT geoid 
+                FROM census_us 
+                WHERE year = '2024'
+                  AND state = ANY(${states})
+                  AND county = ANY(${counties})
+              `;
+              geoidList = geoidRows.map((r: any) => r.geoid);
+            } else if (states.length > 0) {
+              // Case 4: State only
+              const geoidRows = await sql`
+                SELECT DISTINCT geoid 
+                FROM census_us 
+                WHERE year = '2024'
+                  AND state = ANY(${states})
+              `;
+              geoidList = geoidRows.map((r: any) => r.geoid);
+            }
+            
+            // Get color from geography definition (or use default)
+            const geoColor = geo.color || '#91bfdb';
+            
+            // Batch insert all geoids
+            if (geoidList.length > 0) {
+              const values = geoidList.map(geoid => 
+                `(${organization_id}, '${geoName.replace(/'/g, "''")}', '${geoid}', '${geoColor}')`
+              ).join(',');
+              
+              await sql.unsafe(`
+                INSERT INTO geography_tracts (organization_id, geography_name, geoid, color)
+                VALUES ${values}
+                ON CONFLICT (organization_id, geography_name, geoid) DO NOTHING
+              `);
+              
+              console.log(`[BOUNDARY] ✅ Inserted ${geoidList.length} tracts into geography_tracts for "${geoName}"`);
+            }
+          }
 
         } catch (vintageError: any) {
           console.error(`[BOUNDARY] ERROR "${geoName}" vintage ${vintage}:`, vintageError.message);
