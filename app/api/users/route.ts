@@ -79,19 +79,22 @@ export async function POST(req: NextRequest) {
 
     await sql`DELETE FROM cached_hmda WHERE organization_id = ${organization_id}`;
 
-    // ── Start background boundary generation (non-blocking) ──────────────────
+    // ── Start background boundary generation (with delay to ensure org exists) ──
     const geographies = body.geographies || [];
     if (geographies.length > 0) {
-      const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bankmaps-dashboard.vercel.app';
-      fetch(`${baseUrl}/api/boundaries/generate`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ organization_id, geographies })
-      }).catch((err: any) => console.error('[BOUNDARY] Failed to start:', err.message));
-      console.log(`[BOUNDARY] Started for org=${organization_id}`);
+      // Small delay to ensure the org transaction has committed
+      setTimeout(() => {
+        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://bankmaps-dashboard.vercel.app';
+        fetch(`${baseUrl}/api/boundaries/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ organization_id, geographies })
+        }).catch((err: any) => console.error('[BOUNDARY] Failed to start:', err.message));
+        console.log(`[BOUNDARY] Started for org=${organization_id}`);
+      }, 1000); // 1 second delay
     }
 
     // ── Start background HMDA caching ────────────────────────────────────────

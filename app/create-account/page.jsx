@@ -62,6 +62,7 @@ const SOURCE_CONFIG = {
 export default function Page() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
   const [orgName, setOrgName] = useState('');
   const [selectedOrgType, setSelectedOrgType] = useState('');
   const [selectedRegulator, setSelectedRegulator] = useState('');
@@ -411,8 +412,10 @@ const handleSave = async () => {
     states: selectedStates,
     geographies: selectedGeographies,
     customContext: customContext.trim(),
-	linked: selectedLenderPerSource,
+    linked: selectedLenderPerSource,
   };
+
+  setIsSaving(true); // Show loading state
 
   try {
     const res = await fetch('/api/users', {
@@ -435,7 +438,7 @@ const handleSave = async () => {
     }
 
     // Success - organization created, cache running in background
-    alert("✅ Organization created!\n\nHMDA data is being cached in the background.\nRedirecting to your dashboard...");
+    alert("✅ Organization created!\n\nYour data is being prepared in the background.\nRedirecting to your dashboard...");
     
     // Redirect after brief delay to let user see the message
     setTimeout(() => {
@@ -444,6 +447,7 @@ const handleSave = async () => {
 
   } catch (err) {
     console.error('Save error:', err);
+    setIsSaving(false); // Hide loading state on error
     alert(`❌ Error: ${err.message || 'Could not save organization. Please try again.'}`);
   }
 };
@@ -941,17 +945,31 @@ const renderStep3 = () => (
         ) : (
           <button
             onClick={handleSave}
+            disabled={isSaving}
             style={{
               padding: '12px 28px',
-              background: '#28a745',
+              background: isSaving ? '#ccc' : '#28a745',
               color: 'white',
               border: 'none',
               borderRadius: '6px',
               marginLeft: 'auto',
-              cursor: 'pointer',
+              cursor: isSaving ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
             }}
           >
-            Save & Continue
+            {isSaving && (
+              <div style={{
+                width: '16px',
+                height: '16px',
+                border: '2px solid white',
+                borderTopColor: 'transparent',
+                borderRadius: '50%',
+                animation: 'spin 0.6s linear infinite',
+              }} />
+            )}
+            {isSaving ? 'Creating Organization...' : 'Save & Continue'}
           </button>
         )}
       </div>
