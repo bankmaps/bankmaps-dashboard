@@ -5,17 +5,23 @@ import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useOrganizations } from "./OrganizationsContext";
 
-// ─── Census vintage lookup ────────────────────────────────────────────────────
+// ─── Census tileset lookup (one per year, source layer always "census") ───────
+const CENSUS_CONFIG: Record<number, { tileset: string; sourceLayer: string }> = {
+  2018: { tileset: "mapbox://stuartmaps.census-2018", sourceLayer: "census" },
+  2019: { tileset: "mapbox://stuartmaps.census-2019", sourceLayer: "census" },
+  2020: { tileset: "mapbox://stuartmaps.census-2020", sourceLayer: "census" },
+  2021: { tileset: "mapbox://stuartmaps.census-2021", sourceLayer: "census" },
+  2022: { tileset: "mapbox://stuartmaps.census-2022", sourceLayer: "census" },
+  2023: { tileset: "mapbox://stuartmaps.census-2023", sourceLayer: "census" },
+  2024: { tileset: "mapbox://stuartmaps.census-2024", sourceLayer: "census" },
+  2025: { tileset: "mapbox://stuartmaps.census-2025", sourceLayer: "census" },
+};
+
+// Vintage mapping for geography_tracts and map_boundaries API calls
 const YEAR_TO_VINTAGE: Record<number, number> = {
   2018: 2018, 2019: 2018,
   2020: 2020, 2021: 2020, 2022: 2020, 2023: 2020,
   2024: 2024, 2025: 2024,
-};
-
-const CENSUS_CONFIG: Record<number, { tileset: string; sourceLayer: string }> = {
-  2018: { tileset: "mapbox://stuartmaps.avpxgs0u", sourceLayer: "2018-8q9vrr" },
-  2020: { tileset: "mapbox://stuartmaps.6m3z799u", sourceLayer: "2020-9ythj8" },
-  2024: { tileset: "mapbox://stuartmaps.58y5r823", sourceLayer: "2024-1pvgy8" },
 };
 
 // ─── Map definitions ──────────────────────────────────────────────────────────
@@ -24,22 +30,16 @@ const MAPS = [
     id: "boundaries",
     title: "Assessment Area Boundaries",
     description: "Shaded footprint of your selected geography",
-    metric: "in_assessment_area",  // Special metric we'll compute
-    colorField: "in_assessment_area",
   },
   {
     id: "income-level",
     title: "Low-Moderate Income Geographies",
     description: "Census tracts shaded by income level classification",
-    metric: "income_level",
-    colorField: "income_level",
   },
   {
     id: "majority-minority",
     title: "Majority-Minority Geographies",
     description: "Census tracts shaded by majority minority status",
-    metric: "majority_minority",
-    colorField: "majority_minority",
   },
 ];
 
@@ -55,18 +55,18 @@ const INCOME_COLORS: Record<string, string> = {
 };
 
 const BOUNDARY_COLORS: Record<string, string> = {
-  "Inside":  "#91bfdb",  // Light blue for assessment area
-  "Outside": "#f7f7f7",  // Light gray for outside
+  "Inside":  "#91bfdb",
+  "Outside": "#f7f7f7",
 };
 
 const MINORITY_COLORS: Record<string, string> = {
-  "White Majority": "#4575b4",           // Blue
-  "Asian Majority": "#fee090",           // Yellow
-  "Black Majority": "#d73027",           // Red
-  "Hispanic Majority": "#fc8d59",        // Orange
-  "Black+Hispanic Majority": "#e34a33",  // Dark Orange
-  "Combined Majority": "#7b2d8b",        // Purple
-  "NA": "#cccccc",                       // Gray
+  "White Majority":          "#4575b4",
+  "Asian Majority":          "#fee090",
+  "Black Majority":          "#d73027",
+  "Hispanic Majority":       "#fc8d59",
+  "Black+Hispanic Majority": "#e34a33",
+  "Combined Majority":       "#7b2d8b",
+  "NA":                      "#cccccc",
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -79,64 +79,46 @@ export default function AssessmentAreaMaps() {
 
   const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg, loading } = useOrganizations();
 
-  const [mapLoaded,      setMapLoaded]      = useState(false);
-  
-  // Initialize geography name from first geography when org changes
+  const [mapLoaded,             setMapLoaded]             = useState(false);
+  const [currentMapIdx,         setCurrentMapIdx]         = useState(0);
+  const [isPlaying,             setIsPlaying]             = useState(false);
+  const [isTransitioning,       setIsTransitioning]       = useState(false);
+  const [selectedYear,          setSelectedYear]          = useState(2024);
+  const [selectedGeographyName, setSelectedGeographyName] = useState<string>("");
+  const [showTractNums,         setShowTractNums]         = useState(false);
+  const [boundaries,            setBoundaries]            = useState<any[]>([]);
+  const [assessmentGeoids,      setAssessmentGeoids]      = useState<string[]>([]);
+  const [showPrintModal,        setShowPrintModal]        = useState(false);
+
+  const currentMap = MAPS[currentMapIdx];
+  const config     = CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024];
+  const vintage    = YEAR_TO_VINTAGE[selectedYear] || 2024;
+
+  // ── Initialize geography name from first geography when org changes ─────────
   useEffect(() => {
-    if (selectedOrg && selectedOrg.geographies && selectedOrg.geographies.length > 0) {
+    if (selectedOrg?.geographies?.length > 0) {
       geographiesRef.current = selectedOrg.geographies;
       const firstGeoName = selectedOrg.geographies[0]?.name || "";
       console.log("[MAP] Initializing geography to:", firstGeoName);
       setSelectedGeographyName(firstGeoName);
     }
   }, [selectedOrg]);
-  
-  // Debug logging
-  useEffect(() => {
-    console.log("[MAP] Organizations context:", { 
-      count: organizations.length, 
-      selectedOrgId, 
-      selectedOrg: selectedOrg?.name,
-      loading 
-    });
-  }, [organizations, selectedOrgId, selectedOrg, loading]);
-  const [currentMapIdx,  setCurrentMapIdx]  = useState(0);
-  const [isPlaying,      setIsPlaying]      = useState(false); // Disabled for testing
-  const [isTransitioning,setIsTransitioning]= useState(false); // Disabled for testing
 
-  // Filters
-  const [selectedYear,   setSelectedYear]   = useState(2024);
-  const [selectedGeographyName, setSelectedGeographyName] = useState<string>("");
-  const [showTractNums,  setShowTractNums]  = useState(false);
-  const [boundaries,     setBoundaries]     = useState<any[]>([]);
-  const [censusData,     setCensusData]     = useState<any[]>([]);
-  const [censusCache,    setCensusCache]    = useState<Record<string, any[]>>({});
-
-  // Print modal
-  const [showPrintModal, setShowPrintModal] = useState(false);
-
-  const currentMap = MAPS[currentMapIdx];
-  const vintage    = YEAR_TO_VINTAGE[selectedYear] || 2024;
-  const config     = CENSUS_CONFIG[vintage];
-
-// ── Fetch boundaries when org/year changes ────────────────────────────────
+  // ── Fetch map boundary overlay (for blue boundary line) ────────────────────
   useEffect(() => {
     if (!selectedOrgId) return;
-    const token = localStorage.getItem("jwt_token") 
+    const token = localStorage.getItem("jwt_token")
                || localStorage.getItem("token")
                || localStorage.getItem("authToken")
                || localStorage.getItem("access_token");
 
     const encodedGeo = encodeURIComponent(selectedGeographyName);
-    console.log(`[MAP] Fetching boundaries: orgId=${selectedOrgId}, vintage=${vintage}, geography=${selectedGeographyName} (encoded: ${encodedGeo})`);
-    
+    console.log(`[MAP] Fetching boundary: orgId=${selectedOrgId}, vintage=${vintage}, geography=${selectedGeographyName}`);
+
     fetch(`/api/boundaries/generate?orgId=${selectedOrgId}&vintage=${vintage}&geography=${encodedGeo}`, {
       headers: { Authorization: `Bearer ${token || ""}` }
     })
-      .then(r => {
-        console.log("[MAP] Boundary response status:", r.status);
-        return r.json();
-      })
+      .then(r => r.json())
       .then(data => {
         console.log("[MAP] Boundary data received:", data);
         setBoundaries(data.boundaries || []);
@@ -144,40 +126,30 @@ export default function AssessmentAreaMaps() {
       .catch(err => console.error("[MAP] fetch boundaries error:", err));
   }, [selectedOrgId, vintage, selectedGeographyName]);
 
-  // ── Fetch census data for choropleth (with caching) ──────────────────────
+  // ── Fetch assessment area geoids from geography_tracts ─────────────────────
+  // Used only for the boundaries map to shade inside/outside tracts
   useEffect(() => {
-    if (!selectedOrgId || currentMap.metric === null) return;
-    
-    const cacheKey = `${currentMap.metric}-${selectedYear}-${selectedOrgId}`;
-    
-    // Check cache first
-    if (censusCache[cacheKey]) {
-      console.log(`[MAP] Using cached data for ${cacheKey}`);
-      setCensusData(censusCache[cacheKey]);
-      return;
-    }
+    if (!selectedOrgId || !selectedGeographyName || currentMap.id !== "boundaries") return;
+    const token = localStorage.getItem("jwt_token")
+               || localStorage.getItem("token")
+               || localStorage.getItem("authToken")
+               || localStorage.getItem("access_token");
 
-    const token = localStorage.getItem("jwt_token");
+    const encodedGeo = encodeURIComponent(selectedGeographyName);
+    console.log(`[MAP] Fetching geography tracts: orgId=${selectedOrgId}, geo=${selectedGeographyName}, year=${selectedYear}`);
 
-    // Special handling for boundaries map (inside/outside assessment area)
-    const endpoint = currentMap.metric === "in_assessment_area"
-      ? `/api/assessment-area?orgId=${selectedOrgId}&year=${selectedYear}`
-      : `/api/census-data?year=${selectedYear}&metric=${currentMap.metric}`;
-
-    console.log(`[MAP] Fetching ${cacheKey}`);
-    fetch(endpoint, {
-      headers: { Authorization: `Bearer ${token}` }
+    fetch(`/api/geography-tracts?orgId=${selectedOrgId}&geography=${encodedGeo}&year=${selectedYear}`, {
+      headers: { Authorization: `Bearer ${token || ""}` }
     })
       .then(r => r.json())
       .then(data => {
-        const rows = data.rows || [];
-        setCensusData(rows);
-        setCensusCache(prev => ({ ...prev, [cacheKey]: rows }));
+        console.log(`[MAP] Got ${data.geoids?.length} assessment geoids`);
+        setAssessmentGeoids(data.geoids || []);
       })
-      .catch(console.error);
-  }, [selectedOrgId, selectedYear, currentMap.metric, censusCache]);
+      .catch(err => console.error("[MAP] fetch geography tracts error:", err));
+  }, [selectedOrgId, selectedGeographyName, selectedYear, currentMap.id]);
 
-  // ── Initialize Mapbox ─────────────────────────────────────────────────────
+  // ── Initialize Mapbox ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
@@ -198,13 +170,13 @@ export default function AssessmentAreaMaps() {
     map.on("load", () => {
       setMapLoaded(true);
 
-      // Add census tract source
+      // Census tract vector tile source
       map.addSource("census-tracts", {
         type: "vector",
         url: config.tileset,
       });
 
-      // Base fill layer
+      // Base fill layer - color applied by choropleth effects below
       map.addLayer({
         id: "tract-fill",
         type: "fill",
@@ -213,7 +185,7 @@ export default function AssessmentAreaMaps() {
         paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.6 },
       });
 
-      // Boundary outline layer
+      // Tract outline
       map.addLayer({
         id: "tract-outline",
         type: "line",
@@ -222,7 +194,7 @@ export default function AssessmentAreaMaps() {
         paint: { "line-color": "#999", "line-width": 0.3, "line-opacity": 0.5 },
       });
 
-      // User geography boundary layer (blue)
+      // User geography boundary (blue line)
       map.addSource("user-boundary", { type: "geojson", data: { type: "FeatureCollection", features: [] } });
       map.addLayer({
         id: "user-boundary-fill",
@@ -237,7 +209,7 @@ export default function AssessmentAreaMaps() {
         paint: { "line-color": "#0066FF", "line-width": 3, "line-opacity": 0.9 },
       });
 
-      // Tract number labels layer
+      // Tract number labels
       map.addLayer({
         id: "tract-labels",
         type: "symbol",
@@ -253,37 +225,67 @@ export default function AssessmentAreaMaps() {
     });
 
     mapRef.current = map;
-
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // ── Update boundary overlay ───────────────────────────────────────────────
+  // ── Swap tileset source when year changes ───────────────────────────────────
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+    const map = mapRef.current;
+    const newConfig = CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024];
+
+    if (map.getLayer("tract-labels"))  map.removeLayer("tract-labels");
+    if (map.getLayer("tract-outline")) map.removeLayer("tract-outline");
+    if (map.getLayer("tract-fill"))    map.removeLayer("tract-fill");
+    if (map.getSource("census-tracts")) map.removeSource("census-tracts");
+
+    map.addSource("census-tracts", { type: "vector", url: newConfig.tileset });
+
+    map.addLayer({
+      id: "tract-fill",
+      type: "fill",
+      source: "census-tracts",
+      "source-layer": newConfig.sourceLayer,
+      paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.6 },
+    });
+    map.addLayer({
+      id: "tract-outline",
+      type: "line",
+      source: "census-tracts",
+      "source-layer": newConfig.sourceLayer,
+      paint: { "line-color": "#999", "line-width": 0.3, "line-opacity": 0.5 },
+    });
+    map.addLayer({
+      id: "tract-labels",
+      type: "symbol",
+      source: "census-tracts",
+      "source-layer": newConfig.sourceLayer,
+      layout: {
+        "text-field": ["get", "GEOID"],
+        "text-size": 8,
+        "visibility": showTractNums ? "visible" : "none",
+      },
+      paint: { "text-color": "#333", "text-halo-color": "#fff", "text-halo-width": 1 },
+    });
+  }, [mapLoaded, selectedYear]);
+
+  // ── Update boundary overlay ─────────────────────────────────────────────────
   useEffect(() => {
     if (!mapLoaded || !mapRef.current) return;
     const map = mapRef.current;
 
-    // Find boundary for selected vintage
     const boundary = boundaries[0];
     if (!boundary?.boundary_geojson) {
       map.getSource("user-boundary")?.setData({ type: "FeatureCollection", features: [] });
       return;
     }
 
-    // Wrap geometry in Feature for Mapbox
-    const geojsonData = {
+    map.getSource("user-boundary")?.setData({
       type: "Feature",
       geometry: boundary.boundary_geojson,
       properties: {}
-    };
-    
-    map.getSource("user-boundary")?.setData(geojsonData);
-    
-    console.log("[MAP] Boundary loaded:", {
-      type: boundary.boundary_geojson.type,
-      area: boundary.total_area_sq_miles
     });
 
-    // Fly to geography
     if (boundary.center_point) {
       map.flyTo({
         center: [boundary.center_point.lng, boundary.center_point.lat],
@@ -293,41 +295,55 @@ export default function AssessmentAreaMaps() {
     }
   }, [mapLoaded, boundaries]);
 
-  // ── Update choropleth colors ──────────────────────────────────────────────
+  // ── Apply choropleth colors based on current map type ──────────────────────
   useEffect(() => {
     if (!mapLoaded || !mapRef.current) return;
     const map = mapRef.current;
+    const sourceLayer = (CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024]).sourceLayer;
 
-    if (censusData.length === 0) {
-      map.setPaintProperty("tract-fill", "fill-color", "#e8e8e8");
-      map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
-      return;
+    if (currentMap.id === "income-level") {
+      // Read income_level directly from tileset properties
+      map.setPaintProperty("tract-fill", "fill-color", [
+        "match", ["get", "income_level"],
+        "Low",      INCOME_COLORS["Low"],
+        "Moderate", INCOME_COLORS["Moderate"],
+        "Middle",   INCOME_COLORS["Middle"],
+        "Upper",    INCOME_COLORS["Upper"],
+        INCOME_COLORS["Unknown"]
+      ]);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+
+    } else if (currentMap.id === "majority-minority") {
+      // Read majority_minority directly from tileset properties
+      map.setPaintProperty("tract-fill", "fill-color", [
+        "match", ["get", "majority_minority"],
+        "White Majority",          MINORITY_COLORS["White Majority"],
+        "Asian Majority",          MINORITY_COLORS["Asian Majority"],
+        "Black Majority",          MINORITY_COLORS["Black Majority"],
+        "Hispanic Majority",       MINORITY_COLORS["Hispanic Majority"],
+        "Black+Hispanic Majority", MINORITY_COLORS["Black+Hispanic Majority"],
+        "Combined Majority",       MINORITY_COLORS["Combined Majority"],
+        MINORITY_COLORS["NA"]
+      ]);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+
+    } else if (currentMap.id === "boundaries") {
+      // Shade inside/outside based on geoids from geography_tracts
+      if (assessmentGeoids.length > 0) {
+        map.setPaintProperty("tract-fill", "fill-color", [
+          "match", ["get", "GEOID"],
+          assessmentGeoids, BOUNDARY_COLORS["Inside"],
+          BOUNDARY_COLORS["Outside"]
+        ]);
+        map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      } else {
+        map.setPaintProperty("tract-fill", "fill-color", "#e8e8e8");
+        map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
+      }
     }
+  }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]);
 
-    const colors = currentMap.colorField === "in_assessment_area"
-      ? BOUNDARY_COLORS
-      : currentMap.colorField === "income_level" 
-      ? INCOME_COLORS 
-      : MINORITY_COLORS;
-    const field  = currentMap.colorField!;
-
-    // Deduplicate censusData by geoid (keep first occurrence)
-    const uniqueData = Array.from(
-      new Map(censusData.map(row => [row.geoid, row])).values()
-    );
-
-    const colorExpr: any[] = ["match", ["get", "GEOID"]];
-    uniqueData.forEach(row => {
-      const color = colors[row[field]] || "#cccccc";
-      colorExpr.push(row.geoid, color);
-    });
-    colorExpr.push("#e8e8e8");
-
-    map.setPaintProperty("tract-fill", "fill-color", colorExpr);
-    map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
-  }, [mapLoaded, censusData, currentMap]);
-
-  // ── Toggle tract number labels ────────────────────────────────────────────
+  // ── Toggle tract number labels ──────────────────────────────────────────────
   useEffect(() => {
     if (!mapLoaded || !mapRef.current) return;
     mapRef.current.setLayoutProperty(
@@ -335,12 +351,10 @@ export default function AssessmentAreaMaps() {
     );
   }, [mapLoaded, showTractNums]);
 
-  // ── Slideshow timer ───────────────────────────────────────────────────────
+  // ── Slideshow controls ──────────────────────────────────────────────────────
   const goToMap = useCallback((idx: number) => {
-    // setIsTransitioning(true); // DISABLED FOR TESTING
     setTimeout(() => {
       setCurrentMapIdx(idx);
-      // setIsTransitioning(false); // DISABLED FOR TESTING
     }, 400);
   }, []);
 
@@ -349,46 +363,31 @@ export default function AssessmentAreaMaps() {
   }, [currentMapIdx, goToMap]);
 
   useEffect(() => {
-    // AUTO-ADVANCE DISABLED FOR TESTING
-    // if (!isPlaying) {
-    //   if (slideTimerRef.current) clearInterval(slideTimerRef.current);
-    //   return;
-    // }
-    // slideTimerRef.current = setInterval(nextMap, 5000);
-    // return () => { if (slideTimerRef.current) clearInterval(slideTimerRef.current); };
     if (slideTimerRef.current) clearInterval(slideTimerRef.current);
   }, [isPlaying, nextMap]);
 
-  // ── Pause on hover ────────────────────────────────────────────────────────
-  const handleMouseEnter = () => { isPausedRef.current = true; setIsPlaying(false); };
-  const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true); };
+  const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
+  const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
 
-  // ── Print helpers ─────────────────────────────────────────────────────────
   const handlePrintCurrent = () => { window.print(); };
   const handlePrintAll     = () => { alert("Generating full PDF report... (coming soon)"); };
-
-  // ── Selected org name ─────────────────────────────────────────────────────
-
 
   return (
     <>
       <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif", height: "100%", minHeight: "600px" }}>
 
-        {/* Loading state */}
         {loading && (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-500">Loading organizations...</p>
           </div>
         )}
 
-        {/* No orgs state */}
         {!loading && organizations.length === 0 && (
           <div className="flex items-center justify-center h-full">
             <p className="text-gray-500">No organizations found. Please create one first.</p>
           </div>
         )}
 
-        {/* Main content */}
         {!loading && organizations.length > 0 && (
         <>
         {/* ── Controls Bar ──────────────────────────────────────────────── */}
@@ -410,23 +409,18 @@ export default function AssessmentAreaMaps() {
 
           <div className="w-px h-5 bg-gray-300" />
 
-          {/* Geography selector (within selected org) */}
-          {selectedOrg && selectedOrg.geographies && selectedOrg.geographies.length > 1 && (
+          {/* Geography selector */}
+          {selectedOrg?.geographies?.length > 1 && (
             <>
               <div className="flex items-center gap-2">
                 <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Area</label>
                 <select
                   value={selectedGeographyName}
-                  onChange={e => {
-                    console.log("[MAP] Raw select value:", e.target.value);
-                    setSelectedGeographyName(e.target.value);
-                  }}
+                  onChange={e => setSelectedGeographyName(e.target.value)}
                   className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
                 >
                   {selectedOrg.geographies.map((geo: any, idx: number) => (
-                    <option key={idx} value={geo.name}>
-                      {geo.name}
-                    </option>
+                    <option key={idx} value={geo.name}>{geo.name}</option>
                   ))}
                 </select>
               </div>
@@ -451,7 +445,7 @@ export default function AssessmentAreaMaps() {
           {/* Tract numbers toggle */}
           <button
             onClick={() => setShowTractNums(!showTractNums)}
-            className={`text-xs px-3 py-1 rounded-full border font-medium  ${
+            className={`text-xs px-3 py-1 rounded-full border font-medium ${
               showTractNums
                 ? "bg-blue-600 text-white border-blue-600"
                 : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
@@ -471,7 +465,7 @@ export default function AssessmentAreaMaps() {
               mapRef.current.setLayoutProperty("user-boundary-line", "visibility", next);
               mapRef.current.setLayoutProperty("user-boundary-fill", "visibility", next);
             }}
-            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 "
+            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
           >
             🗺️ Boundary
           </button>
@@ -481,18 +475,14 @@ export default function AssessmentAreaMaps() {
           {/* Print button */}
           <button
             onClick={() => setShowPrintModal(true)}
-            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 "
+            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
           >
             🖨️ Print / Save
           </button>
         </div>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
-        <div
-          className={`px-6 py-3 bg-white border-b border-gray-100  ${
-            isTransitioning ? "opacity-0" : "opacity-100"
-          }`}
-        >
+        <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
           <h2 className="text-lg font-bold text-gray-800">{currentMap.title}</h2>
           <p className="text-sm text-gray-500 mt-0.5">
             {selectedOrg?.name || "—"} &nbsp;·&nbsp; Year: {selectedYear} &nbsp;·&nbsp; {currentMap.description}
@@ -506,13 +496,10 @@ export default function AssessmentAreaMaps() {
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Map container */}
           <div
             ref={mapContainerRef}
             style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
-            className={` ${
-              isTransitioning ? "opacity-0" : "opacity-100"
-            }`}
+            className={isTransitioning ? "opacity-0" : "opacity-100"}
           />
 
           {/* Legend */}
@@ -531,6 +518,21 @@ export default function AssessmentAreaMaps() {
           )}
 
           {/* Boundary legend */}
+          {currentMap.id === "boundaries" && (
+            <div className="absolute bottom-8 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+              <div className="font-semibold text-gray-700 mb-2">Assessment Area</div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: BOUNDARY_COLORS["Inside"] }} />
+                <span className="text-gray-600">Inside</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: BOUNDARY_COLORS["Outside"] }} />
+                <span className="text-gray-600">Outside</span>
+              </div>
+            </div>
+          )}
+
+          {/* Blue boundary line legend */}
           <div className="absolute bottom-8 right-14 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
             <div className="flex items-center gap-2">
               <div className="w-6 h-1 bg-blue-600 rounded" />
@@ -541,14 +543,12 @@ export default function AssessmentAreaMaps() {
 
         {/* ── Slideshow Controls ─────────────────────────────────────────── */}
         <div className="flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
-
-          {/* Map selector dots/buttons */}
           <div className="flex items-center gap-2">
             {MAPS.map((m, idx) => (
               <button
                 key={m.id}
                 onClick={() => { setIsPlaying(false); goToMap(idx); }}
-                className={` rounded-full text-xs font-medium px-3 py-1 ${
+                className={`rounded-full text-xs font-medium px-3 py-1 ${
                   idx === currentMapIdx
                     ? "bg-blue-600 text-white"
                     : "bg-white text-gray-500 border border-gray-300 hover:border-gray-400"
@@ -561,15 +561,13 @@ export default function AssessmentAreaMaps() {
 
           <div className="w-px h-5 bg-gray-300" />
 
-          {/* Play/Pause */}
           <button
             onClick={() => setIsPlaying(!isPlaying)}
-            className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400 "
+            className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
           >
             {isPlaying ? "⏸ Pause" : "▶ Play"}
           </button>
 
-          {/* Prev / Next */}
           <button
             onClick={() => { setIsPlaying(false); goToMap((currentMapIdx - 1 + MAPS.length) % MAPS.length); }}
             className="text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
@@ -583,9 +581,8 @@ export default function AssessmentAreaMaps() {
             Next ►
           </button>
 
-          {/* Progress indicator */}
           <span className="text-xs text-gray-400">
-          {currentMapIdx + 1} / {MAPS.length}
+            {currentMapIdx + 1} / {MAPS.length}
           </span>
         </div>
         </>
