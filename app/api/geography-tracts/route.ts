@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
 
     const orgId    = req.nextUrl.searchParams.get('orgId');
-    const geoName  = req.nextUrl.searchParams.get('geography');
+    const geoName  = decodeURIComponent(req.nextUrl.searchParams.get('geography') || '');
     const yearStr  = req.nextUrl.searchParams.get('year');
 
     if (!orgId || !geoName || !yearStr) {
@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
       FROM geography_tracts
       WHERE organization_id = ${parseInt(orgId)}
         AND geography_name  = ${geoName}
-        AND vintage_year    = ${vintage}
+        AND census_vintage  = ${vintage}
     `;
 
     const geoids = rows.map((r: any) => r.geoid);
