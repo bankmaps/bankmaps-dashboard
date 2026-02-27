@@ -6,6 +6,13 @@ import { neon } from '@neondatabase/serverless';
 const JWT_SECRET = process.env.JWT_SECRET!;
 const CENSUS_VINTAGES = [2018, 2020, 2024];
 
+// Map census vintage to the correct census_us year
+const VINTAGE_TO_YEAR: Record<number, string> = {
+  2018: '2018',
+  2020: '2022',
+  2024: '2024',
+};
+
 export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get('authorization');
@@ -40,11 +47,11 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      // Get color from geography definition (or use default)
       const geoColor = geo.color || '#91bfdb';
 
       // Process each vintage
       for (const vintage of CENSUS_VINTAGES) {
+        const censusYear = VINTAGE_TO_YEAR[vintage];
         try {
           // Delete existing tracts for this org + geography + vintage
           await sql`
@@ -54,52 +61,64 @@ export async function POST(req: NextRequest) {
               AND census_vintage = ${vintage}
           `;
 
-          // INSERT INTO ... SELECT pattern for each vintage
           if (tracts.length > 0) {
             // Case 1: Specific tracts
             await sql`
-              INSERT INTO geography_tracts (organization_id, geography_name, census_vintage, geoid, color)
-              SELECT ${organization_id}, ${geoName}, ${vintage}, ctb.geoid, ${geoColor}
+              INSERT INTO geography_tracts (organization_id, geography_name, census_vintage, geoid, color, state, county, town, msa, msa_number, tract_number)
+              SELECT ${organization_id}, ${geoName}, ${vintage}, ctb.geoid, ${geoColor},
+                     c.state, c.county, c.town, c.msa, c.msa_number, c.tract_number
               FROM census_tract_boundaries ctb
+              INNER JOIN census_us c ON c.geoid = ctb.geoid AND c.year = ${censusYear}
               WHERE ctb.census_vintage = ${vintage}
                 AND ctb.geoid = ANY(${tracts})
-              ON CONFLICT (organization_id, geography_name, census_vintage, geoid) DO NOTHING
+              ON CONFLICT (organization_id, geography_name, census_vintage, geoid) DO UPDATE SET
+                state = EXCLUDED.state, county = EXCLUDED.county, town = EXCLUDED.town,
+                msa = EXCLUDED.msa, msa_number = EXCLUDED.msa_number, tract_number = EXCLUDED.tract_number
             `;
           } else if (states.length > 0 && counties.length > 0 && towns.length > 0) {
             // Case 2: State + county + towns
             await sql`
-              INSERT INTO geography_tracts (organization_id, geography_name, census_vintage, geoid, color)
-              SELECT ${organization_id}, ${geoName}, ${vintage}, ctb.geoid, ${geoColor}
+              INSERT INTO geography_tracts (organization_id, geography_name, census_vintage, geoid, color, state, county, town, msa, msa_number, tract_number)
+              SELECT ${organization_id}, ${geoName}, ${vintage}, ctb.geoid, ${geoColor},
+                     c.state, c.county, c.town, c.msa, c.msa_number, c.tract_number
               FROM census_tract_boundaries ctb
-              INNER JOIN census_us c ON c.geoid = ctb.geoid
+              INNER JOIN census_us c ON c.geoid = ctb.geoid AND c.year = ${censusYear}
               WHERE ctb.census_vintage = ${vintage}
                 AND TRIM(c.state) = ANY(${states})
                 AND TRIM(c.county) = ANY(${counties})
                 AND TRIM(c.town) = ANY(${towns})
-              ON CONFLICT (organization_id, geography_name, census_vintage, geoid) DO NOTHING
+              ON CONFLICT (organization_id, geography_name, census_vintage, geoid) DO UPDATE SET
+                state = EXCLUDED.state, county = EXCLUDED.county, town = EXCLUDED.town,
+                msa = EXCLUDED.msa, msa_number = EXCLUDED.msa_number, tract_number = EXCLUDED.tract_number
             `;
           } else if (states.length > 0 && counties.length > 0) {
             // Case 3: State + county (all towns)
             await sql`
-              INSERT INTO geography_tracts (organization_id, geography_name, census_vintage, geoid, color)
-              SELECT ${organization_id}, ${geoName}, ${vintage}, ctb.geoid, ${geoColor}
+              INSERT INTO geography_tracts (organization_id, geography_name, census_vintage, geoid, color, state, county, town, msa, msa_number, tract_number)
+              SELECT ${organization_id}, ${geoName}, ${vintage}, ctb.geoid, ${geoColor},
+                     c.state, c.county, c.town, c.msa, c.msa_number, c.tract_number
               FROM census_tract_boundaries ctb
-              INNER JOIN census_us c ON c.geoid = ctb.geoid
+              INNER JOIN census_us c ON c.geoid = ctb.geoid AND c.year = ${censusYear}
               WHERE ctb.census_vintage = ${vintage}
                 AND TRIM(c.state) = ANY(${states})
                 AND TRIM(c.county) = ANY(${counties})
-              ON CONFLICT (organization_id, geography_name, census_vintage, geoid) DO NOTHING
+              ON CONFLICT (organization_id, geography_name, census_vintage, geoid) DO UPDATE SET
+                state = EXCLUDED.state, county = EXCLUDED.county, town = EXCLUDED.town,
+                msa = EXCLUDED.msa, msa_number = EXCLUDED.msa_number, tract_number = EXCLUDED.tract_number
             `;
           } else if (states.length > 0) {
             // Case 4: State only
             await sql`
-              INSERT INTO geography_tracts (organization_id, geography_name, census_vintage, geoid, color)
-              SELECT ${organization_id}, ${geoName}, ${vintage}, ctb.geoid, ${geoColor}
+              INSERT INTO geography_tracts (organization_id, geography_name, census_vintage, geoid, color, state, county, town, msa, msa_number, tract_number)
+              SELECT ${organization_id}, ${geoName}, ${vintage}, ctb.geoid, ${geoColor},
+                     c.state, c.county, c.town, c.msa, c.msa_number, c.tract_number
               FROM census_tract_boundaries ctb
-              INNER JOIN census_us c ON c.geoid = ctb.geoid
+              INNER JOIN census_us c ON c.geoid = ctb.geoid AND c.year = ${censusYear}
               WHERE ctb.census_vintage = ${vintage}
                 AND TRIM(c.state) = ANY(${states})
-              ON CONFLICT (organization_id, geography_name, census_vintage, geoid) DO NOTHING
+              ON CONFLICT (organization_id, geography_name, census_vintage, geoid) DO UPDATE SET
+                state = EXCLUDED.state, county = EXCLUDED.county, town = EXCLUDED.town,
+                msa = EXCLUDED.msa, msa_number = EXCLUDED.msa_number, tract_number = EXCLUDED.tract_number
             `;
           }
 
@@ -110,7 +129,7 @@ export async function POST(req: NextRequest) {
               AND geography_name = ${geoName}
               AND census_vintage = ${vintage}
           `;
-          
+
           console.log(`[GEOGRAPHY_TRACTS] ✅ Vintage ${vintage}: ${countResult[0].count} tracts for "${geoName}"`);
 
         } catch (error: any) {
