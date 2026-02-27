@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       SELECT
         c.income_level,
         COUNT(*)                        AS tract_count,
-        SUM(c.households)               AS household_count
+        SUM(c.households::numeric)      AS household_count
       FROM geography_tracts gt
       INNER JOIN census_us c ON c.geoid = gt.geoid AND c.year = ${String(year)}
       WHERE gt.organization_id = ${parseInt(orgId)}
@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
       SELECT
         c.majority_minority,
         COUNT(*)                        AS tract_count,
-        SUM(c.households)               AS household_count
+        SUM(c.households::numeric)      AS household_count
       FROM geography_tracts gt
       INNER JOIN census_us c ON c.geoid = gt.geoid AND c.year = ${String(year)}
       WHERE gt.organization_id = ${parseInt(orgId)}

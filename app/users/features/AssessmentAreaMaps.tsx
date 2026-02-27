@@ -129,6 +129,7 @@ export default function AssessmentAreaMaps() {
   const popupRef         = useRef<any>(null);
   const currentMapIdRef  = useRef<string>('boundaries');
   const showHoverRef     = useRef<boolean>(true);
+  const branchPopupRef   = useRef<any>(null);
 
   const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg, loading } = useOrganizations();
 
@@ -145,6 +146,8 @@ export default function AssessmentAreaMaps() {
   const [showHover,             setShowHover]             = useState(true);
   const [showSummary,           setShowSummary]           = useState(true);
   const [summaryData,           setSummaryData]           = useState<any>(null);
+  const [showBranches,          setShowBranches]          = useState(true);
+  const [branches,              setBranches]              = useState<any[]>([]);
 
   const currentMap = MAPS[currentMapIdx];
   const config     = CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024];
@@ -225,6 +228,62 @@ export default function AssessmentAreaMaps() {
       .catch(err => console.error('[MAP] fetch summary error:', err));
   }, [selectedOrgId, selectedGeographyName, selectedYear]);
 
+  // ── Fetch branch locations ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (!selectedOrgId) return;
+    const token = localStorage.getItem("jwt_token")
+               || localStorage.getItem("token")
+               || localStorage.getItem("authToken")
+               || localStorage.getItem("access_token");
+
+    fetch(`/api/branches?orgId=${selectedOrgId}`, {
+      headers: { Authorization: `Bearer ${token || ""}` }
+    })
+      .then(r => r.json())
+      .then(data => {
+        console.log(`[MAP] Got ${data.branches?.length} branches`);
+        setBranches(data.branches || []);
+      })
+      .catch(err => console.error('[MAP] fetch branches error:', err));
+  }, [selectedOrgId]);
+
+  // ── Update branch points on map ───────────────────────────────────────────
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+    const map = mapRef.current;
+
+    const features = branches.map((b: any) => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [b.lon, b.lat] },
+      properties: {
+        branchtype:    b.branchtype,
+        lendername:    b.lendername || '',
+        regulator:     b.regulator || '',
+        branchaddress: b.branchaddress || '',
+        branchcity:    b.branchcity || '',
+        branchstate:   b.branchstate || '',
+      }
+    }));
+
+    map.getSource('branches')?.setData({
+      type: 'FeatureCollection',
+      features
+    });
+
+    // Ensure branch points stay on top
+    if (map.getLayer('branch-points'))      map.moveLayer('branch-points');
+    if (map.getLayer('user-boundary-fill')) map.moveLayer('user-boundary-fill');
+    if (map.getLayer('user-boundary-line')) map.moveLayer('user-boundary-line');
+  }, [mapLoaded, branches]);
+
+  // ── Toggle branch visibility ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!mapLoaded || !mapRef.current) return;
+    mapRef.current.setLayoutProperty(
+      'branch-points', 'visibility', showBranches ? 'visible' : 'none'
+    );
+  }, [mapLoaded, showBranches]);
+
   // ── Initialize Mapbox ───────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
@@ -258,7 +317,7 @@ export default function AssessmentAreaMaps() {
         type: "fill",
         source: "census-tracts",
         "source-layer": config.sourceLayer,
-        paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.4 },
+        paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.6 },
       });
 
       // Tract outline
@@ -311,6 +370,62 @@ export default function AssessmentAreaMaps() {
           "line-opacity": 0,
         },
         filter: ["==", "GEOID", ""],
+      });
+
+      // Branch points source + layers (empty until data loads)
+      map.addSource("branches", {
+        type: "geojson",
+        data: { type: "FeatureCollection", features: [] }
+      });
+      map.addLayer({
+        id: "branch-points",
+        type: "circle",
+        source: "branches",
+        paint: {
+          "circle-radius": 6,
+          "circle-color": [
+            "match", ["get", "branchtype"],
+            "Main Office", "#ff6600",
+            "Branch",      "#0066ff",
+            "#888888"
+          ],
+          "circle-stroke-color": "#ffffff",
+          "circle-stroke-width": 1.5,
+        },
+      });
+
+      // Move boundary layers to top so they render above everything
+      if (map.getLayer("user-boundary-fill")) map.moveLayer("user-boundary-fill");
+      if (map.getLayer("user-boundary-line")) map.moveLayer("user-boundary-line");
+
+      // ── Branch hover popup ──────────────────────────────────────────────
+      map.on('mouseenter', 'branch-points', (e: any) => {
+        if (!e.features || e.features.length === 0) return;
+        map.getCanvas().style.cursor = 'pointer';
+        const p = e.features[0].properties;
+        const html = `<div style="font-family:sans-serif;font-size:11px;line-height:1.3;padding:6px 8px;min-width:180px;">
+          <div style="margin-bottom:2px;">${p.lendername} (${p.regulator})</div>
+          <div style="color:#555;margin-bottom:1px;">${p.branchaddress}, ${p.branchcity}, ${p.branchstate}</div>
+          <div style="color:#555;">${p.branchtype}</div>
+        </div>`;
+        if (!branchPopupRef.current) {
+          branchPopupRef.current = new mapboxgl.Popup({
+            closeButton: false,
+            closeOnClick: false,
+            maxWidth: '280px',
+            offset: [16, 0],
+            anchor: 'left',
+          });
+        }
+        branchPopupRef.current.setLngLat(e.lngLat).setHTML(html).addTo(map);
+      });
+
+      map.on('mouseleave', 'branch-points', () => {
+        map.getCanvas().style.cursor = '';
+        if (branchPopupRef.current) {
+          branchPopupRef.current.remove();
+          branchPopupRef.current = null;
+        }
       });
     });
 
@@ -380,7 +495,7 @@ export default function AssessmentAreaMaps() {
       type: "fill",
       source: "census-tracts",
       "source-layer": newConfig.sourceLayer,
-      paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.4 },
+      paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.6 },
     });
     map.addLayer({
       id: "tract-outline",
@@ -409,6 +524,11 @@ export default function AssessmentAreaMaps() {
       paint: { "line-color": "#333", "line-width": 2, "line-opacity": 0 },
       filter: ["==", "GEOID", ""],
     });
+
+    // Keep branch points and boundary lines on top
+    if (map.getLayer("branch-points"))     map.moveLayer("branch-points");
+    if (map.getLayer("user-boundary-fill")) map.moveLayer("user-boundary-fill");
+    if (map.getLayer("user-boundary-line")) map.moveLayer("user-boundary-line");
   }, [mapLoaded, selectedYear]);
 
   // ── Update boundary overlay ─────────────────────────────────────────────────
@@ -453,7 +573,7 @@ export default function AssessmentAreaMaps() {
         "Upper",    INCOME_COLORS["Upper"],
         INCOME_COLORS["Unknown"]
       ]);
-      map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
 
     } else if (currentMap.id === "majority-minority") {
       // Read majority_minority directly from tileset properties
@@ -467,7 +587,7 @@ export default function AssessmentAreaMaps() {
         "Combined Majority",       MINORITY_COLORS["Combined Majority"],
         MINORITY_COLORS["NA"]
       ]);
-      map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
 
     } else if (currentMap.id === "boundaries") {
       // Shade inside/outside based on geoids from geography_tracts
@@ -477,7 +597,7 @@ export default function AssessmentAreaMaps() {
           assessmentGeoids, BOUNDARY_COLORS["Inside"],
           BOUNDARY_COLORS["Outside"]
         ]);
-        map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
+        map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
       } else {
         map.setPaintProperty("tract-fill", "fill-color", "#e8e8e8");
         map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
@@ -655,6 +775,18 @@ export default function AssessmentAreaMaps() {
             🗺️ Boundary
           </button>
 
+          {/* Branches toggle */}
+          <button
+            onClick={() => setShowBranches(!showBranches)}
+            className={`text-xs px-3 py-1 rounded-full border font-medium ${
+              showBranches
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            }`}
+          >
+            🏦 Branches
+          </button>
+
           <div className="flex-1" />
 
           {/* Print button */}
@@ -713,6 +845,21 @@ export default function AssessmentAreaMaps() {
               <div className="flex items-center gap-2">
                 <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: BOUNDARY_COLORS["Outside"] }} />
                 <span className="text-gray-600">Outside</span>
+              </div>
+            </div>
+          )}
+
+          {/* Branch legend */}
+          {showBranches && branches.length > 0 && (
+            <div className="absolute bottom-20 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+              <div className="font-semibold text-gray-700 mb-2">Branches</div>
+              <div className="flex items-center gap-2 mb-1">
+                <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#ff6600'}} />
+                <span className="text-gray-600">Main Office</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#0066ff'}} />
+                <span className="text-gray-600">Branch</span>
               </div>
             </div>
           )}
