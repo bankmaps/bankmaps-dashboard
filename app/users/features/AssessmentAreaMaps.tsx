@@ -69,6 +69,69 @@ const MINORITY_COLORS: Record<string, string> = {
   "NA":                      "#cccccc",
 };
 
+// ─── Popup HTML builders ─────────────────────────────────────────────────────
+
+function buildPopupHTML(mapId: string, props: Record<string, any>): string {
+  const header = `
+    <div style="font-weight:700;font-size:13px;margin-bottom:2px;">
+      Tract ${props.tract_text} in ${props.townname}, ${props.stateabbrev}
+    </div>
+    <div style="font-size:11px;color:#555;margin-bottom:1px;">${props.countyname}</div>
+    <div style="font-size:11px;color:#555;margin-bottom:4px;">${props.msaname}</div>
+    <div style="font-size:11px;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px;">
+      ${props.income_level} &ndash; ${props.majority_minority}
+    </div>`;
+
+  if (mapId === 'boundaries') {
+    return `<div style="font-family:sans-serif;min-width:200px;max-width:260px;">${header}</div>`;
+  }
+
+  if (mapId === 'income-level') {
+    return `<div style="font-family:sans-serif;min-width:200px;max-width:260px;">
+      ${header}
+      <div style="font-size:11px;display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span style="color:#666;">Tract Median Family Income</span>
+        <span style="font-weight:600;">${props.tract_median_family_income}</span>
+      </div>
+      <div style="font-size:11px;display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span style="color:#666;">MSA Median Family Income</span>
+        <span style="font-weight:600;">${props.msa_median_family_income}</span>
+      </div>
+      <div style="font-size:11px;display:flex;justify-content:space-between;">
+        <span style="color:#666;">Tract % of MSA Median</span>
+        <span style="font-weight:600;">${props.tract_median_family_income_percent}</span>
+      </div>
+    </div>`;
+  }
+
+  if (mapId === 'majority-minority') {
+    const row = (label: string, val: any, pct: any) =>
+      `<div style="font-size:11px;display:flex;justify-content:space-between;margin-bottom:2px;">
+        <span style="color:#666;">${label}</span>
+        <span style="font-weight:600;">${val} (${pct})</span>
+      </div>`;
+    return `<div style="font-family:sans-serif;min-width:220px;max-width:280px;">
+      ${header}
+      <div style="font-size:11px;display:flex;justify-content:space-between;margin-bottom:4px;">
+        <span style="color:#666;">Population</span>
+        <span style="font-weight:600;">${props.total_population}</span>
+      </div>
+      ${row('White Non-Hispanic', props.white_nonhispanic_population, props.white_nonhispanic_population_percent)}
+      ${row('Minority', props.minority_population, props.minority_population_percent)}
+      ${row('Asian', props.asian_population, props.asian_population_percent)}
+      ${row('Black/African American', props.black_population, props.black_population_percent)}
+      ${row('Hawaiian/Other Pacific Islander', props.hawaiian_other_pacific_islander_population, props.hawaiian_other_pacific_islander_population_percent)}
+      ${row('Native American/Alaskan Native', props.native_american_population, props.native_american_population_percent)}
+      ${row('Two or More Races', props.two_or_more_races_population, props.two_or_more_races_population_percent)}
+      ${row('White', props.white_population, props.white_population_percent)}
+      ${row('Other Race', props.other_race_population, props.other_race_population_percent)}
+      ${row('Hispanic or Latino', props.hispanic_population, props.hispanic_population_percent)}
+    </div>`;
+  }
+
+  return '';
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AssessmentAreaMaps() {
   const mapContainerRef  = useRef<HTMLDivElement>(null);
@@ -76,6 +139,8 @@ export default function AssessmentAreaMaps() {
   const slideTimerRef    = useRef<NodeJS.Timeout | null>(null);
   const isPausedRef      = useRef(false);
   const geographiesRef   = useRef<any[]>([]);
+  const popupRef         = useRef<any>(null);
+  const currentMapIdRef  = useRef<string>('boundaries');
 
   const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg, loading } = useOrganizations();
 
@@ -224,6 +289,38 @@ export default function AssessmentAreaMaps() {
       });
     });
 
+    // ── Hover popup ──────────────────────────────────────────────────────────
+    map.on('mousemove', 'tract-fill', (e: any) => {
+      if (!e.features || e.features.length === 0) return;
+      map.getCanvas().style.cursor = 'pointer';
+
+      const props = e.features[0].properties;
+      const currentMapId = currentMapIdRef.current;
+      const html = buildPopupHTML(currentMapId, props);
+      if (!html) return;
+
+      if (!popupRef.current) {
+        popupRef.current = new mapboxgl.Popup({
+          closeButton: false,
+          closeOnClick: false,
+          maxWidth: '300px',
+        });
+      }
+
+      popupRef.current
+        .setLngLat(e.lngLat)
+        .setHTML(html)
+        .addTo(map);
+    });
+
+    map.on('mouseleave', 'tract-fill', () => {
+      map.getCanvas().style.cursor = '';
+      if (popupRef.current) {
+        popupRef.current.remove();
+        popupRef.current = null;
+      }
+    });
+
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, []);
@@ -342,6 +439,11 @@ export default function AssessmentAreaMaps() {
       }
     }
   }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]);
+
+  // ── Keep currentMapIdRef in sync so hover popup knows which layout to use ──
+  useEffect(() => {
+    currentMapIdRef.current = currentMap.id;
+  }, [currentMap]);
 
   // ── Toggle tract number labels ──────────────────────────────────────────────
   useEffect(() => {
