@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 
     // Get the Branch lender_id from linked_sources jsonb
     const orgRows = await sql`
-      SELECT linked_sources->>'Branch' AS branch_lender_id
+      SELECT linked_sources->>'branch' AS branch_lender_id
       FROM organizations
       WHERE id = ${parseInt(orgId)}
     `;
