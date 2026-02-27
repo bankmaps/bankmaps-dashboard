@@ -345,10 +345,11 @@ export default function AssessmentAreaMaps() {
     const map = mapRef.current;
     const newConfig = CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024];
 
-    if (map.getLayer("tract-labels"))  map.removeLayer("tract-labels");
-    if (map.getLayer("tract-outline")) map.removeLayer("tract-outline");
-    if (map.getLayer("tract-fill"))    map.removeLayer("tract-fill");
-    if (map.getSource("census-tracts")) map.removeSource("census-tracts");
+    if (map.getLayer("tract-labels"))    map.removeLayer("tract-labels");
+    if (map.getLayer("tract-highlight")) map.removeLayer("tract-highlight");
+    if (map.getLayer("tract-outline"))   map.removeLayer("tract-outline");
+    if (map.getLayer("tract-fill"))      map.removeLayer("tract-fill");
+    if (map.getSource("census-tracts"))  map.removeSource("census-tracts");
 
     map.addSource("census-tracts", { type: "vector", url: newConfig.tileset });
 
