@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
     jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
 
     const orgId    = req.nextUrl.searchParams.get('orgId');
-    const geoName  = decodeURIComponent(req.nextUrl.searchParams.get('geography') || '');
+    const geoName  = req.nextUrl.searchParams.get('geography');
     const yearStr  = req.nextUrl.searchParams.get('year');
 
     if (!orgId || !geoName || !yearStr) {

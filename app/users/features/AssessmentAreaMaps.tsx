@@ -56,7 +56,7 @@ const INCOME_COLORS: Record<string, string> = {
 
 const BOUNDARY_COLORS: Record<string, string> = {
   "Inside":  "#91bfdb",
-  "Outside": "#f7f7f7",
+  "Outside": "#f5f0e8",  // Beige for outside assessment area
 };
 
 const MINORITY_COLORS: Record<string, string> = {
