@@ -47,85 +47,72 @@ const YEARS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
 // ─── Color schemes ────────────────────────────────────────────────────────────
 const INCOME_COLORS: Record<string, string> = {
-  "Low":      "#d73027",
-  "Moderate": "#fc8d59",
-  "Middle":   "#fee090",
-  "Upper":    "#4575b4",
-  "Unknown":  "#cccccc",
+  "Low":      "#ff0000",
+  "Moderate": "#ffff00",
+  "Middle":   "#aaaa7f",
+  "Upper":    "#d6d6a0",
+  "Unknown":  "#7d7d7d",
 };
 
 const BOUNDARY_COLORS: Record<string, string> = {
-  "Inside":  "#91bfdb",
-  "Outside": "#f5f0e8",  // Beige for outside assessment area
+  "Inside":  "#00aa7f",
+  "Outside": "#aaaa7f",
 };
 
 const MINORITY_COLORS: Record<string, string> = {
-  "White Majority":          "#4575b4",
-  "Asian Majority":          "#fee090",
-  "Black Majority":          "#d73027",
-  "Hispanic Majority":       "#fc8d59",
-  "Black+Hispanic Majority": "#e34a33",
-  "Combined Majority":       "#7b2d8b",
-  "NA":                      "#cccccc",
+  "White Majority":          "#aaaa7f",
+  "Asian Majority":          "#00fbff",
+  "Black Majority":          "#aa00ff",
+  "Hispanic Majority":       "#ff0000",
+  "Black+Hispanic Majority": "#00ff00",
+  "Combined Majority":       "#ffff00",
+  "NA":                      "#7d7d7d",
 };
 
 // ─── Popup HTML builders ─────────────────────────────────────────────────────
 
 function buildPopupHTML(mapId: string, props: Record<string, any>): string {
+  const s = 'font-family:sans-serif;font-size:11px;line-height:1.3;';
+  const rowS = 'display:flex;justify-content:space-between;gap:12px;margin-bottom:1px;';
+
   const header = `
-    <div style="font-weight:700;font-size:13px;margin-bottom:2px;">
-      Tract ${props.tract_text} in ${props.townname}, ${props.stateabbrev}
-    </div>
-    <div style="font-size:11px;color:#555;margin-bottom:1px;">${props.countyname}</div>
-    <div style="font-size:11px;color:#555;margin-bottom:4px;">${props.msaname}</div>
-    <div style="font-size:11px;margin-bottom:6px;border-bottom:1px solid #eee;padding-bottom:4px;">
-      ${props.income_level} &ndash; ${props.majority_minority}
-    </div>`;
+    <div style="font-size:12px;margin-bottom:1px;">Tract ${props.tract_text} in ${props.townname}, ${props.stateabbrev}</div>
+    <div style="color:#555;margin-bottom:1px;">${props.countyname}</div>
+    <div style="color:#555;margin-bottom:3px;">${props.msaname}</div>
+    <div style="margin-bottom:3px;border-bottom:1px solid #ddd;padding-bottom:2px;">${props.income_level} &ndash; ${props.majority_minority}</div>`;
+
+  const row = (label: string, val: any) =>
+    `<div style="${rowS}"><span style="color:#555;">${label}</span><span>${val}</span></div>`;
 
   if (mapId === 'boundaries') {
-    return `<div style="font-family:sans-serif;min-width:200px;max-width:260px;">${header}</div>`;
+    return `<div style="${s}padding:6px 8px;">${header}</div>`;
   }
 
   if (mapId === 'income-level') {
-    return `<div style="font-family:sans-serif;min-width:200px;max-width:260px;">
+    return `<div style="${s}padding:6px 8px;min-width:190px;">
       ${header}
-      <div style="font-size:11px;display:flex;justify-content:space-between;margin-bottom:2px;">
-        <span style="color:#666;">Tract Median Family Income</span>
-        <span style="font-weight:600;">${props.tract_median_family_income}</span>
-      </div>
-      <div style="font-size:11px;display:flex;justify-content:space-between;margin-bottom:2px;">
-        <span style="color:#666;">MSA Median Family Income</span>
-        <span style="font-weight:600;">${props.msa_median_family_income}</span>
-      </div>
-      <div style="font-size:11px;display:flex;justify-content:space-between;">
-        <span style="color:#666;">Tract % of MSA Median</span>
-        <span style="font-weight:600;">${props.tract_median_family_income_percent}</span>
-      </div>
+      ${row('Tract MFI', props.tract_median_family_income)}
+      ${row('MSA MFI', props.msa_median_family_income)}
+      ${row('Tract % of MSA', props.tract_median_family_income_percent)}
     </div>`;
   }
 
   if (mapId === 'majority-minority') {
-    const row = (label: string, val: any, pct: any) =>
-      `<div style="font-size:11px;display:flex;justify-content:space-between;margin-bottom:2px;">
-        <span style="color:#666;">${label}</span>
-        <span style="font-weight:600;">${val} (${pct})</span>
-      </div>`;
-    return `<div style="font-family:sans-serif;min-width:220px;max-width:280px;">
+    const prow = (label: string, val: any, pct: any) =>
+      `<div style="${rowS}"><span style="color:#555;">${label}</span><span>${val} (${pct})</span></div>`;
+    return `<div style="${s}padding:6px 8px;min-width:210px;">
       ${header}
-      <div style="font-size:11px;display:flex;justify-content:space-between;margin-bottom:4px;">
-        <span style="color:#666;">Population</span>
-        <span style="font-weight:600;">${props.total_population}</span>
-      </div>
-      ${row('White Non-Hispanic', props.white_nonhispanic_population, props.white_nonhispanic_population_percent)}
-      ${row('Minority', props.minority_population, props.minority_population_percent)}
-      ${row('Asian', props.asian_population, props.asian_population_percent)}
-      ${row('Black/African American', props.black_population, props.black_population_percent)}
-      ${row('Hawaiian/Other Pacific Islander', props.hawaiian_other_pacific_islander_population, props.hawaiian_other_pacific_islander_population_percent)}
-      ${row('Native American/Alaskan Native', props.native_american_population, props.native_american_population_percent)}
-      ${row('Two or More Races', props.two_or_more_races_population, props.two_or_more_races_population_percent)}
-      ${row('White', props.white_population, props.white_population_percent)}
-      ${row('Other Race', props.other_race_population, props.other_race_population_percent)}
-      ${row('Hispanic or Latino', props.hispanic_population, props.hispanic_population_percent)}
+      ${row('Population', props.total_population)}
+      ${prow('White Non-Hispanic', props.white_nonhispanic_population, props.white_nonhispanic_population_percent)}
+      ${prow('Minority', props.minority_population, props.minority_population_percent)}
+      ${prow('Asian', props.asian_population, props.asian_population_percent)}
+      ${prow('Black/African American', props.black_population, props.black_population_percent)}
+      ${prow('Hawaiian/Other Pacific Isl.', props.hawaiian_other_pacific_islander_population, props.hawaiian_other_pacific_islander_population_percent)}
+      ${prow('Native American/Alaskan', props.native_american_population, props.native_american_population_percent)}
+      ${prow('Two or More Races', props.two_or_more_races_population, props.two_or_more_races_population_percent)}
+      ${prow('White', props.white_population, props.white_population_percent)}
+      ${prow('Other Race', props.other_race_population, props.other_race_population_percent)}
+      ${prow('Hispanic or Latino', props.hispanic_population, props.hispanic_population_percent)}
     </div>`;
   }
 
@@ -141,6 +128,7 @@ export default function AssessmentAreaMaps() {
   const geographiesRef   = useRef<any[]>([]);
   const popupRef         = useRef<any>(null);
   const currentMapIdRef  = useRef<string>('boundaries');
+  const showHoverRef     = useRef<boolean>(true);
 
   const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg, loading } = useOrganizations();
 
@@ -154,6 +142,7 @@ export default function AssessmentAreaMaps() {
   const [boundaries,            setBoundaries]            = useState<any[]>([]);
   const [assessmentGeoids,      setAssessmentGeoids]      = useState<string[]>([]);
   const [showPrintModal,        setShowPrintModal]        = useState(false);
+  const [showHover,             setShowHover]             = useState(true);
 
   const currentMap = MAPS[currentMapIdx];
   const config     = CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024];
@@ -225,7 +214,7 @@ export default function AssessmentAreaMaps() {
 
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
-      style: "mapbox://styles/mapbox/light-v11",
+      style: "mapbox://styles/mapbox/streets-v12",
       center: [-98.5, 39.8],
       zoom: 3.5,
     });
@@ -281,17 +270,38 @@ export default function AssessmentAreaMaps() {
         source: "census-tracts",
         "source-layer": config.sourceLayer,
         layout: {
-          "text-field": ["get", "tract_number"],
+          "text-field": ["get", "tract_text"],
           "text-size": 8,
           "visibility": "none",
         },
         paint: { "text-color": "#333", "text-halo-color": "#fff", "text-halo-width": 1 },
       });
+
+      // Hover highlight layer
+      map.addLayer({
+        id: "tract-highlight",
+        type: "line",
+        source: "census-tracts",
+        "source-layer": config.sourceLayer,
+        paint: {
+          "line-color": "#333",
+          "line-width": 2,
+          "line-opacity": 0,
+        },
+        filter: ["==", "GEOID", ""],
+      });
     });
 
-    // ── Hover popup ──────────────────────────────────────────────────────────
+    // ── Hover popup + highlight ──────────────────────────────────────────────
     map.on('mousemove', 'tract-fill', (e: any) => {
       if (!e.features || e.features.length === 0) return;
+
+      // Highlight hovered tract outline
+      const geoid = e.features[0].properties.GEOID;
+      map.setFilter('tract-highlight', ['==', 'GEOID', geoid]);
+      map.setPaintProperty('tract-highlight', 'line-opacity', 1);
+
+      if (!showHoverRef.current) return;
       map.getCanvas().style.cursor = 'pointer';
 
       const props = e.features[0].properties;
@@ -303,7 +313,9 @@ export default function AssessmentAreaMaps() {
         popupRef.current = new mapboxgl.Popup({
           closeButton: false,
           closeOnClick: false,
-          maxWidth: '300px',
+          maxWidth: '320px',
+          offset: [16, 0],  // shift right of cursor
+          anchor: 'left',
         });
       }
 
@@ -315,6 +327,8 @@ export default function AssessmentAreaMaps() {
 
     map.on('mouseleave', 'tract-fill', () => {
       map.getCanvas().style.cursor = '';
+      map.setFilter('tract-highlight', ['==', 'GEOID', '']);
+      map.setPaintProperty('tract-highlight', 'line-opacity', 0);
       if (popupRef.current) {
         popupRef.current.remove();
         popupRef.current = null;
@@ -358,11 +372,19 @@ export default function AssessmentAreaMaps() {
       source: "census-tracts",
       "source-layer": newConfig.sourceLayer,
       layout: {
-        "text-field": ["get", "tract_number"],
+        "text-field": ["get", "tract_text"],
         "text-size": 8,
         "visibility": showTractNums ? "visible" : "none",
       },
       paint: { "text-color": "#333", "text-halo-color": "#fff", "text-halo-width": 1 },
+    });
+    map.addLayer({
+      id: "tract-highlight",
+      type: "line",
+      source: "census-tracts",
+      "source-layer": newConfig.sourceLayer,
+      paint: { "line-color": "#333", "line-width": 2, "line-opacity": 0 },
+      filter: ["==", "GEOID", ""],
     });
   }, [mapLoaded, selectedYear]);
 
@@ -439,6 +461,16 @@ export default function AssessmentAreaMaps() {
       }
     }
   }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]);
+
+  // ── Sync showHoverRef ────────────────────────────────────────────────────────
+  useEffect(() => {
+    showHoverRef.current = showHover;
+    // Remove popup immediately when hover turned off
+    if (!showHover && popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+    }
+  }, [showHover]);
 
   // ── Keep currentMapIdRef in sync so hover popup knows which layout to use ──
   useEffect(() => {
@@ -554,6 +586,20 @@ export default function AssessmentAreaMaps() {
             }`}
           >
             🔢 Tract Numbers
+          </button>
+
+          <div className="w-px h-5 bg-gray-300" />
+
+          {/* Hover toggle */}
+          <button
+            onClick={() => setShowHover(!showHover)}
+            className={`text-xs px-3 py-1 rounded-full border font-medium ${
+              showHover
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            }`}
+          >
+            💬 Hover
           </button>
 
           <div className="w-px h-5 bg-gray-300" />
