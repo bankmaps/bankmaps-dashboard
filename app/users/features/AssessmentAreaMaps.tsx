@@ -143,6 +143,8 @@ export default function AssessmentAreaMaps() {
   const [assessmentGeoids,      setAssessmentGeoids]      = useState<string[]>([]);
   const [showPrintModal,        setShowPrintModal]        = useState(false);
   const [showHover,             setShowHover]             = useState(true);
+  const [showSummary,           setShowSummary]           = useState(true);
+  const [summaryData,           setSummaryData]           = useState<any>(null);
 
   const currentMap = MAPS[currentMapIdx];
   const config     = CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024];
@@ -201,6 +203,26 @@ export default function AssessmentAreaMaps() {
         setAssessmentGeoids(data.geoids || []);
       })
       .catch(err => console.error("[MAP] fetch geography tracts error:", err));
+  }, [selectedOrgId, selectedGeographyName, selectedYear]);
+
+  // ── Fetch summary data ───────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!selectedOrgId || !selectedGeographyName) return;
+    const token = localStorage.getItem("jwt_token")
+               || localStorage.getItem("token")
+               || localStorage.getItem("authToken")
+               || localStorage.getItem("access_token");
+
+    const encodedGeo = encodeURIComponent(selectedGeographyName);
+    fetch(`/api/geography-tracts/summary?orgId=${selectedOrgId}&geography=${encodedGeo}&year=${selectedYear}`, {
+      headers: { Authorization: `Bearer ${token || ""}` }
+    })
+      .then(r => r.json())
+      .then(data => {
+        console.log('[MAP] Summary data received:', data);
+        setSummaryData(data);
+      })
+      .catch(err => console.error('[MAP] fetch summary error:', err));
   }, [selectedOrgId, selectedGeographyName, selectedYear]);
 
   // ── Initialize Mapbox ───────────────────────────────────────────────────────
@@ -605,6 +627,20 @@ export default function AssessmentAreaMaps() {
 
           <div className="w-px h-5 bg-gray-300" />
 
+          {/* Summary table toggle */}
+          <button
+            onClick={() => setShowSummary(!showSummary)}
+            className={`text-xs px-3 py-1 rounded-full border font-medium ${
+              showSummary
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            }`}
+          >
+            📊 Summary
+          </button>
+
+          <div className="w-px h-5 bg-gray-300" />
+
           {/* Boundary toggle */}
           <button
             onClick={() => {
@@ -688,6 +724,118 @@ export default function AssessmentAreaMaps() {
               <span className="text-gray-600">Assessment Area</span>
             </div>
           </div>
+
+          {/* Summary table - top right */}
+          {showSummary && summaryData && (
+            <div className="absolute top-3 right-3 z-10 bg-white border border-black rounded p-2 text-xs max-w-xs" style={{fontFamily:'sans-serif', lineHeight:'1.3'}}>
+
+              {/* Boundary map summary */}
+              {currentMap.id === 'boundaries' && (
+                <div>
+                  <div style={{marginBottom:'3px', color:'#333'}}>
+                    Assessment area covers {summaryData.msas?.length === 1
+                      ? `the ${summaryData.msas[0].msa} MSA`
+                      : summaryData.msas?.length > 1
+                        ? `portions of ${summaryData.msas.map((m: any) => m.msa).join(', ')}`
+                        : 'the selected geography'
+                    }.
+                  </div>
+                  <div style={{color:'#555'}}>{summaryData.income?.totalTracts} census tracts</div>
+                </div>
+              )}
+
+              {/* Income level summary table */}
+              {currentMap.id === 'income-level' && summaryData.income && (() => {
+                const { items, totalTracts, totalHouseholds, lmSubtotal } = summaryData.income;
+                const order = ['Low','Moderate','Middle','Upper','NA'];
+                const sorted = [...items].sort((a:any,b:any) => order.indexOf(a.label) - order.indexOf(b.label));
+                return (
+                  <table style={{borderCollapse:'collapse', width:'100%', minWidth:'240px'}}>
+                    <thead>
+                      <tr style={{borderBottom:'1px solid #ccc'}}>
+                        <th style={{textAlign:'left', paddingRight:'8px', color:'#555', fontWeight:'normal'}}></th>
+                        <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># Tracts</th>
+                        <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}>%</th>
+                        <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># HH</th>
+                        <th style={{textAlign:'right', color:'#555', fontWeight:'normal'}}>%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sorted.map((row: any) => (
+                        <tr key={row.label}>
+                          <td style={{paddingRight:'8px', color:'#333'}}>{row.label}</td>
+                          <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_count.toLocaleString()}</td>
+                          <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_pct}%</td>
+                          <td style={{textAlign:'right', paddingRight:'6px'}}>{row.household_count.toLocaleString()}</td>
+                          <td style={{textAlign:'right'}}>{row.household_pct}%</td>
+                        </tr>
+                      ))}
+                      <tr style={{borderTop:'1px solid #ccc'}}>
+                        <td style={{paddingRight:'8px', color:'#333'}}>Total</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{totalTracts.toLocaleString()}</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>100%</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{totalHouseholds.toLocaleString()}</td>
+                        <td style={{textAlign:'right'}}>100%</td>
+                      </tr>
+                      <tr style={{borderTop:'1px solid #eee'}}>
+                        <td style={{paddingRight:'8px', color:'#333'}}>Low-Moderate</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.tract_count.toLocaleString()}</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.tract_pct}%</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.household_count.toLocaleString()}</td>
+                        <td style={{textAlign:'right'}}>{lmSubtotal.household_pct}%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                );
+              })()}
+
+              {/* Majority minority summary table */}
+              {currentMap.id === 'majority-minority' && summaryData.minority && (() => {
+                const { items, totalTracts, totalHouseholds, mmSubtotal } = summaryData.minority;
+                const order = ['Asian Majority','Black Majority','Hispanic Majority','Black+Hispanic Majority','Combined Majority','White Majority','NA'];
+                const sorted = [...items].sort((a:any,b:any) => order.indexOf(a.label) - order.indexOf(b.label));
+                return (
+                  <table style={{borderCollapse:'collapse', width:'100%', minWidth:'240px'}}>
+                    <thead>
+                      <tr style={{borderBottom:'1px solid #ccc'}}>
+                        <th style={{textAlign:'left', paddingRight:'8px', color:'#555', fontWeight:'normal'}}></th>
+                        <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># Tracts</th>
+                        <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}>%</th>
+                        <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># HH</th>
+                        <th style={{textAlign:'right', color:'#555', fontWeight:'normal'}}>%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sorted.map((row: any) => (
+                        <tr key={row.label}>
+                          <td style={{paddingRight:'8px', color:'#333'}}>{row.label.replace(' Majority','')}</td>
+                          <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_count.toLocaleString()}</td>
+                          <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_pct}%</td>
+                          <td style={{textAlign:'right', paddingRight:'6px'}}>{row.household_count.toLocaleString()}</td>
+                          <td style={{textAlign:'right'}}>{row.household_pct}%</td>
+                        </tr>
+                      ))}
+                      <tr style={{borderTop:'1px solid #ccc'}}>
+                        <td style={{paddingRight:'8px', color:'#333'}}>Total</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{totalTracts.toLocaleString()}</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>100%</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{totalHouseholds.toLocaleString()}</td>
+                        <td style={{textAlign:'right'}}>100%</td>
+                      </tr>
+                      <tr style={{borderTop:'1px solid #eee'}}>
+                        <td style={{paddingRight:'8px', color:'#333'}}>Majority Minority</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.tract_count.toLocaleString()}</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.tract_pct}%</td>
+                        <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.household_count.toLocaleString()}</td>
+                        <td style={{textAlign:'right'}}>{mmSubtotal.household_pct}%</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                );
+              })()}
+
+            </div>
+          )}
         </div>
 
         {/* ── Slideshow Controls ─────────────────────────────────────────── */}
