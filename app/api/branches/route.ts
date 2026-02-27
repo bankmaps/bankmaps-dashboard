@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
 
     // Fetch branches from branch_us
     const branchRows = await sql`
-      SELECT lat, lon, branchtype, lendername, regulator, branchaddress, branchcity, branchstate
+      SELECT lat, lon, branchtype, lender, regulator, branchaddress, branchcity, branchstate
       FROM branch_us
       WHERE lender_id = ${lenderId}
         AND lat IS NOT NULL
