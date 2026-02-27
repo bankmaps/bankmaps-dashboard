@@ -129,7 +129,7 @@ export default function AssessmentAreaMaps() {
   // ── Fetch assessment area geoids from geography_tracts ─────────────────────
   // Used only for the boundaries map to shade inside/outside tracts
   useEffect(() => {
-    if (!selectedOrgId || !selectedGeographyName || currentMap.id !== "boundaries") return;
+    if (!selectedOrgId || !selectedGeographyName) return;
     const token = localStorage.getItem("jwt_token")
                || localStorage.getItem("token")
                || localStorage.getItem("authToken")
@@ -147,7 +147,7 @@ export default function AssessmentAreaMaps() {
         setAssessmentGeoids(data.geoids || []);
       })
       .catch(err => console.error("[MAP] fetch geography tracts error:", err));
-  }, [selectedOrgId, selectedGeographyName, selectedYear, currentMap.id]);
+  }, [selectedOrgId, selectedGeographyName, selectedYear]);
 
   // ── Initialize Mapbox ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -216,7 +216,7 @@ export default function AssessmentAreaMaps() {
         source: "census-tracts",
         "source-layer": config.sourceLayer,
         layout: {
-          "text-field": ["get", "GEOID"],
+          "text-field": ["get", "tract_number"],
           "text-size": 8,
           "visibility": "none",
         },
@@ -261,7 +261,7 @@ export default function AssessmentAreaMaps() {
       source: "census-tracts",
       "source-layer": newConfig.sourceLayer,
       layout: {
-        "text-field": ["get", "GEOID"],
+        "text-field": ["get", "tract_number"],
         "text-size": 8,
         "visibility": showTractNums ? "visible" : "none",
       },
