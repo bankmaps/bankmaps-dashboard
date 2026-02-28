@@ -7,14 +7,14 @@ import { useOrganizations } from "./OrganizationsContext";
 
 // ─── Census tileset lookup (one per year, source layer always "census") ───────
 const CENSUS_CONFIG: Record<number, { tileset: string; sourceLayer: string }> = {
-  2018: { tileset: "mapbox://stuartmaps.census-2018", sourceLayer: "census" },
-  2019: { tileset: "mapbox://stuartmaps.census-2019", sourceLayer: "census" },
-  2020: { tileset: "mapbox://stuartmaps.census-2020", sourceLayer: "census" },
-  2021: { tileset: "mapbox://stuartmaps.census-2021", sourceLayer: "census" },
-  2022: { tileset: "mapbox://stuartmaps.census-2022", sourceLayer: "census" },
-  2023: { tileset: "mapbox://stuartmaps.census-2023", sourceLayer: "census" },
-  2024: { tileset: "mapbox://stuartmaps.census-2024", sourceLayer: "census" },
-  2025: { tileset: "mapbox://stuartmaps.census-2025", sourceLayer: "census" },
+  2018: { tileset: "mapbox://stuartmaps.census-2018", sourceLayer: "census_2018" },
+  2019: { tileset: "mapbox://stuartmaps.census-2019", sourceLayer: "census_2019" },
+  2020: { tileset: "mapbox://stuartmaps.census-2020", sourceLayer: "census_2020" },
+  2021: { tileset: "mapbox://stuartmaps.census-2021", sourceLayer: "census_2021" },
+  2022: { tileset: "mapbox://stuartmaps.census-2022", sourceLayer: "census_2022" },
+  2023: { tileset: "mapbox://stuartmaps.census-2023", sourceLayer: "census_2023" },
+  2024: { tileset: "mapbox://stuartmaps.0vrxg3i5", sourceLayer: "cesnsus_2024" },
+  2025: { tileset: "mapbox://stuartmaps.census-2025", sourceLayer: "census_2025" },
 };
 
 // Vintage mapping for geography_tracts and map_boundaries API calls
@@ -306,10 +306,7 @@ export default function AssessmentAreaMaps() {
       setMapLoaded(true);
 
       // Census tract vector tile source
-      map.addSource("census-tracts", {
-        type: "vector",
-        url: config.tileset,
-      });
+      map.addSource("census-tracts", { type: "vector", url: config.tileset });
 
       // Base fill layer - color applied by choropleth effects below
       map.addLayer({
@@ -371,6 +368,8 @@ export default function AssessmentAreaMaps() {
         },
         filter: ["==", "GEOID", ""],
       });
+
+
 
       // Branch points source + layers (empty until data loads)
       map.addSource("branches", {
@@ -436,7 +435,9 @@ export default function AssessmentAreaMaps() {
       // Highlight hovered tract outline
       const geoid = e.features[0].properties.GEOID;
       map.setFilter('tract-highlight', ['==', 'GEOID', geoid]);
+      //  ['==', 'GEOID', geoid]));
       map.setPaintProperty('tract-highlight', 'line-opacity', 1);
+      //  'line-opacity', 1));
 
       if (!showHoverRef.current) return;
       map.getCanvas().style.cursor = 'pointer';
@@ -465,12 +466,16 @@ export default function AssessmentAreaMaps() {
     map.on('mouseleave', 'tract-fill', () => {
       map.getCanvas().style.cursor = '';
       map.setFilter('tract-highlight', ['==', 'GEOID', '']);
+      //  ['==', 'GEOID', '']));
       map.setPaintProperty('tract-highlight', 'line-opacity', 0);
+      //  'line-opacity', 0));
       if (popupRef.current) {
         popupRef.current.remove();
         popupRef.current = null;
       }
     });
+
+    // Mirror hover events for west tileset
 
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
@@ -490,40 +495,10 @@ export default function AssessmentAreaMaps() {
 
     map.addSource("census-tracts", { type: "vector", url: newConfig.tileset });
 
-    map.addLayer({
-      id: "tract-fill",
-      type: "fill",
-      source: "census-tracts",
-      "source-layer": newConfig.sourceLayer,
-      paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.6 },
-    });
-    map.addLayer({
-      id: "tract-outline",
-      type: "line",
-      source: "census-tracts",
-      "source-layer": newConfig.sourceLayer,
-      paint: { "line-color": "#999", "line-width": 0.3, "line-opacity": 0.5 },
-    });
-    map.addLayer({
-      id: "tract-labels",
-      type: "symbol",
-      source: "census-tracts",
-      "source-layer": newConfig.sourceLayer,
-      layout: {
-        "text-field": ["get", "tract_text"],
-        "text-size": 8,
-        "visibility": showTractNums ? "visible" : "none",
-      },
-      paint: { "text-color": "#333", "text-halo-color": "#fff", "text-halo-width": 1 },
-    });
-    map.addLayer({
-      id: "tract-highlight",
-      type: "line",
-      source: "census-tracts",
-      "source-layer": newConfig.sourceLayer,
-      paint: { "line-color": "#333", "line-width": 2, "line-opacity": 0 },
-      filter: ["==", "GEOID", ""],
-    });
+    map.addLayer({ id: "tract-fill",      type: "fill",   source: "census-tracts", "source-layer": newConfig.sourceLayer, paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.6 } });
+    map.addLayer({ id: "tract-outline",   type: "line",   source: "census-tracts", "source-layer": newConfig.sourceLayer, paint: { "line-color": "#999", "line-width": 0.3, "line-opacity": 0.5 } });
+    map.addLayer({ id: "tract-labels",    type: "symbol", source: "census-tracts", "source-layer": newConfig.sourceLayer, layout: { "text-field": ["get", "tract_text"], "text-size": 8, "visibility": showTractNums ? "visible" : "none" }, paint: { "text-color": "#333", "text-halo-color": "#fff", "text-halo-width": 1 } });
+    map.addLayer({ id: "tract-highlight", type: "line",   source: "census-tracts", "source-layer": newConfig.sourceLayer, paint: { "line-color": "#333", "line-width": 2, "line-opacity": 0 }, filter: ["==", "GEOID", ""] });
 
     // Keep branch points and boundary lines on top
     if (map.getLayer("branch-points"))     map.moveLayer("branch-points");
@@ -565,7 +540,503 @@ export default function AssessmentAreaMaps() {
 
     if (currentMap.id === "income-level") {
       // Read income_level directly from tileset properties
-      map.setPaintProperty("tract-fill", "fill-color", [
+      map.setPaintProperty("tract-fill", "fill-color",
+      // 
+      // Applied to east; west below
+      [
+      "match", ["get", "income_level"],
+      "Low",      INCOME_COLORS["Low"],
+      "Moderate", INCOME_COLORS["Moderate"],
+      "Middle",   INCOME_COLORS["Middle"],
+      "Upper",    INCOME_COLORS["Upper"],
+      INCOME_COLORS["Unknown"]
+      ]);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      
+      } else if (currentMap.id === "majority-minority") {
+      // Read majority_minority directly from tileset properties
+      map.setPaintProperty("tract-fill", "fill-color",
+      // Applied to east; west below
+      [
+      "match", ["get", "majority_minority"],
+      "White Majority",          MINORITY_COLORS["White Majority"],
+      "Asian Majority",          MINORITY_COLORS["Asian Majority"],
+      "Black Majority",          MINORITY_COLORS["Black Majority"],
+      "Hispanic Majority",       MINORITY_COLORS["Hispanic Majority"],
+      "Black+Hispanic Majority", MINORITY_COLORS["Black+Hispanic Majority"],
+      "Combined Majority",       MINORITY_COLORS["Combined Majority"],
+      MINORITY_COLORS["NA"]
+      ]);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      
+      } else if (currentMap.id === "boundaries") {
+      // Shade inside/outside based on geoids from geography_tracts
+      if (assessmentGeoids.length > 0) {
+      map.setPaintProperty("tract-fill", "fill-color",
+      // Applied to east; west below
+      [
+      "match", ["get", "GEOID"],
+      assessmentGeoids, BOUNDARY_COLORS["Inside"],
+      BOUNDARY_COLORS["Outside"]
+      ]);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      } else {
+      map.setPaintProperty("tract-fill", "fill-color",
+      // Applied to east; west below
+      "#e8e8e8");
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
+      }
+      }
+      }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]);
+      
+      // ── Sync showHoverRef ────────────────────────────────────────────────────────
+      useEffect(() => {
+      showHoverRef.current = showHover;
+      // Remove popup immediately when hover turned off
+      if (!showHover && popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+      }
+      }, [showHover]);
+      
+      // ── Keep currentMapIdRef in sync so hover popup knows which layout to use ──
+      useEffect(() => {
+      currentMapIdRef.current = currentMap.id;
+      }, [currentMap]);
+      
+      // ── Toggle tract number labels ──────────────────────────────────────────────
+      useEffect(() => {
+      if (!mapLoaded || !mapRef.current) return;
+      mapRef.current.setLayoutProperty(
+      "tract-labels", "visibility", showTractNums ? "visible" : "none"
+      );
+      }, [mapLoaded, showTractNums]);
+      
+      // ── Slideshow controls ──────────────────────────────────────────────────────
+      const goToMap = useCallback((idx: number) => {
+      setTimeout(() => {
+      setCurrentMapIdx(idx);
+      }, 400);
+      }, []);
+      
+      const nextMap = useCallback(() => {
+      goToMap((currentMapIdx + 1) % MAPS.length);
+      }, [currentMapIdx, goToMap]);
+      
+      useEffect(() => {
+      if (slideTimerRef.current) clearInterval(slideTimerRef.current);
+      }, [isPlaying, nextMap]);
+      
+      const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
+      const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
+      
+      const handlePrintCurrent = () => { window.print(); };
+      const handlePrintAll     = () => { alert("Generating full PDF report... (coming soon)"); };
+      
+      return (
+      <>
+      <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif", height: "100%", minHeight: "600px" }}>
+      
+      {loading && (
+      <div className="flex items-center justify-center h-full">
+      <p className="text-gray-500">Loading organizations...</p>
+      </div>
+      )}
+      
+      {!loading && organizations.length === 0 && (
+      <div className="flex items-center justify-center h-full">
+      <p className="text-gray-500">No organizations found. Please create one first.</p>
+      </div>
+      )}
+      
+      {!loading && organizations.length > 0 && (
+      <>
+      {/* ── Controls Bar ──────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
+      
+      {/* Organization selector */}
+      <div className="flex items-center gap-2">
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Organization</label>
+      <select
+      value={selectedOrgId || ""}
+      onChange={e => setSelectedOrgId(Number(e.target.value))}
+      className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+      >
+      {organizations.map(org => (
+      <option key={org.id} value={org.id}>{org.name}</option>
+      ))}
+      </select>
+      </div>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Geography selector */}
+      {selectedOrg?.geographies?.length > 1 && (
+      <>
+      <div className="flex items-center gap-2">
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Area</label>
+      <select
+      value={selectedGeographyName}
+      onChange={e => setSelectedGeographyName(e.target.value)}
+      className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+      >
+      {selectedOrg.geographies.map((geo: any, idx: number) => (
+      <option key={idx} value={geo.name}>{geo.name}</option>
+      ))}
+      </select>
+      </div>
+      <div className="w-px h-5 bg-gray-300" />
+      </>
+      )}
+      
+      {/* Year selector */}
+      <div className="flex items-center gap-2">
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Year</label>
+      <select
+      value={selectedYear}
+      onChange={e => setSelectedYear(Number(e.target.value))}
+      className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+      >
+      {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+      </div>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Tract numbers toggle */}
+      <button
+      onClick={() => setShowTractNums(!showTractNums)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showTractNums
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      🔢 Tract Numbers
+      </button>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Hover toggle */}
+      <button
+      onClick={() => setShowHover(!showHover)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showHover
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      💬 Hover
+      </button>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Summary table toggle */}
+      <button
+      onClick={() => setShowSummary(!showSummary)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showSummary
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      📊 Summary
+      </button>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Boundary toggle */}
+      <button
+      onClick={() => {
+      if (!mapRef.current) return;
+      const vis = mapRef.current.getLayoutProperty("user-boundary-line", "visibility");
+      const next = vis === "none" ? "visible" : "none";
+      mapRef.current.setLayoutProperty("user-boundary-line", "visibility", next);
+      mapRef.current.setLayoutProperty("user-boundary-fill", "visibility", next);
+      }}
+      className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      >
+      🗺️ Boundary
+      </button>
+      
+      {/* Branches toggle */}
+      <button
+      onClick={() => setShowBranches(!showBranches)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showBranches
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      🏦 Branches
+      </button>
+      
+      <div className="flex-1" />
+      
+      {/* Recenter button */}
+      <button
+      onClick={() => {
+      if (!mapRef.current || !boundaries[0]?.center_point) return;
+      mapRef.current.flyTo({
+      center: [boundaries[0].center_point.lng, boundaries[0].center_point.lat],
+      zoom: boundaries[0].zoom_level || 10,
+      duration: 800,
+      });
+      }}
+      className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      >
+      🎯 Recenter
+      </button>
+      
+      {/* Print button */}
+      <button
+      onClick={() => setShowPrintModal(true)}
+      className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      >
+      🖨️ Print / Save
+      </button>
+      </div>
+      
+      {/* ── Narrative Bar ─────────────────────────────────────────────── */}
+      <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
+      <h2 className="text-lg font-bold text-gray-800">{currentMap.title}</h2>
+      <p className="text-sm text-gray-500 mt-0.5">
+      {selectedOrg?.name || "—"} &nbsp;·&nbsp; Year: {selectedYear} &nbsp;·&nbsp; {currentMap.description}
+      </p>
+      </div>
+      
+      {/* ── Map Area ──────────────────────────────────────────────────── */}
+      <div
+      className="relative overflow-hidden"
+      style={{ flex: 1, minHeight: "450px", position: "relative" }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      >
+      <div
+      ref={mapContainerRef}
+      style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+      className={isTransitioning ? "opacity-0" : "opacity-100"}
+      />
+      
+      {/* Legend */}
+      {currentMap.id !== "boundaries" && (
+      <div className="absolute bottom-8 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="font-semibold text-gray-700 mb-2">
+      {currentMap.id === "income-level" ? "Income Level" : "Majority Minority"}
+      </div>
+      {Object.entries(currentMap.id === "income-level" ? INCOME_COLORS : MINORITY_COLORS).map(([label, color]) => (
+      <div key={label} className="flex items-center gap-2 mb-1">
+      <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: color }} />
+      <span className="text-gray-600">{label}</span>
+      </div>
+      ))}
+      </div>
+      )}
+      
+      {/* Boundary legend */}
+      {currentMap.id === "boundaries" && (
+      <div className="absolute bottom-8 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="font-semibold text-gray-700 mb-2">Assessment Area</div>
+      <div className="flex items-center gap-2 mb-1">
+      <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: BOUNDARY_COLORS["Inside"] }} />
+      <span className="text-gray-600">Inside</span>
+      </div>
+      <div className="flex items-center gap-2">
+      <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: BOUNDARY_COLORS["Outside"] }} />
+      <span className="text-gray-600">Outside</span>
+      </div>
+      </div>
+      )}
+      
+      {/* Branch legend */}
+      {showBranches && branches.length > 0 && (
+      <div className="absolute bottom-20 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="font-semibold text-gray-700 mb-2">Branches</div>
+      <div className="flex items-center gap-2 mb-1">
+      <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#ff6600'}} />
+      <span className="text-gray-600">Main Office</span>
+      </div>
+      <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#0066ff'}} />
+      <span className="text-gray-600">Branch</span>
+      </div>
+      </div>
+      )}
+      
+      {/* Blue boundary line legend */}
+      <div className="absolute bottom-8 right-14 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="flex items-center gap-2">
+      <div className="w-6 h-1 bg-blue-600 rounded" />
+      <span className="text-gray-600">Assessment Area</span>
+      </div>
+      </div>
+      
+      {/* Summary table - top right */}
+      {showSummary && summaryData && (
+      <div className="absolute top-3 right-3 z-10 bg-white border border-black rounded p-2 text-xs max-w-xs" style={{fontFamily:'sans-serif', lineHeight:'1.3'}}>
+      
+      {/* Boundary map summary */}
+      {currentMap.id === 'boundaries' && (
+      <div>
+      <div style={{marginBottom:'3px', color:'#333'}}>
+      Assessment area covers {summaryData.msas?.length === 1
+      ? `the ${summaryData.msas[0].msa} MSA`
+      : summaryData.msas?.length > 1
+      ? `portions of ${summaryData.msas.map((m: any) => m.msa).join(', ')}`
+      : 'the selected geography'
+      }.
+      </div>
+      <div style={{color:'#555'}}>{summaryData.income?.totalTracts} census tracts</div>
+      </div>
+      )}
+      
+      {/* Income level summary table */}
+      {currentMap.id === 'income-level' && summaryData.income && (() => {
+      const { items, totalTracts, totalHouseholds, lmSubtotal } = summaryData.income;
+      const order = ['Low','Moderate','Middle','Upper','NA'];
+      const sorted = [...items].sort((a:any,b:any) => order.indexOf(a.label) - order.indexOf(b.label));
+      return (
+      <table style={{borderCollapse:'collapse', width:'100%', minWidth:'240px'}}>
+      <thead>
+      <tr style={{borderBottom:'1px solid #ccc'}}>
+      <th style={{textAlign:'left', paddingRight:'8px', color:'#555', fontWeight:'normal'}}></th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># Tracts</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}>%</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># HH</th>
+      <th style={{textAlign:'right', color:'#555', fontWeight:'normal'}}>%</th>
+      </tr>
+      </thead>
+      <tbody>
+      {sorted.map((row: any) => (
+      <tr key={row.label}>
+      <td style={{paddingRight:'8px', color:'#333'}}>{row.label}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{row.household_pct}%</td>
+      </tr>
+      ))}
+      <tr style={{borderTop:'1px solid #ccc'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Total</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalTracts.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>100%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalHouseholds.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>100%</td>
+      </tr>
+      <tr style={{borderTop:'1px solid #eee'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Low-Moderate</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{lmSubtotal.household_pct}%</td>
+      </tr>
+      </tbody>
+      </table>
+      );
+      })()}
+      
+      {/* Majority minority summary table */}
+      {currentMap.id === 'majority-minority' && summaryData.minority && (() => {
+      const { items, totalTracts, totalHouseholds, mmSubtotal } = summaryData.minority;
+      const order = ['Asian Majority','Black Majority','Hispanic Majority','Black+Hispanic Majority','Combined Majority','White Majority','NA'];
+      const sorted = [...items].sort((a:any,b:any) => order.indexOf(a.label) - order.indexOf(b.label));
+      return (
+      <table style={{borderCollapse:'collapse', width:'100%', minWidth:'240px'}}>
+      <thead>
+      <tr style={{borderBottom:'1px solid #ccc'}}>
+      <th style={{textAlign:'left', paddingRight:'8px', color:'#555', fontWeight:'normal'}}></th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># Tracts</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}>%</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># HH</th>
+      <th style={{textAlign:'right', color:'#555', fontWeight:'normal'}}>%</th>
+      </tr>
+      </thead>
+      <tbody>
+      {sorted.map((row: any) => (
+      <tr key={row.label}>
+      <td style={{paddingRight:'8px', color:'#333'}}>{row.label.replace(' Majority','')}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{row.household_pct}%</td>
+      </tr>
+      ))}
+      <tr style={{borderTop:'1px solid #ccc'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Total</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalTracts.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>100%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalHouseholds.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>100%</td>
+      </tr>
+      <tr style={{borderTop:'1px solid #eee'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Majority Minority</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{mmSubtotal.household_pct}%</td>
+      </tr>
+      </tbody>
+      </table>
+      );
+      })()}
+      
+      </div>
+      )}
+      </div>
+      
+      {/* ── Slideshow Controls ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+      <div className="flex items-center gap-2">
+      {MAPS.map((m, idx) => (
+      <button
+      key={m.id}
+      onClick={() => { setIsPlaying(false); goToMap(idx); }}
+      className={`rounded-full text-xs font-medium px-3 py-1 ${
+      idx === currentMapIdx
+      ? "bg-blue-600 text-white"
+      : "bg-white text-gray-500 border border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      {m.title.split(" ")[0]}
+      </button>
+      ))}
+      </div>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      <button
+      onClick={() => setIsPlaying(!isPlaying)}
+      className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+      >
+      {isPlaying ? "⏸ Pause" : "▶ Play"}
+      </button>
+      
+      <button
+      onClick={() => { setIsPlaying(false); goToMap((currentMapIdx - 1 + MAPS.length) % MAPS.length); }}
+      className="text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+      >
+      ◄ Prev
+      </button>
+      <button
+      onClick={() => { setIsPlaying(false); goToMap((currentMapIdx + 1) % MAPS.length); }}
+      className="text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+      >
+      Next ►
+      </button>
+      
+      <span className="text-xs text-gray-400">
+      {currentMapIdx + 1} / {MAPS.length}
+      </span>
+      </div>
+      </>
+      )}
+      </div>
+      </>
+      );
+      }
+      );
+      // Applied to east; west below
+       [
         "match", ["get", "income_level"],
         "Low",      INCOME_COLORS["Low"],
         "Moderate", INCOME_COLORS["Moderate"],
@@ -574,10 +1045,493 @@ export default function AssessmentAreaMaps() {
         INCOME_COLORS["Unknown"]
       ]);
       map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      //  0.7));
 
     } else if (currentMap.id === "majority-minority") {
       // Read majority_minority directly from tileset properties
-      map.setPaintProperty("tract-fill", "fill-color", [
+      map.setPaintProperty("tract-fill", "fill-color",
+      // 
+      // Applied to east; west below
+      [
+      "match", ["get", "majority_minority"],
+      "White Majority",          MINORITY_COLORS["White Majority"],
+      "Asian Majority",          MINORITY_COLORS["Asian Majority"],
+      "Black Majority",          MINORITY_COLORS["Black Majority"],
+      "Hispanic Majority",       MINORITY_COLORS["Hispanic Majority"],
+      "Black+Hispanic Majority", MINORITY_COLORS["Black+Hispanic Majority"],
+      "Combined Majority",       MINORITY_COLORS["Combined Majority"],
+      MINORITY_COLORS["NA"]
+      ]);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      
+      } else if (currentMap.id === "boundaries") {
+      // Shade inside/outside based on geoids from geography_tracts
+      if (assessmentGeoids.length > 0) {
+      map.setPaintProperty("tract-fill", "fill-color",
+      // Applied to east; west below
+      [
+      "match", ["get", "GEOID"],
+      assessmentGeoids, BOUNDARY_COLORS["Inside"],
+      BOUNDARY_COLORS["Outside"]
+      ]);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      } else {
+      map.setPaintProperty("tract-fill", "fill-color",
+      // Applied to east; west below
+      "#e8e8e8");
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
+      }
+      }
+      }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]);
+      
+      // ── Sync showHoverRef ────────────────────────────────────────────────────────
+      useEffect(() => {
+      showHoverRef.current = showHover;
+      // Remove popup immediately when hover turned off
+      if (!showHover && popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+      }
+      }, [showHover]);
+      
+      // ── Keep currentMapIdRef in sync so hover popup knows which layout to use ──
+      useEffect(() => {
+      currentMapIdRef.current = currentMap.id;
+      }, [currentMap]);
+      
+      // ── Toggle tract number labels ──────────────────────────────────────────────
+      useEffect(() => {
+      if (!mapLoaded || !mapRef.current) return;
+      mapRef.current.setLayoutProperty(
+      "tract-labels", "visibility", showTractNums ? "visible" : "none"
+      );
+      }, [mapLoaded, showTractNums]);
+      
+      // ── Slideshow controls ──────────────────────────────────────────────────────
+      const goToMap = useCallback((idx: number) => {
+      setTimeout(() => {
+      setCurrentMapIdx(idx);
+      }, 400);
+      }, []);
+      
+      const nextMap = useCallback(() => {
+      goToMap((currentMapIdx + 1) % MAPS.length);
+      }, [currentMapIdx, goToMap]);
+      
+      useEffect(() => {
+      if (slideTimerRef.current) clearInterval(slideTimerRef.current);
+      }, [isPlaying, nextMap]);
+      
+      const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
+      const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
+      
+      const handlePrintCurrent = () => { window.print(); };
+      const handlePrintAll     = () => { alert("Generating full PDF report... (coming soon)"); };
+      
+      return (
+      <>
+      <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif", height: "100%", minHeight: "600px" }}>
+      
+      {loading && (
+      <div className="flex items-center justify-center h-full">
+      <p className="text-gray-500">Loading organizations...</p>
+      </div>
+      )}
+      
+      {!loading && organizations.length === 0 && (
+      <div className="flex items-center justify-center h-full">
+      <p className="text-gray-500">No organizations found. Please create one first.</p>
+      </div>
+      )}
+      
+      {!loading && organizations.length > 0 && (
+      <>
+      {/* ── Controls Bar ──────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
+      
+      {/* Organization selector */}
+      <div className="flex items-center gap-2">
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Organization</label>
+      <select
+      value={selectedOrgId || ""}
+      onChange={e => setSelectedOrgId(Number(e.target.value))}
+      className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+      >
+      {organizations.map(org => (
+      <option key={org.id} value={org.id}>{org.name}</option>
+      ))}
+      </select>
+      </div>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Geography selector */}
+      {selectedOrg?.geographies?.length > 1 && (
+      <>
+      <div className="flex items-center gap-2">
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Area</label>
+      <select
+      value={selectedGeographyName}
+      onChange={e => setSelectedGeographyName(e.target.value)}
+      className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+      >
+      {selectedOrg.geographies.map((geo: any, idx: number) => (
+      <option key={idx} value={geo.name}>{geo.name}</option>
+      ))}
+      </select>
+      </div>
+      <div className="w-px h-5 bg-gray-300" />
+      </>
+      )}
+      
+      {/* Year selector */}
+      <div className="flex items-center gap-2">
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Year</label>
+      <select
+      value={selectedYear}
+      onChange={e => setSelectedYear(Number(e.target.value))}
+      className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+      >
+      {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+      </div>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Tract numbers toggle */}
+      <button
+      onClick={() => setShowTractNums(!showTractNums)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showTractNums
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      🔢 Tract Numbers
+      </button>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Hover toggle */}
+      <button
+      onClick={() => setShowHover(!showHover)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showHover
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      💬 Hover
+      </button>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Summary table toggle */}
+      <button
+      onClick={() => setShowSummary(!showSummary)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showSummary
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      📊 Summary
+      </button>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Boundary toggle */}
+      <button
+      onClick={() => {
+      if (!mapRef.current) return;
+      const vis = mapRef.current.getLayoutProperty("user-boundary-line", "visibility");
+      const next = vis === "none" ? "visible" : "none";
+      mapRef.current.setLayoutProperty("user-boundary-line", "visibility", next);
+      mapRef.current.setLayoutProperty("user-boundary-fill", "visibility", next);
+      }}
+      className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      >
+      🗺️ Boundary
+      </button>
+      
+      {/* Branches toggle */}
+      <button
+      onClick={() => setShowBranches(!showBranches)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showBranches
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      🏦 Branches
+      </button>
+      
+      <div className="flex-1" />
+      
+      {/* Recenter button */}
+      <button
+      onClick={() => {
+      if (!mapRef.current || !boundaries[0]?.center_point) return;
+      mapRef.current.flyTo({
+      center: [boundaries[0].center_point.lng, boundaries[0].center_point.lat],
+      zoom: boundaries[0].zoom_level || 10,
+      duration: 800,
+      });
+      }}
+      className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      >
+      🎯 Recenter
+      </button>
+      
+      {/* Print button */}
+      <button
+      onClick={() => setShowPrintModal(true)}
+      className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      >
+      🖨️ Print / Save
+      </button>
+      </div>
+      
+      {/* ── Narrative Bar ─────────────────────────────────────────────── */}
+      <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
+      <h2 className="text-lg font-bold text-gray-800">{currentMap.title}</h2>
+      <p className="text-sm text-gray-500 mt-0.5">
+      {selectedOrg?.name || "—"} &nbsp;·&nbsp; Year: {selectedYear} &nbsp;·&nbsp; {currentMap.description}
+      </p>
+      </div>
+      
+      {/* ── Map Area ──────────────────────────────────────────────────── */}
+      <div
+      className="relative overflow-hidden"
+      style={{ flex: 1, minHeight: "450px", position: "relative" }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      >
+      <div
+      ref={mapContainerRef}
+      style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+      className={isTransitioning ? "opacity-0" : "opacity-100"}
+      />
+      
+      {/* Legend */}
+      {currentMap.id !== "boundaries" && (
+      <div className="absolute bottom-8 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="font-semibold text-gray-700 mb-2">
+      {currentMap.id === "income-level" ? "Income Level" : "Majority Minority"}
+      </div>
+      {Object.entries(currentMap.id === "income-level" ? INCOME_COLORS : MINORITY_COLORS).map(([label, color]) => (
+      <div key={label} className="flex items-center gap-2 mb-1">
+      <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: color }} />
+      <span className="text-gray-600">{label}</span>
+      </div>
+      ))}
+      </div>
+      )}
+      
+      {/* Boundary legend */}
+      {currentMap.id === "boundaries" && (
+      <div className="absolute bottom-8 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="font-semibold text-gray-700 mb-2">Assessment Area</div>
+      <div className="flex items-center gap-2 mb-1">
+      <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: BOUNDARY_COLORS["Inside"] }} />
+      <span className="text-gray-600">Inside</span>
+      </div>
+      <div className="flex items-center gap-2">
+      <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: BOUNDARY_COLORS["Outside"] }} />
+      <span className="text-gray-600">Outside</span>
+      </div>
+      </div>
+      )}
+      
+      {/* Branch legend */}
+      {showBranches && branches.length > 0 && (
+      <div className="absolute bottom-20 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="font-semibold text-gray-700 mb-2">Branches</div>
+      <div className="flex items-center gap-2 mb-1">
+      <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#ff6600'}} />
+      <span className="text-gray-600">Main Office</span>
+      </div>
+      <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#0066ff'}} />
+      <span className="text-gray-600">Branch</span>
+      </div>
+      </div>
+      )}
+      
+      {/* Blue boundary line legend */}
+      <div className="absolute bottom-8 right-14 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="flex items-center gap-2">
+      <div className="w-6 h-1 bg-blue-600 rounded" />
+      <span className="text-gray-600">Assessment Area</span>
+      </div>
+      </div>
+      
+      {/* Summary table - top right */}
+      {showSummary && summaryData && (
+      <div className="absolute top-3 right-3 z-10 bg-white border border-black rounded p-2 text-xs max-w-xs" style={{fontFamily:'sans-serif', lineHeight:'1.3'}}>
+      
+      {/* Boundary map summary */}
+      {currentMap.id === 'boundaries' && (
+      <div>
+      <div style={{marginBottom:'3px', color:'#333'}}>
+      Assessment area covers {summaryData.msas?.length === 1
+      ? `the ${summaryData.msas[0].msa} MSA`
+      : summaryData.msas?.length > 1
+      ? `portions of ${summaryData.msas.map((m: any) => m.msa).join(', ')}`
+      : 'the selected geography'
+      }.
+      </div>
+      <div style={{color:'#555'}}>{summaryData.income?.totalTracts} census tracts</div>
+      </div>
+      )}
+      
+      {/* Income level summary table */}
+      {currentMap.id === 'income-level' && summaryData.income && (() => {
+      const { items, totalTracts, totalHouseholds, lmSubtotal } = summaryData.income;
+      const order = ['Low','Moderate','Middle','Upper','NA'];
+      const sorted = [...items].sort((a:any,b:any) => order.indexOf(a.label) - order.indexOf(b.label));
+      return (
+      <table style={{borderCollapse:'collapse', width:'100%', minWidth:'240px'}}>
+      <thead>
+      <tr style={{borderBottom:'1px solid #ccc'}}>
+      <th style={{textAlign:'left', paddingRight:'8px', color:'#555', fontWeight:'normal'}}></th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># Tracts</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}>%</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># HH</th>
+      <th style={{textAlign:'right', color:'#555', fontWeight:'normal'}}>%</th>
+      </tr>
+      </thead>
+      <tbody>
+      {sorted.map((row: any) => (
+      <tr key={row.label}>
+      <td style={{paddingRight:'8px', color:'#333'}}>{row.label}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{row.household_pct}%</td>
+      </tr>
+      ))}
+      <tr style={{borderTop:'1px solid #ccc'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Total</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalTracts.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>100%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalHouseholds.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>100%</td>
+      </tr>
+      <tr style={{borderTop:'1px solid #eee'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Low-Moderate</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{lmSubtotal.household_pct}%</td>
+      </tr>
+      </tbody>
+      </table>
+      );
+      })()}
+      
+      {/* Majority minority summary table */}
+      {currentMap.id === 'majority-minority' && summaryData.minority && (() => {
+      const { items, totalTracts, totalHouseholds, mmSubtotal } = summaryData.minority;
+      const order = ['Asian Majority','Black Majority','Hispanic Majority','Black+Hispanic Majority','Combined Majority','White Majority','NA'];
+      const sorted = [...items].sort((a:any,b:any) => order.indexOf(a.label) - order.indexOf(b.label));
+      return (
+      <table style={{borderCollapse:'collapse', width:'100%', minWidth:'240px'}}>
+      <thead>
+      <tr style={{borderBottom:'1px solid #ccc'}}>
+      <th style={{textAlign:'left', paddingRight:'8px', color:'#555', fontWeight:'normal'}}></th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># Tracts</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}>%</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># HH</th>
+      <th style={{textAlign:'right', color:'#555', fontWeight:'normal'}}>%</th>
+      </tr>
+      </thead>
+      <tbody>
+      {sorted.map((row: any) => (
+      <tr key={row.label}>
+      <td style={{paddingRight:'8px', color:'#333'}}>{row.label.replace(' Majority','')}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{row.household_pct}%</td>
+      </tr>
+      ))}
+      <tr style={{borderTop:'1px solid #ccc'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Total</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalTracts.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>100%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalHouseholds.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>100%</td>
+      </tr>
+      <tr style={{borderTop:'1px solid #eee'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Majority Minority</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{mmSubtotal.household_pct}%</td>
+      </tr>
+      </tbody>
+      </table>
+      );
+      })()}
+      
+      </div>
+      )}
+      </div>
+      
+      {/* ── Slideshow Controls ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+      <div className="flex items-center gap-2">
+      {MAPS.map((m, idx) => (
+      <button
+      key={m.id}
+      onClick={() => { setIsPlaying(false); goToMap(idx); }}
+      className={`rounded-full text-xs font-medium px-3 py-1 ${
+      idx === currentMapIdx
+      ? "bg-blue-600 text-white"
+      : "bg-white text-gray-500 border border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      {m.title.split(" ")[0]}
+      </button>
+      ))}
+      </div>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      <button
+      onClick={() => setIsPlaying(!isPlaying)}
+      className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+      >
+      {isPlaying ? "⏸ Pause" : "▶ Play"}
+      </button>
+      
+      <button
+      onClick={() => { setIsPlaying(false); goToMap((currentMapIdx - 1 + MAPS.length) % MAPS.length); }}
+      className="text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+      >
+      ◄ Prev
+      </button>
+      <button
+      onClick={() => { setIsPlaying(false); goToMap((currentMapIdx + 1) % MAPS.length); }}
+      className="text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+      >
+      Next ►
+      </button>
+      
+      <span className="text-xs text-gray-400">
+      {currentMapIdx + 1} / {MAPS.length}
+      </span>
+      </div>
+      </>
+      )}
+      </div>
+      </>
+      );
+      }
+      );
+      // Applied to east; west below
+       [
         "match", ["get", "majority_minority"],
         "White Majority",          MINORITY_COLORS["White Majority"],
         "Asian Majority",          MINORITY_COLORS["Asian Majority"],
@@ -588,19 +1542,496 @@ export default function AssessmentAreaMaps() {
         MINORITY_COLORS["NA"]
       ]);
       map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      //  0.7));
 
     } else if (currentMap.id === "boundaries") {
       // Shade inside/outside based on geoids from geography_tracts
       if (assessmentGeoids.length > 0) {
-        map.setPaintProperty("tract-fill", "fill-color", [
+        map.setPaintProperty("tract-fill", "fill-color",
+      // 
+      // Applied to east; west below
+      [
+      "match", ["get", "GEOID"],
+      assessmentGeoids, BOUNDARY_COLORS["Inside"],
+      BOUNDARY_COLORS["Outside"]
+      ]);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      } else {
+      map.setPaintProperty("tract-fill", "fill-color",
+      // Applied to east; west below
+      "#e8e8e8");
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
+      }
+      }
+      }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]);
+      
+      // ── Sync showHoverRef ────────────────────────────────────────────────────────
+      useEffect(() => {
+      showHoverRef.current = showHover;
+      // Remove popup immediately when hover turned off
+      if (!showHover && popupRef.current) {
+      popupRef.current.remove();
+      popupRef.current = null;
+      }
+      }, [showHover]);
+      
+      // ── Keep currentMapIdRef in sync so hover popup knows which layout to use ──
+      useEffect(() => {
+      currentMapIdRef.current = currentMap.id;
+      }, [currentMap]);
+      
+      // ── Toggle tract number labels ──────────────────────────────────────────────
+      useEffect(() => {
+      if (!mapLoaded || !mapRef.current) return;
+      mapRef.current.setLayoutProperty(
+      "tract-labels", "visibility", showTractNums ? "visible" : "none"
+      );
+      }, [mapLoaded, showTractNums]);
+      
+      // ── Slideshow controls ──────────────────────────────────────────────────────
+      const goToMap = useCallback((idx: number) => {
+      setTimeout(() => {
+      setCurrentMapIdx(idx);
+      }, 400);
+      }, []);
+      
+      const nextMap = useCallback(() => {
+      goToMap((currentMapIdx + 1) % MAPS.length);
+      }, [currentMapIdx, goToMap]);
+      
+      useEffect(() => {
+      if (slideTimerRef.current) clearInterval(slideTimerRef.current);
+      }, [isPlaying, nextMap]);
+      
+      const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
+      const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
+      
+      const handlePrintCurrent = () => { window.print(); };
+      const handlePrintAll     = () => { alert("Generating full PDF report... (coming soon)"); };
+      
+      return (
+      <>
+      <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif", height: "100%", minHeight: "600px" }}>
+      
+      {loading && (
+      <div className="flex items-center justify-center h-full">
+      <p className="text-gray-500">Loading organizations...</p>
+      </div>
+      )}
+      
+      {!loading && organizations.length === 0 && (
+      <div className="flex items-center justify-center h-full">
+      <p className="text-gray-500">No organizations found. Please create one first.</p>
+      </div>
+      )}
+      
+      {!loading && organizations.length > 0 && (
+      <>
+      {/* ── Controls Bar ──────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
+      
+      {/* Organization selector */}
+      <div className="flex items-center gap-2">
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Organization</label>
+      <select
+      value={selectedOrgId || ""}
+      onChange={e => setSelectedOrgId(Number(e.target.value))}
+      className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+      >
+      {organizations.map(org => (
+      <option key={org.id} value={org.id}>{org.name}</option>
+      ))}
+      </select>
+      </div>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Geography selector */}
+      {selectedOrg?.geographies?.length > 1 && (
+      <>
+      <div className="flex items-center gap-2">
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Area</label>
+      <select
+      value={selectedGeographyName}
+      onChange={e => setSelectedGeographyName(e.target.value)}
+      className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+      >
+      {selectedOrg.geographies.map((geo: any, idx: number) => (
+      <option key={idx} value={geo.name}>{geo.name}</option>
+      ))}
+      </select>
+      </div>
+      <div className="w-px h-5 bg-gray-300" />
+      </>
+      )}
+      
+      {/* Year selector */}
+      <div className="flex items-center gap-2">
+      <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Year</label>
+      <select
+      value={selectedYear}
+      onChange={e => setSelectedYear(Number(e.target.value))}
+      className="text-sm border border-gray-300 rounded px-2 py-1 bg-white"
+      >
+      {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+      </select>
+      </div>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Tract numbers toggle */}
+      <button
+      onClick={() => setShowTractNums(!showTractNums)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showTractNums
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      🔢 Tract Numbers
+      </button>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Hover toggle */}
+      <button
+      onClick={() => setShowHover(!showHover)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showHover
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      💬 Hover
+      </button>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Summary table toggle */}
+      <button
+      onClick={() => setShowSummary(!showSummary)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showSummary
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      📊 Summary
+      </button>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      {/* Boundary toggle */}
+      <button
+      onClick={() => {
+      if (!mapRef.current) return;
+      const vis = mapRef.current.getLayoutProperty("user-boundary-line", "visibility");
+      const next = vis === "none" ? "visible" : "none";
+      mapRef.current.setLayoutProperty("user-boundary-line", "visibility", next);
+      mapRef.current.setLayoutProperty("user-boundary-fill", "visibility", next);
+      }}
+      className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      >
+      🗺️ Boundary
+      </button>
+      
+      {/* Branches toggle */}
+      <button
+      onClick={() => setShowBranches(!showBranches)}
+      className={`text-xs px-3 py-1 rounded-full border font-medium ${
+      showBranches
+      ? "bg-blue-600 text-white border-blue-600"
+      : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      🏦 Branches
+      </button>
+      
+      <div className="flex-1" />
+      
+      {/* Recenter button */}
+      <button
+      onClick={() => {
+      if (!mapRef.current || !boundaries[0]?.center_point) return;
+      mapRef.current.flyTo({
+      center: [boundaries[0].center_point.lng, boundaries[0].center_point.lat],
+      zoom: boundaries[0].zoom_level || 10,
+      duration: 800,
+      });
+      }}
+      className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      >
+      🎯 Recenter
+      </button>
+      
+      {/* Print button */}
+      <button
+      onClick={() => setShowPrintModal(true)}
+      className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+      >
+      🖨️ Print / Save
+      </button>
+      </div>
+      
+      {/* ── Narrative Bar ─────────────────────────────────────────────── */}
+      <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
+      <h2 className="text-lg font-bold text-gray-800">{currentMap.title}</h2>
+      <p className="text-sm text-gray-500 mt-0.5">
+      {selectedOrg?.name || "—"} &nbsp;·&nbsp; Year: {selectedYear} &nbsp;·&nbsp; {currentMap.description}
+      </p>
+      </div>
+      
+      {/* ── Map Area ──────────────────────────────────────────────────── */}
+      <div
+      className="relative overflow-hidden"
+      style={{ flex: 1, minHeight: "450px", position: "relative" }}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      >
+      <div
+      ref={mapContainerRef}
+      style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
+      className={isTransitioning ? "opacity-0" : "opacity-100"}
+      />
+      
+      {/* Legend */}
+      {currentMap.id !== "boundaries" && (
+      <div className="absolute bottom-8 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="font-semibold text-gray-700 mb-2">
+      {currentMap.id === "income-level" ? "Income Level" : "Majority Minority"}
+      </div>
+      {Object.entries(currentMap.id === "income-level" ? INCOME_COLORS : MINORITY_COLORS).map(([label, color]) => (
+      <div key={label} className="flex items-center gap-2 mb-1">
+      <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: color }} />
+      <span className="text-gray-600">{label}</span>
+      </div>
+      ))}
+      </div>
+      )}
+      
+      {/* Boundary legend */}
+      {currentMap.id === "boundaries" && (
+      <div className="absolute bottom-8 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="font-semibold text-gray-700 mb-2">Assessment Area</div>
+      <div className="flex items-center gap-2 mb-1">
+      <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: BOUNDARY_COLORS["Inside"] }} />
+      <span className="text-gray-600">Inside</span>
+      </div>
+      <div className="flex items-center gap-2">
+      <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: BOUNDARY_COLORS["Outside"] }} />
+      <span className="text-gray-600">Outside</span>
+      </div>
+      </div>
+      )}
+      
+      {/* Branch legend */}
+      {showBranches && branches.length > 0 && (
+      <div className="absolute bottom-20 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="font-semibold text-gray-700 mb-2">Branches</div>
+      <div className="flex items-center gap-2 mb-1">
+      <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#ff6600'}} />
+      <span className="text-gray-600">Main Office</span>
+      </div>
+      <div className="flex items-center gap-2">
+      <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#0066ff'}} />
+      <span className="text-gray-600">Branch</span>
+      </div>
+      </div>
+      )}
+      
+      {/* Blue boundary line legend */}
+      <div className="absolute bottom-8 right-14 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+      <div className="flex items-center gap-2">
+      <div className="w-6 h-1 bg-blue-600 rounded" />
+      <span className="text-gray-600">Assessment Area</span>
+      </div>
+      </div>
+      
+      {/* Summary table - top right */}
+      {showSummary && summaryData && (
+      <div className="absolute top-3 right-3 z-10 bg-white border border-black rounded p-2 text-xs max-w-xs" style={{fontFamily:'sans-serif', lineHeight:'1.3'}}>
+      
+      {/* Boundary map summary */}
+      {currentMap.id === 'boundaries' && (
+      <div>
+      <div style={{marginBottom:'3px', color:'#333'}}>
+      Assessment area covers {summaryData.msas?.length === 1
+      ? `the ${summaryData.msas[0].msa} MSA`
+      : summaryData.msas?.length > 1
+      ? `portions of ${summaryData.msas.map((m: any) => m.msa).join(', ')}`
+      : 'the selected geography'
+      }.
+      </div>
+      <div style={{color:'#555'}}>{summaryData.income?.totalTracts} census tracts</div>
+      </div>
+      )}
+      
+      {/* Income level summary table */}
+      {currentMap.id === 'income-level' && summaryData.income && (() => {
+      const { items, totalTracts, totalHouseholds, lmSubtotal } = summaryData.income;
+      const order = ['Low','Moderate','Middle','Upper','NA'];
+      const sorted = [...items].sort((a:any,b:any) => order.indexOf(a.label) - order.indexOf(b.label));
+      return (
+      <table style={{borderCollapse:'collapse', width:'100%', minWidth:'240px'}}>
+      <thead>
+      <tr style={{borderBottom:'1px solid #ccc'}}>
+      <th style={{textAlign:'left', paddingRight:'8px', color:'#555', fontWeight:'normal'}}></th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># Tracts</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}>%</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># HH</th>
+      <th style={{textAlign:'right', color:'#555', fontWeight:'normal'}}>%</th>
+      </tr>
+      </thead>
+      <tbody>
+      {sorted.map((row: any) => (
+      <tr key={row.label}>
+      <td style={{paddingRight:'8px', color:'#333'}}>{row.label}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{row.household_pct}%</td>
+      </tr>
+      ))}
+      <tr style={{borderTop:'1px solid #ccc'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Total</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalTracts.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>100%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalHouseholds.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>100%</td>
+      </tr>
+      <tr style={{borderTop:'1px solid #eee'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Low-Moderate</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{lmSubtotal.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{lmSubtotal.household_pct}%</td>
+      </tr>
+      </tbody>
+      </table>
+      );
+      })()}
+      
+      {/* Majority minority summary table */}
+      {currentMap.id === 'majority-minority' && summaryData.minority && (() => {
+      const { items, totalTracts, totalHouseholds, mmSubtotal } = summaryData.minority;
+      const order = ['Asian Majority','Black Majority','Hispanic Majority','Black+Hispanic Majority','Combined Majority','White Majority','NA'];
+      const sorted = [...items].sort((a:any,b:any) => order.indexOf(a.label) - order.indexOf(b.label));
+      return (
+      <table style={{borderCollapse:'collapse', width:'100%', minWidth:'240px'}}>
+      <thead>
+      <tr style={{borderBottom:'1px solid #ccc'}}>
+      <th style={{textAlign:'left', paddingRight:'8px', color:'#555', fontWeight:'normal'}}></th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># Tracts</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}>%</th>
+      <th style={{textAlign:'right', paddingRight:'6px', color:'#555', fontWeight:'normal'}}># HH</th>
+      <th style={{textAlign:'right', color:'#555', fontWeight:'normal'}}>%</th>
+      </tr>
+      </thead>
+      <tbody>
+      {sorted.map((row: any) => (
+      <tr key={row.label}>
+      <td style={{paddingRight:'8px', color:'#333'}}>{row.label.replace(' Majority','')}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{row.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{row.household_pct}%</td>
+      </tr>
+      ))}
+      <tr style={{borderTop:'1px solid #ccc'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Total</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalTracts.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>100%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{totalHouseholds.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>100%</td>
+      </tr>
+      <tr style={{borderTop:'1px solid #eee'}}>
+      <td style={{paddingRight:'8px', color:'#333'}}>Majority Minority</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.tract_count.toLocaleString()}</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.tract_pct}%</td>
+      <td style={{textAlign:'right', paddingRight:'6px'}}>{mmSubtotal.household_count.toLocaleString()}</td>
+      <td style={{textAlign:'right'}}>{mmSubtotal.household_pct}%</td>
+      </tr>
+      </tbody>
+      </table>
+      );
+      })()}
+      
+      </div>
+      )}
+      </div>
+      
+      {/* ── Slideshow Controls ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+      <div className="flex items-center gap-2">
+      {MAPS.map((m, idx) => (
+      <button
+      key={m.id}
+      onClick={() => { setIsPlaying(false); goToMap(idx); }}
+      className={`rounded-full text-xs font-medium px-3 py-1 ${
+      idx === currentMapIdx
+      ? "bg-blue-600 text-white"
+      : "bg-white text-gray-500 border border-gray-300 hover:border-gray-400"
+      }`}
+      >
+      {m.title.split(" ")[0]}
+      </button>
+      ))}
+      </div>
+      
+      <div className="w-px h-5 bg-gray-300" />
+      
+      <button
+      onClick={() => setIsPlaying(!isPlaying)}
+      className="flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+      >
+      {isPlaying ? "⏸ Pause" : "▶ Play"}
+      </button>
+      
+      <button
+      onClick={() => { setIsPlaying(false); goToMap((currentMapIdx - 1 + MAPS.length) % MAPS.length); }}
+      className="text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+      >
+      ◄ Prev
+      </button>
+      <button
+      onClick={() => { setIsPlaying(false); goToMap((currentMapIdx + 1) % MAPS.length); }}
+      className="text-xs px-3 py-1 rounded-full border border-gray-300 bg-white text-gray-600 hover:border-gray-400"
+      >
+      Next ►
+      </button>
+      
+      <span className="text-xs text-gray-400">
+      {currentMapIdx + 1} / {MAPS.length}
+      </span>
+      </div>
+      </>
+      )}
+      </div>
+      </>
+      );
+      }
+      );
+      // Applied to east; west below
+       [
           "match", ["get", "GEOID"],
           assessmentGeoids, BOUNDARY_COLORS["Inside"],
           BOUNDARY_COLORS["Outside"]
         ]);
         map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      //  0.7));
       } else {
-        map.setPaintProperty("tract-fill", "fill-color", "#e8e8e8");
+        map.setPaintProperty("tract-fill", "fill-color",
+      // 
+      // Applied to east; west below
+      "#e8e8e8");
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
+      }
+      }
+      }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]));
+      // Applied to east; west below
+       "#e8e8e8");
         map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
+      //  0.3));
       }
     }
   }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]);
@@ -788,6 +2219,21 @@ export default function AssessmentAreaMaps() {
           </button>
 
           <div className="flex-1" />
+
+          {/* Recenter button */}
+          <button
+            onClick={() => {
+              if (!mapRef.current || !boundaries[0]?.center_point) return;
+              mapRef.current.flyTo({
+                center: [boundaries[0].center_point.lng, boundaries[0].center_point.lat],
+                zoom: boundaries[0].zoom_level || 10,
+                duration: 800,
+              });
+            }}
+            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+          >
+            🎯 Recenter
+          </button>
 
           {/* Print button */}
           <button
