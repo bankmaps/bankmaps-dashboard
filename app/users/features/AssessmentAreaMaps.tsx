@@ -542,7 +542,6 @@ export default function AssessmentAreaMaps() {
       // Read income_level directly from tileset properties
       map.setPaintProperty("tract-fill", "fill-color",
       // 
-      // Applied to east; west below
       [
       "match", ["get", "income_level"],
       "Low",      INCOME_COLORS["Low"],
@@ -556,7 +555,6 @@ export default function AssessmentAreaMaps() {
       } else if (currentMap.id === "majority-minority") {
       // Read majority_minority directly from tileset properties
       map.setPaintProperty("tract-fill", "fill-color",
-      // Applied to east; west below
       [
       "match", ["get", "majority_minority"],
       "White Majority",          MINORITY_COLORS["White Majority"],
@@ -573,7 +571,6 @@ export default function AssessmentAreaMaps() {
       // Shade inside/outside based on geoids from geography_tracts
       if (assessmentGeoids.length > 0) {
       map.setPaintProperty("tract-fill", "fill-color",
-      // Applied to east; west below
       [
       "match", ["get", "GEOID"],
       assessmentGeoids, BOUNDARY_COLORS["Inside"],
@@ -582,7 +579,6 @@ export default function AssessmentAreaMaps() {
       map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
       } else {
       map.setPaintProperty("tract-fill", "fill-color",
-      // Applied to east; west below
       "#e8e8e8");
       map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
       }
@@ -1034,9 +1030,7 @@ export default function AssessmentAreaMaps() {
       </>
       );
       }
-      );
-      // Applied to east; west below
-       [
+      map.setPaintProperty("tract-fill", "fill-color", [
         "match", ["get", "income_level"],
         "Low",      INCOME_COLORS["Low"],
         "Moderate", INCOME_COLORS["Moderate"],
@@ -1045,13 +1039,11 @@ export default function AssessmentAreaMaps() {
         INCOME_COLORS["Unknown"]
       ]);
       map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
-      //  0.7));
 
     } else if (currentMap.id === "majority-minority") {
       // Read majority_minority directly from tileset properties
       map.setPaintProperty("tract-fill", "fill-color",
       // 
-      // Applied to east; west below
       [
       "match", ["get", "majority_minority"],
       "White Majority",          MINORITY_COLORS["White Majority"],
@@ -1068,7 +1060,6 @@ export default function AssessmentAreaMaps() {
       // Shade inside/outside based on geoids from geography_tracts
       if (assessmentGeoids.length > 0) {
       map.setPaintProperty("tract-fill", "fill-color",
-      // Applied to east; west below
       [
       "match", ["get", "GEOID"],
       assessmentGeoids, BOUNDARY_COLORS["Inside"],
@@ -1077,7 +1068,6 @@ export default function AssessmentAreaMaps() {
       map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
       } else {
       map.setPaintProperty("tract-fill", "fill-color",
-      // Applied to east; west below
       "#e8e8e8");
       map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
       }
@@ -1530,8 +1520,7 @@ export default function AssessmentAreaMaps() {
       );
       }
       );
-      // Applied to east; west below
-       [
+      map.setPaintProperty("tract-fill", "fill-color", [
         "match", ["get", "majority_minority"],
         "White Majority",          MINORITY_COLORS["White Majority"],
         "Asian Majority",          MINORITY_COLORS["Asian Majority"],
@@ -1542,14 +1531,12 @@ export default function AssessmentAreaMaps() {
         MINORITY_COLORS["NA"]
       ]);
       map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
-      //  0.7));
 
     } else if (currentMap.id === "boundaries") {
       // Shade inside/outside based on geoids from geography_tracts
       if (assessmentGeoids.length > 0) {
         map.setPaintProperty("tract-fill", "fill-color",
       // 
-      // Applied to east; west below
       [
       "match", ["get", "GEOID"],
       assessmentGeoids, BOUNDARY_COLORS["Inside"],
@@ -1558,7 +1545,6 @@ export default function AssessmentAreaMaps() {
       map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
       } else {
       map.setPaintProperty("tract-fill", "fill-color",
-      // Applied to east; west below
       "#e8e8e8");
       map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
       }
@@ -2010,27 +1996,18 @@ export default function AssessmentAreaMaps() {
       </>
       );
       }
-      );
-      // Applied to east; west below
-       [
+      map.setPaintProperty("tract-fill", "fill-color", [
           "match", ["get", "GEOID"],
           assessmentGeoids, BOUNDARY_COLORS["Inside"],
           BOUNDARY_COLORS["Outside"]
         ]);
         map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
-      //  0.7));
       } else {
-        map.setPaintProperty("tract-fill", "fill-color",
-      // 
-      // Applied to east; west below
-      "#e8e8e8");
-      map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
-      }
-      }
-      }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]));
-      // Applied to east; west below
-       "#e8e8e8");
+        map.setPaintProperty("tract-fill", "fill-color", "#e8e8e8");
         map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
+      }
+      }
+      }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]);
       //  0.3));
       }
     }
