@@ -13,7 +13,7 @@ const CENSUS_CONFIG: Record<number, { tileset: string; sourceLayer: string }> = 
   2021: { tileset: "mapbox://stuartmaps.census-2021", sourceLayer: "census" },
   2022: { tileset: "mapbox://stuartmaps.census-2022", sourceLayer: "census" },
   2023: { tileset: "mapbox://stuartmaps.census-2023", sourceLayer: "census" },
-  2024: { tileset: "mapbox://stuartmaps.0vrxg3i5", sourceLayer: "cesnsus_2024" },
+  2024: { tileset: "mapbox://stuartmaps.0vrxg3i5", sourceLayer: "cesnsus_2024-bvcc7q" },
   2025: { tileset: "mapbox://stuartmaps.census-2025", sourceLayer: "census" },
 };
 
