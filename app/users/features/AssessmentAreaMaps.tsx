@@ -452,10 +452,6 @@ export default function AssessmentAreaMaps() {
       const geoid = e.features[0].properties.GEOID;
       const lngLat = e.lngLat;
 
-      // Always update highlight immediately
-      map.setFilter('tract-highlight', ['==', 'GEOID', geoid]);
-      map.setPaintProperty('tract-highlight', 'line-opacity', 1);
-
       if (!showHoverRef.current) return;
       map.getCanvas().style.cursor = 'pointer';
 
@@ -464,13 +460,15 @@ export default function AssessmentAreaMaps() {
         popupRef.current.setLngLat(lngLat);
       }
 
-      // Only fetch if we moved to a different tract
+      // Only fetch/highlight if we moved to a different tract
       if (geoid === lastGeoid) return;
       lastGeoid = geoid;
 
-      // Debounce the API fetch by 150ms
+      // Debounce both highlight and API fetch by 150ms
       if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
       hoverDebounceTimer = setTimeout(() => {
+        map.setFilter('tract-highlight', ['==', 'GEOID', geoid]);
+        map.setPaintProperty('tract-highlight', 'line-opacity', 1);
         const currentMapId = currentMapIdRef.current;
         const token = localStorage.getItem("jwt_token")
                    || localStorage.getItem("token")
