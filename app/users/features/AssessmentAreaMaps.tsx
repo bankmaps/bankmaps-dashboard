@@ -13,7 +13,7 @@ const CENSUS_CONFIG: Record<number, { tileset: string; sourceLayer: string }> = 
   2021: { tileset: "mapbox://stuartmaps.census-2021", sourceLayer: "census" },
   2022: { tileset: "mapbox://stuartmaps.census-2022", sourceLayer: "census" },
   2023: { tileset: "mapbox://stuartmaps.census-2023", sourceLayer: "census" },
-2024: { tileset: "mapbox://stuartmaps.0vrxg3i5", sourceLayer: "cesnsus_2024-bvcc7q" },
+  2024: { tileset: "mapbox://stuartmaps.b9uw1ngw", sourceLayer: "census_2024-2dda84" },
   2025: { tileset: "mapbox://stuartmaps.census-2025", sourceLayer: "census" },
 };
 
@@ -443,55 +443,72 @@ export default function AssessmentAreaMaps() {
     });
 
     // ── Hover popup + highlight ──────────────────────────────────────────────
+    let hoverDebounceTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastGeoid: string | null = null;
+
     map.on('mousemove', 'tract-fill', (e: any) => {
       if (!e.features || e.features.length === 0) return;
 
-      // Highlight hovered tract outline
       const geoid = e.features[0].properties.GEOID;
+      const lngLat = e.lngLat;
+
+      // Always update highlight immediately
       map.setFilter('tract-highlight', ['==', 'GEOID', geoid]);
       map.setPaintProperty('tract-highlight', 'line-opacity', 1);
 
       if (!showHoverRef.current) return;
       map.getCanvas().style.cursor = 'pointer';
 
-      const lngLat = e.lngLat;
-      const currentMapId = currentMapIdRef.current;
+      // Move existing popup to current cursor position immediately
+      if (popupRef.current) {
+        popupRef.current.setLngLat(lngLat);
+      }
 
-      // Fetch full tract data from census_us via API
-      const token = localStorage.getItem("jwt_token")
-                 || localStorage.getItem("token")
-                 || localStorage.getItem("authToken")
-                 || localStorage.getItem("access_token");
+      // Only fetch if we moved to a different tract
+      if (geoid === lastGeoid) return;
+      lastGeoid = geoid;
 
-      fetch(`/api/popup?geoid=${geoid}&year=${selectedYearRef.current}`, {
-        headers: { Authorization: `Bearer ${token || ""}` }
-      })
-        .then(r => r.json())
-        .then(props => {
-          if (!map || !showHoverRef.current) return;
+      // Debounce the API fetch by 150ms
+      if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
+      hoverDebounceTimer = setTimeout(() => {
+        const currentMapId = currentMapIdRef.current;
+        const token = localStorage.getItem("jwt_token")
+                   || localStorage.getItem("token")
+                   || localStorage.getItem("authToken")
+                   || localStorage.getItem("access_token");
 
-          const html = buildPopupHTML(currentMapId, props);
-          if (!html) return;
-
-          if (!popupRef.current) {
-            popupRef.current = new mapboxgl.Popup({
-              closeButton: false,
-              closeOnClick: false,
-              maxWidth: '320px',
-              offset: [16, 0],
-              anchor: 'left',
-            });
-          }
-
-          popupRef.current
-            .setLngLat(lngLat)
-            .setHTML(html)
-            .addTo(map);
+        fetch(`/api/popup?geoid=${geoid}&year=${selectedYearRef.current}`, {
+          headers: { Authorization: `Bearer ${token || ""}` }
         })
-        .catch(err => console.error('[POPUP] fetch error:', err));
+          .then(r => r.json())
+          .then(props => {
+            if (!map || !showHoverRef.current) return;
+
+            const html = buildPopupHTML(currentMapId, props);
+            if (!html) return;
+
+            if (!popupRef.current) {
+              popupRef.current = new mapboxgl.Popup({
+                closeButton: false,
+                closeOnClick: false,
+                maxWidth: '320px',
+                offset: [16, 0],
+                anchor: 'left',
+              });
+            }
+
+            popupRef.current
+              .setLngLat(lngLat)
+              .setHTML(html)
+              .addTo(map);
+          })
+          .catch(err => console.error('[POPUP] fetch error:', err));
+      }, 150);
     });
 
     map.on('mouseleave', 'tract-fill', () => {
+      if (hoverDebounceTimer) clearTimeout(hoverDebounceTimer);
+      lastGeoid = null;
       map.getCanvas().style.cursor = '';
       map.setFilter('tract-highlight', ['==', 'GEOID', '']);
       map.setPaintProperty('tract-highlight', 'line-opacity', 0);
