@@ -30,37 +30,26 @@ export async function GET(req: NextRequest) {
 
     const query = `
       SELECT
-        tract_text,
-        townname,
-        stateabbrev,
-        countyname,
-        msaname,
+        tract_number,
+        town,
+        st,
+        county,
+        msa,
         income_level,
         majority_minority,
         tract_median_family_income,
         msa_median_family_income,
-        tract_median_family_income_percent,
         total_population,
         white_nonhispanic_population,
-        white_nonhispanic_population_percent,
         minority_population,
-        minority_population_percent,
         asian_population,
-        asian_population_percent,
         black_population,
-        black_population_percent,
         hawaiian_other_pacific_islander_population,
-        hawaiian_other_pacific_islander_population_percent,
         native_american_population,
-        native_american_population_percent,
         two_or_more_races_population,
-        two_or_more_races_population_percent,
         white_population,
-        white_population_percent,
         other_race_population,
-        other_race_population_percent,
-        hispanic_population,
-        hispanic_population_percent
+        hispanic_population
       FROM census_us
       WHERE geoid = $1
         AND year  = $2

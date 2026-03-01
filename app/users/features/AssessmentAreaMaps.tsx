@@ -75,10 +75,13 @@ function buildPopupHTML(mapId: string, props: Record<string, any>): string {
   const s = 'font-family:sans-serif;font-size:11px;line-height:1.3;';
   const rowS = 'display:flex;justify-content:space-between;gap:12px;margin-bottom:1px;';
 
+  const fmt = (n: any) => n != null ? Number(n).toLocaleString() : 'N/A';
+  const pct  = (n: any) => n != null ? `${Number(n).toFixed(1)}%` : 'N/A';
+
   const header = `
-    <div style="font-size:12px;margin-bottom:1px;">Tract ${props.tract_text} in ${props.townname}, ${props.stateabbrev}</div>
-    <div style="color:#555;margin-bottom:1px;">${props.countyname}</div>
-    <div style="color:#555;margin-bottom:3px;">${props.msaname}</div>
+    <div style="font-size:12px;margin-bottom:1px;">Tract ${props.tract_number} in ${props.town}, ${props.st}</div>
+    <div style="color:#555;margin-bottom:1px;">${props.county}</div>
+    <div style="color:#555;margin-bottom:3px;">${props.msa}</div>
     <div style="margin-bottom:3px;border-bottom:1px solid #ddd;padding-bottom:2px;">${props.income_level} &ndash; ${props.majority_minority}</div>`;
 
   const row = (label: string, val: any) =>
@@ -89,30 +92,39 @@ function buildPopupHTML(mapId: string, props: Record<string, any>): string {
   }
 
   if (mapId === 'income-level') {
+    const tractMFI = fmt(props.tract_median_family_income);
+    const msaMFI   = fmt(props.msa_median_family_income);
+    const tractPct = props.tract_median_family_income != null && props.msa_median_family_income != null
+      ? pct((props.tract_median_family_income / props.msa_median_family_income) * 100)
+      : 'N/A';
     return `<div style="${s}padding:6px 8px;min-width:190px;">
       ${header}
-      ${row('Tract MFI', props.tract_median_family_income)}
-      ${row('MSA MFI', props.msa_median_family_income)}
-      ${row('Tract % of MSA', props.tract_median_family_income_percent)}
+      ${row('Tract MFI', tractMFI)}
+      ${row('MSA MFI', msaMFI)}
+      ${row('Tract % of MSA', tractPct)}
     </div>`;
   }
 
   if (mapId === 'majority-minority') {
-    const prow = (label: string, val: any, pct: any) =>
-      `<div style="${rowS}"><span style="color:#555;">${label}</span><span>${val} (${pct})</span></div>`;
+    const pop = props.total_population || 0;
+    const prow = (label: string, val: any) => {
+      const n = val || 0;
+      const p = pop > 0 ? pct((n / pop) * 100) : 'N/A';
+      return `<div style="${rowS}"><span style="color:#555;">${label}</span><span>${fmt(n)} (${p})</span></div>`;
+    };
     return `<div style="${s}padding:6px 8px;min-width:210px;">
       ${header}
-      ${row('Population', props.total_population)}
-      ${prow('White Non-Hispanic', props.white_nonhispanic_population, props.white_nonhispanic_population_percent)}
-      ${prow('Minority', props.minority_population, props.minority_population_percent)}
-      ${prow('Asian', props.asian_population, props.asian_population_percent)}
-      ${prow('Black/African American', props.black_population, props.black_population_percent)}
-      ${prow('Hawaiian/Other Pacific Isl.', props.hawaiian_other_pacific_islander_population, props.hawaiian_other_pacific_islander_population_percent)}
-      ${prow('Native American/Alaskan', props.native_american_population, props.native_american_population_percent)}
-      ${prow('Two or More Races', props.two_or_more_races_population, props.two_or_more_races_population_percent)}
-      ${prow('White', props.white_population, props.white_population_percent)}
-      ${prow('Other Race', props.other_race_population, props.other_race_population_percent)}
-      ${prow('Hispanic or Latino', props.hispanic_population, props.hispanic_population_percent)}
+      ${row('Population', fmt(pop))}
+      ${prow('White Non-Hispanic', props.white_nonhispanic_population)}
+      ${prow('Minority', props.minority_population)}
+      ${prow('Asian', props.asian_population)}
+      ${prow('Black/African American', props.black_population)}
+      ${prow('Hawaiian/Other Pacific Isl.', props.hawaiian_other_pacific_islander_population)}
+      ${prow('Native American/Alaskan', props.native_american_population)}
+      ${prow('Two or More Races', props.two_or_more_races_population)}
+      ${prow('White', props.white_population)}
+      ${prow('Other Race', props.other_race_population)}
+      ${prow('Hispanic or Latino', props.hispanic_population)}
     </div>`;
   }
 
