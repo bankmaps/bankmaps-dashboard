@@ -13,7 +13,7 @@ const CENSUS_CONFIG: Record<number, { tileset: string; sourceLayer: string }> = 
   2021: { tileset: "mapbox://stuartmaps.census-2021", sourceLayer: "census" },
   2022: { tileset: "mapbox://stuartmaps.census-2022", sourceLayer: "census" },
   2023: { tileset: "mapbox://stuartmaps.census-2023", sourceLayer: "census" },
-  2024: { tileset: "mapbox://stuartmaps.b9uw1ngw", sourceLayer: "census_2024-2dda84" },
+  2024: { tileset: "mapbox://stuartmaps.census-2024", sourceLayer: "census" },
   2025: { tileset: "mapbox://stuartmaps.census-2025", sourceLayer: "census" },
 };
 
@@ -128,6 +128,7 @@ export default function AssessmentAreaMaps() {
   const geographiesRef   = useRef<any[]>([]);
   const popupRef         = useRef<any>(null);
   const currentMapIdRef  = useRef<string>('boundaries');
+  const selectedYearRef  = useRef<number>(2024);
   const showHoverRef     = useRef<boolean>(true);
   const branchPopupRef   = useRef<any>(null);
 
@@ -441,25 +442,41 @@ export default function AssessmentAreaMaps() {
       if (!showHoverRef.current) return;
       map.getCanvas().style.cursor = 'pointer';
 
-      const props = e.features[0].properties;
+      const lngLat = e.lngLat;
       const currentMapId = currentMapIdRef.current;
-      const html = buildPopupHTML(currentMapId, props);
-      if (!html) return;
 
-      if (!popupRef.current) {
-        popupRef.current = new mapboxgl.Popup({
-          closeButton: false,
-          closeOnClick: false,
-          maxWidth: '320px',
-          offset: [16, 0],  // shift right of cursor
-          anchor: 'left',
-        });
-      }
+      // Fetch full tract data from census_us via API
+      const token = localStorage.getItem("jwt_token")
+                 || localStorage.getItem("token")
+                 || localStorage.getItem("authToken")
+                 || localStorage.getItem("access_token");
 
-      popupRef.current
-        .setLngLat(e.lngLat)
-        .setHTML(html)
-        .addTo(map);
+      fetch(`/api/popup?geoid=${geoid}&year=${selectedYearRef.current}`, {
+        headers: { Authorization: `Bearer ${token || ""}` }
+      })
+        .then(r => r.json())
+        .then(props => {
+          if (!map || !showHoverRef.current) return;
+
+          const html = buildPopupHTML(currentMapId, props);
+          if (!html) return;
+
+          if (!popupRef.current) {
+            popupRef.current = new mapboxgl.Popup({
+              closeButton: false,
+              closeOnClick: false,
+              maxWidth: '320px',
+              offset: [16, 0],
+              anchor: 'left',
+            });
+          }
+
+          popupRef.current
+            .setLngLat(lngLat)
+            .setHTML(html)
+            .addTo(map);
+        })
+        .catch(err => console.error('[POPUP] fetch error:', err));
     });
 
     map.on('mouseleave', 'tract-fill', () => {
@@ -615,9 +632,15 @@ export default function AssessmentAreaMaps() {
     }
   }, [showHover]);
 
+  // ── Keep selectedYearRef in sync ────────────────────────────────────────────
+  useEffect(() => {
+    selectedYearRef.current = selectedYear;
+  }, [selectedYear]);
+
   // ── Keep currentMapIdRef in sync so hover popup knows which layout to use ──
   useEffect(() => {
     currentMapIdRef.current = currentMap.id;
+    selectedYearRef.current = selectedYear;
   }, [currentMap]);
 
   // ── Toggle tract number labels ──────────────────────────────────────────────
