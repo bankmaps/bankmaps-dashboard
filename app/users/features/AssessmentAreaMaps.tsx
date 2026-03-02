@@ -746,6 +746,17 @@ export default function AssessmentAreaMaps() {
 
   return (
     <>
+      {/* ── Print styles ────────────────────────────────────────────────── */}
+      <style>{`
+        @media print {
+          @page { size: landscape letter; margin: 0.4in; }
+          body * { visibility: hidden; }
+          .aa-print-frame, .aa-print-frame * { visibility: visible; }
+          .aa-print-frame { position: fixed; top: 0; left: 0; width: 100%; }
+          .aa-no-print { display: none !important; }
+        }
+      `}</style>
+
       <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif", height: "100%", minHeight: "600px" }}>
 
         {loading && (
@@ -763,7 +774,7 @@ export default function AssessmentAreaMaps() {
         {!loading && organizations.length > 0 && (
         <>
         {/* ── Controls Bar ──────────────────────────────────────────────── */}
-        <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
+        <div className="aa-no-print flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
 
           {/* Organization selector */}
           <div className="flex items-center gap-2">
@@ -898,6 +909,9 @@ export default function AssessmentAreaMaps() {
           </button>
         </div>
 
+        {/* ── Print frame: narrative + map ──────────────────────────────── */}
+        <div className="aa-print-frame">
+
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
         <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
           <h2 className="text-lg font-bold text-gray-800">{currentMap.title}</h2>
@@ -909,7 +923,7 @@ export default function AssessmentAreaMaps() {
         {/* ── Map Area ──────────────────────────────────────────────────── */}
         <div
           className="relative overflow-hidden"
-          style={{ flex: 1, minHeight: "450px", position: "relative" }}
+          style={{ position: "relative", width: "100%", paddingBottom: "77.6%" }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -1097,8 +1111,10 @@ export default function AssessmentAreaMaps() {
           )}
         </div>
 
+        </div> {/* end aa-print-frame */}
+
         {/* ── Slideshow Controls ─────────────────────────────────────────── */}
-        <div className="flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+        <div className="aa-no-print flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
           <div className="flex items-center gap-2">
             {MAPS.map((m, idx) => (
               <button
