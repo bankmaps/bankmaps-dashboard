@@ -13,7 +13,7 @@ const CENSUS_CONFIG: Record<number, { tileset: string; sourceLayer: string }> = 
   2021: { tileset: "mapbox://stuartmaps.census-2021", sourceLayer: "census" },
   2022: { tileset: "mapbox://stuartmaps.census-2022", sourceLayer: "census" },
   2023: { tileset: "mapbox://stuartmaps.census-2023", sourceLayer: "census" },
-  2024: { tileset: "mapbox://stuartmaps.b9uw1ngw", sourceLayer: "census_2024-2dda84" },
+  2024: { tileset: "mapbox://stuartmaps.93jkr67o", sourceLayer: "census_2024-3x4oxo" },
   2025: { tileset: "mapbox://stuartmaps.census-2025", sourceLayer: "census" },
 };
 
@@ -330,7 +330,7 @@ export default function AssessmentAreaMaps() {
         type: "fill",
         source: "census-tracts",
         "source-layer": config.sourceLayer,
-        paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.6 },
+        paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.4 },
       });
 
       // Tract outline
@@ -539,7 +539,7 @@ export default function AssessmentAreaMaps() {
       type: "fill",
       source: "census-tracts",
       "source-layer": newConfig.sourceLayer,
-      paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.6 },
+      paint: { "fill-color": "#e8e8e8", "fill-opacity": 0.4 },
     });
     map.addLayer({
       id: "tract-outline",
@@ -617,7 +617,7 @@ export default function AssessmentAreaMaps() {
         "Upper",    INCOME_COLORS["Upper"],
         INCOME_COLORS["Unknown"]
       ]);
-      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
 
     } else if (currentMap.id === "majority-minority") {
       // Read majority_minority directly from tileset properties
@@ -631,7 +631,7 @@ export default function AssessmentAreaMaps() {
         "Combined Majority",       MINORITY_COLORS["Combined Majority"],
         MINORITY_COLORS["NA"]
       ]);
-      map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+      map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
 
     } else if (currentMap.id === "boundaries") {
       // Shade inside/outside based on geoids from geography_tracts
@@ -641,7 +641,7 @@ export default function AssessmentAreaMaps() {
           assessmentGeoids, BOUNDARY_COLORS["Inside"],
           BOUNDARY_COLORS["Outside"]
         ]);
-        map.setPaintProperty("tract-fill", "fill-opacity", 0.7);
+        map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
       } else {
         map.setPaintProperty("tract-fill", "fill-color", "#e8e8e8");
         map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
