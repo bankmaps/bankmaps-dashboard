@@ -752,7 +752,7 @@ export default function AssessmentAreaMaps() {
           @page { size: landscape letter; margin: 0.4in; }
           body * { visibility: hidden; }
           .aa-print-frame, .aa-print-frame * { visibility: visible; }
-          .aa-print-frame { position: fixed; top: 0; left: 0; width: 100%; }
+          .aa-print-frame { position: fixed; top: 0; left: 0; width: 100%; max-width: 100%; }
           .aa-no-print { display: none !important; }
         }
       `}</style>
@@ -909,8 +909,10 @@ export default function AssessmentAreaMaps() {
           </button>
         </div>
 
-        {/* ── Print frame: narrative + map ──────────────────────────────── */}
-        <div className="aa-print-frame">
+        {/* ── Page frame: centered letter-landscape shape ────────────────── */}
+        {/* Printable area at 0.4in margins: 10.2" × 7.7" = ratio 0.755    */}
+        {/* At max-width 960px: map height = 960 * 0.755 - 62px (narrative) */}
+        <div className="aa-print-frame" style={{ maxWidth: '960px', margin: '12px auto', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
         <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
@@ -923,7 +925,7 @@ export default function AssessmentAreaMaps() {
         {/* ── Map Area ──────────────────────────────────────────────────── */}
         <div
           className="relative overflow-hidden"
-          style={{ position: "relative", width: "100%", paddingBottom: "77.6%" }}
+          style={{ position: "relative", width: "100%", height: "663px" }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -1114,7 +1116,7 @@ export default function AssessmentAreaMaps() {
         </div> {/* end aa-print-frame */}
 
         {/* ── Slideshow Controls ─────────────────────────────────────────── */}
-        <div className="aa-no-print flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+        <div className="aa-no-print flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200" style={{ maxWidth: '960px', margin: '0 auto' }}>
           <div className="flex items-center gap-2">
             {MAPS.map((m, idx) => (
               <button
