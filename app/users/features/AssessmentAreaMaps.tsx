@@ -161,6 +161,7 @@ export default function AssessmentAreaMaps() {
   const [summaryData,           setSummaryData]           = useState<any>(null);
   const [showBranches,          setShowBranches]          = useState(true);
   const [branches,              setBranches]              = useState<any[]>([]);
+  const [showBoundary,          setShowBoundary]          = useState(true);
 
   const currentMap = MAPS[currentMapIdx];
   const config     = CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024];
@@ -313,7 +314,7 @@ export default function AssessmentAreaMaps() {
       zoom: 3.5,
     });
 
-    map.addControl(new mapboxgl.NavigationControl(), "top-right");
+    // NavigationControl moved to custom position below title box
 
     map.on("load", () => {
       setMapLoaded(true);
@@ -395,15 +396,13 @@ export default function AssessmentAreaMaps() {
         type: "circle",
         source: "branches",
         paint: {
-          "circle-radius": 6,
-          "circle-color": [
-            "match", ["get", "branchtype"],
-            "Main Office", "#ff6600",
-            "Branch",      "#0066ff",
-            "#888888"
-          ],
-          "circle-stroke-color": "#ffffff",
-          "circle-stroke-width": 1.5,
+          "circle-radius": 5,
+          "circle-color": "#cc0000",
+          "circle-stroke-color": "#cc0000",
+          "circle-stroke-width": 0,
+          // Use pitch-alignment none and square shape via zero blur
+          "circle-blur": 0,
+          "circle-pitch-alignment": "map",
         },
       });
 
@@ -696,8 +695,25 @@ export default function AssessmentAreaMaps() {
   const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
   const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
 
-  const handlePrintCurrent = () => { window.print(); };
-  const handlePrintAll     = () => { alert("Generating full PDF report... (coming soon)"); };
+  const handlePrintCurrent = () => {
+    setShowPrintModal(false);
+    setTimeout(() => window.print(), 100);
+  };
+  const handlePrintAll = () => {
+    setShowPrintModal(false);
+    // Cycle through all maps printing each one
+    let idx = 0;
+    const printNext = () => {
+      if (idx >= MAPS.length) return;
+      goToMap(idx);
+      idx++;
+      setTimeout(() => {
+        window.print();
+        if (idx < MAPS.length) setTimeout(printNext, 1000);
+      }, 600);
+    };
+    printNext();
+  };
 
   return (
     <>
@@ -815,12 +831,17 @@ export default function AssessmentAreaMaps() {
           <button
             onClick={() => {
               if (!mapRef.current) return;
-              const vis = mapRef.current.getLayoutProperty("user-boundary-line", "visibility");
-              const next = vis === "none" ? "visible" : "none";
-              mapRef.current.setLayoutProperty("user-boundary-line", "visibility", next);
-              mapRef.current.setLayoutProperty("user-boundary-fill", "visibility", next);
+              const next = !showBoundary;
+              setShowBoundary(next);
+              const vis = next ? "visible" : "none";
+              mapRef.current.setLayoutProperty("user-boundary-line", "visibility", vis);
+              mapRef.current.setLayoutProperty("user-boundary-fill", "visibility", vis);
             }}
-            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            className={`text-xs px-3 py-1 rounded-full border font-medium ${
+              showBoundary
+                ? "bg-blue-600 text-white border-blue-600"
+                : "bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            }`}
           >
             🗺️ Boundary
           </button>
@@ -869,6 +890,20 @@ export default function AssessmentAreaMaps() {
             className={isTransitioning ? "opacity-0" : "opacity-100"}
           />
 
+          {/* Zoom controls - top left below title */}
+          <div className="absolute top-3 left-3 z-10 flex flex-col gap-1">
+            <button
+              onClick={() => mapRef.current?.zoomIn()}
+              className="w-7 h-7 bg-white rounded shadow text-lg font-bold text-gray-700 flex items-center justify-center hover:bg-gray-100 border border-gray-300"
+              title="Zoom in"
+            >+</button>
+            <button
+              onClick={() => mapRef.current?.zoomOut()}
+              className="w-7 h-7 bg-white rounded shadow text-lg font-bold text-gray-700 flex items-center justify-center hover:bg-gray-100 border border-gray-300"
+              title="Zoom out"
+            >−</button>
+          </div>
+
           {/* Legend */}
           {currentMap.id !== "boundaries" && (
             <div className="absolute bottom-8 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
@@ -899,23 +934,21 @@ export default function AssessmentAreaMaps() {
             </div>
           )}
 
-          {/* Branch legend */}
+          {/* Branch legend - bottom right, above boundary legend */}
           {showBranches && branches.length > 0 && (
-            <div className="absolute bottom-20 left-4 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+            <div className="absolute bg-white rounded-lg shadow-lg p-3 z-10 text-xs" style={{bottom:'52px', right:'56px'}}>
               <div className="font-semibold text-gray-700 mb-2">Branches</div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#ff6600'}} />
-                <span className="text-gray-600">Main Office</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full border border-white" style={{backgroundColor:'#0066ff'}} />
-                <span className="text-gray-600">Branch</span>
-              </div>
+              {branches.some((b: any) => b.branchtype === 11 || b.branchtype === '11') && (
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-3 h-3" style={{backgroundColor:'#cc0000'}} />
+                  <span className="text-gray-600">Full Service Branch</span>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Blue boundary line legend */}
-          <div className="absolute bottom-8 right-14 bg-white rounded-lg shadow-lg p-3 z-10 text-xs">
+          {/* Blue boundary line legend - bottom right */}
+          <div className="absolute bg-white rounded-lg shadow-lg p-3 z-10 text-xs" style={{bottom:'8px', right:'56px'}}>
             <div className="flex items-center gap-2">
               <div className="w-6 h-1 bg-blue-600 rounded" />
               <span className="text-gray-600">Assessment Area</span>
@@ -1079,6 +1112,36 @@ export default function AssessmentAreaMaps() {
             {currentMapIdx + 1} / {MAPS.length}
           </span>
         </div>
+        {/* ── Print Modal ───────────────────────────────────────────────── */}
+        {showPrintModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+            <div className="bg-white rounded-xl shadow-2xl p-6 w-80">
+              <h3 className="text-base font-bold text-gray-800 mb-1">Print / Save Map</h3>
+              <p className="text-xs text-gray-500 mb-4">Choose what to print or save as PDF.</p>
+              <div className="flex flex-col gap-3">
+                <button
+                  onClick={handlePrintCurrent}
+                  className="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
+                >
+                  🖨️ Print Current Map ({currentMap.title.split(" ")[0]})
+                </button>
+                <button
+                  onClick={handlePrintAll}
+                  className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white text-sm font-medium hover:bg-gray-800"
+                >
+                  🗂️ Print All Maps ({MAPS.length} pages)
+                </button>
+                <button
+                  onClick={() => setShowPrintModal(false)}
+                  className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:border-gray-400"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         </>
         )}
       </div>
