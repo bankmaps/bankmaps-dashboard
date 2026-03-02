@@ -47,9 +47,13 @@ const YEARS = [2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025];
 
 // ─── Color schemes ────────────────────────────────────────────────────────────
 const INCOME_COLORS: Record<string, string> = {
+  "Low Income":      "#ff0000",
   "Low":      "#ff0000",
+  "Moderate Income": "#ffff00",
   "Moderate": "#ffff00",
+  "Middle Income":   "#aaaa7f",
   "Middle":   "#aaaa7f",
+  "Upper Income":    "#d6d6a0",
   "Upper":    "#d6d6a0",
   "Unknown":  "#7d7d7d",
 };
@@ -365,7 +369,7 @@ export default function AssessmentAreaMaps() {
         source: "census-tracts",
         "source-layer": config.sourceLayer,
         layout: {
-          "text-field": ["get", "tract_text"],
+          "text-field": ["get", "tract_number"],
           "text-size": 8,
           "visibility": "none",
         },
@@ -391,18 +395,26 @@ export default function AssessmentAreaMaps() {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] }
       });
+
+      // Draw a red square icon into an offscreen canvas and register it
+      const squareSize = 10;
+      const squareCanvas = document.createElement('canvas');
+      squareCanvas.width = squareSize;
+      squareCanvas.height = squareSize;
+      const ctx = squareCanvas.getContext('2d')!;
+      ctx.fillStyle = '#cc0000';
+      ctx.fillRect(0, 0, squareSize, squareSize);
+      const squareImageData = ctx.getImageData(0, 0, squareSize, squareSize);
+      map.addImage('branch-square', { width: squareSize, height: squareSize, data: squareImageData.data as unknown as Uint8Array });
+
       map.addLayer({
         id: "branch-points",
-        type: "circle",
+        type: "symbol",
         source: "branches",
-        paint: {
-          "circle-radius": 5,
-          "circle-color": "#cc0000",
-          "circle-stroke-color": "#cc0000",
-          "circle-stroke-width": 0,
-          // Use pitch-alignment none and square shape via zero blur
-          "circle-blur": 0,
-          "circle-pitch-alignment": "map",
+        layout: {
+          "icon-image": "branch-square",
+          "icon-size": 1,
+          "icon-allow-overlap": true,
         },
       });
 
@@ -519,6 +531,68 @@ export default function AssessmentAreaMaps() {
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
+  // ── Apply choropleth colors based on current map type ──────────────────────
+  const applychoropleth = useCallback(() => {
+    if (!mapRef.current) return;
+    const map = mapRef.current;
+
+    const doApply = () => {
+      if (currentMap.id === "income-level") {
+        map.setPaintProperty("tract-fill", "fill-color", [
+          "match", ["get", "income_level"],
+          "Low",            INCOME_COLORS["Low"],
+          "Low Income",     INCOME_COLORS["Low"],
+          "Moderate",       INCOME_COLORS["Moderate"],
+          "Moderate Income",INCOME_COLORS["Moderate"],
+          "Middle",         INCOME_COLORS["Middle"],
+          "Middle Income",  INCOME_COLORS["Middle"],
+          "Upper",          INCOME_COLORS["Upper"],
+          "Upper Income",   INCOME_COLORS["Upper"],
+          INCOME_COLORS["Unknown"]
+        ]);
+        map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
+
+      } else if (currentMap.id === "majority-minority") {
+        map.setPaintProperty("tract-fill", "fill-color", [
+          "match", ["get", "majority_minority"],
+          "White Majority",          MINORITY_COLORS["White Majority"],
+          "Asian Majority",          MINORITY_COLORS["Asian Majority"],
+          "Black Majority",          MINORITY_COLORS["Black Majority"],
+          "Hispanic Majority",       MINORITY_COLORS["Hispanic Majority"],
+          "Black+Hispanic Majority", MINORITY_COLORS["Black+Hispanic Majority"],
+          "Combined Majority",       MINORITY_COLORS["Combined Majority"],
+          MINORITY_COLORS["NA"]
+        ]);
+        map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
+
+      } else if (currentMap.id === "boundaries") {
+        if (assessmentGeoids.length > 0) {
+          map.setPaintProperty("tract-fill", "fill-color", [
+            "match", ["get", "GEOID"],
+            assessmentGeoids, BOUNDARY_COLORS["Inside"],
+            BOUNDARY_COLORS["Outside"]
+          ]);
+          map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
+        } else {
+          map.setPaintProperty("tract-fill", "fill-color", "#e8e8e8");
+          map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
+        }
+      }
+    };
+
+    // Wait for map to be idle (tiles loaded) before applying paint properties
+    if (map.isStyleLoaded() && map.getSource("census-tracts")) {
+      doApply();
+    } else {
+      map.once('idle', doApply);
+    }
+  }, [currentMap, assessmentGeoids]);
+
+  useEffect(() => {
+    if (!mapLoaded) return;
+    applychoropleth();
+  }, [mapLoaded, applychoropleth, selectedYear]);
+
   // ── Swap tileset source when year changes ───────────────────────────────────
   useEffect(() => {
     if (!mapLoaded || !mapRef.current) return;
@@ -553,7 +627,7 @@ export default function AssessmentAreaMaps() {
       source: "census-tracts",
       "source-layer": newConfig.sourceLayer,
       layout: {
-        "text-field": ["get", "tract_text"],
+        "text-field": ["get", "tract_number"],
         "text-size": 8,
         "visibility": showTractNums ? "visible" : "none",
       },
@@ -572,6 +646,9 @@ export default function AssessmentAreaMaps() {
     if (map.getLayer("branch-points"))     map.moveLayer("branch-points");
     if (map.getLayer("user-boundary-fill")) map.moveLayer("user-boundary-fill");
     if (map.getLayer("user-boundary-line")) map.moveLayer("user-boundary-line");
+
+    // Re-apply choropleth colors after source swap (wait for tiles to load)
+    map.once('idle', () => applychoropleth());
   }, [mapLoaded, selectedYear]);
 
   // ── Update boundary overlay ─────────────────────────────────────────────────
@@ -599,54 +676,6 @@ export default function AssessmentAreaMaps() {
       });
     }
   }, [mapLoaded, boundaries]);
-
-  // ── Apply choropleth colors based on current map type ──────────────────────
-  useEffect(() => {
-    if (!mapLoaded || !mapRef.current) return;
-    const map = mapRef.current;
-    const sourceLayer = (CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024]).sourceLayer;
-
-    if (currentMap.id === "income-level") {
-      // Read income_level directly from tileset properties
-      map.setPaintProperty("tract-fill", "fill-color", [
-        "match", ["get", "income_level"],
-        "Low",      INCOME_COLORS["Low"],
-        "Moderate", INCOME_COLORS["Moderate"],
-        "Middle",   INCOME_COLORS["Middle"],
-        "Upper",    INCOME_COLORS["Upper"],
-        INCOME_COLORS["Unknown"]
-      ]);
-      map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
-
-    } else if (currentMap.id === "majority-minority") {
-      // Read majority_minority directly from tileset properties
-      map.setPaintProperty("tract-fill", "fill-color", [
-        "match", ["get", "majority_minority"],
-        "White Majority",          MINORITY_COLORS["White Majority"],
-        "Asian Majority",          MINORITY_COLORS["Asian Majority"],
-        "Black Majority",          MINORITY_COLORS["Black Majority"],
-        "Hispanic Majority",       MINORITY_COLORS["Hispanic Majority"],
-        "Black+Hispanic Majority", MINORITY_COLORS["Black+Hispanic Majority"],
-        "Combined Majority",       MINORITY_COLORS["Combined Majority"],
-        MINORITY_COLORS["NA"]
-      ]);
-      map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
-
-    } else if (currentMap.id === "boundaries") {
-      // Shade inside/outside based on geoids from geography_tracts
-      if (assessmentGeoids.length > 0) {
-        map.setPaintProperty("tract-fill", "fill-color", [
-          "match", ["get", "GEOID"],
-          assessmentGeoids, BOUNDARY_COLORS["Inside"],
-          BOUNDARY_COLORS["Outside"]
-        ]);
-        map.setPaintProperty("tract-fill", "fill-opacity", 0.4);
-      } else {
-        map.setPaintProperty("tract-fill", "fill-color", "#e8e8e8");
-        map.setPaintProperty("tract-fill", "fill-opacity", 0.3);
-      }
-    }
-  }, [mapLoaded, currentMap, assessmentGeoids, selectedYear]);
 
   // ── Sync showHoverRef ────────────────────────────────────────────────────────
   useEffect(() => {
