@@ -910,8 +910,6 @@ export default function AssessmentAreaMaps() {
         </div>
 
         {/* ── Page frame: centered letter-landscape shape ────────────────── */}
-        {/* Printable area at 0.4in margins: 10.2" × 7.7" = ratio 0.755    */}
-        {/* At max-width 960px: map height = 960 * 0.755 - 62px (narrative) */}
         <div className="aa-print-frame" style={{ maxWidth: '960px', margin: '12px auto', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
@@ -922,13 +920,18 @@ export default function AssessmentAreaMaps() {
           </p>
         </div>
 
-        {/* ── Map Area ──────────────────────────────────────────────────── */}
+        {/* ── Map Area: padding-bottom drives landscape aspect ratio ─────── */}
+        {/* 7.7/10.2 = 75.5% for printable area; narrative ~62px so         */}
+        {/* we use a wrapping div for the ratio and position map inside it   */}
         <div
-          className="relative overflow-hidden"
-          style={{ position: "relative", width: "100%", height: "663px" }}
+          style={{ position: 'relative', width: '100%', paddingBottom: '75.5%' }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
+          <div
+            className="overflow-hidden"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
           <div
             ref={mapContainerRef}
             style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0 }}
@@ -1111,8 +1114,8 @@ export default function AssessmentAreaMaps() {
 
             </div>
           )}
-        </div>
-
+          </div> {/* end inner map absolute div */}
+        </div> {/* end aspect ratio wrapper */}
         </div> {/* end aa-print-frame */}
 
         {/* ── Slideshow Controls ─────────────────────────────────────────── */}
