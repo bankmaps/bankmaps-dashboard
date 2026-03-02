@@ -17,7 +17,7 @@ const CENSUS_CONFIG: Record<number, { tileset: string; sourceLayer: string }> = 
   2025: { tileset: "mapbox://stuartmaps.census-2025", sourceLayer: "census" },
 };
 
-// Vintage mapping for geography_tracts and map_boundaries API calls
+// Vintage mapping for geography_tracts and map_boundaries API calls - ARE WE STILL USING THIS
 const YEAR_TO_VINTAGE: Record<number, number> = {
   2018: 2018, 2019: 2018,
   2020: 2020, 2021: 2020, 2022: 2020, 2023: 2020,
