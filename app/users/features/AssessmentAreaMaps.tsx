@@ -1137,7 +1137,7 @@ export default function AssessmentAreaMaps() {
           </div> {/* end inner absolute div */}
         </div> {/* end aspect ratio wrapper */}
         </div> {/* end aa-print-frame */}
-        </div> {/* end frame wrapper */
+        </div> {/* end frame wrapper */}
 
         {/* ── Slideshow Controls ─────────────────────────────────────────── */}
         <div className="aa-no-print flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
