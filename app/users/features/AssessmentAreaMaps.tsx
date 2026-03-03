@@ -910,7 +910,7 @@ export default function AssessmentAreaMaps() {
         </div>
 
         {/* ── Print frame: full width, letter-landscape aspect ratio ───────── */}
-        <div className="aa-print-frame" style={{ width: '792px', margin: '12px auto', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
+        <div className="aa-print-frame" style={{ width: '100%', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
         <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
@@ -922,13 +922,13 @@ export default function AssessmentAreaMaps() {
 
         {/* ── Map Area: padding-bottom = 7.7/10.2 = 75.5% for landscape ─── */}
         <div
-          style={{ position: 'relative', width: '100%', height: '550px' }}
+          style={{ position: 'relative', width: '100%', paddingBottom: '70%' }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           <div
             className="overflow-hidden"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}
           >
           <div
             ref={mapContainerRef}
