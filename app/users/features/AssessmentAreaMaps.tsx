@@ -922,7 +922,7 @@ export default function AssessmentAreaMaps() {
 
         {/* ── Map Area: padding-bottom = 7.7/10.2 = 75.5% for landscape ─── */}
         <div
-          style={{ position: 'relative', width: '100%', paddingBottom: '70%' }}
+          style={{ position: 'relative', width: '100%', height: 'calc(100vh - 220px)' }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
