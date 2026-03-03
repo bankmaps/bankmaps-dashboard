@@ -160,7 +160,6 @@ export default function AssessmentAreaMaps() {
   const [boundaries,            setBoundaries]            = useState<any[]>([]);
   const [assessmentGeoids,      setAssessmentGeoids]      = useState<string[]>([]);
   const [showPrintModal,        setShowPrintModal]        = useState(false);
-  const [isPdfLoading,          setIsPdfLoading]          = useState(false);
   const [showHover,             setShowHover]             = useState(true);
   const [showSummary,           setShowSummary]           = useState(true);
   const [summaryData,           setSummaryData]           = useState<any>(null);
@@ -725,27 +724,24 @@ export default function AssessmentAreaMaps() {
   const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
   const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
 
-  const triggerPdfDownload = async (mode) => {
+  const handlePrintCurrent = () => {
     setShowPrintModal(false);
-    setIsPdfLoading(true);
-    try {
-      const token = localStorage.getItem("jwt_token") || localStorage.getItem("token") || localStorage.getItem("authToken") || localStorage.getItem("access_token") || "";
-      const baseUrl = window.location.href.split("?")[0];
-      const url = "/api/pdf?url=" + encodeURIComponent(baseUrl) + "&mode=" + mode + "&mapIdx=" + currentMapIdx + "&token=" + encodeURIComponent(token);
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("PDF generation failed");
-      const blob = await res.blob();
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = mode === "series" ? "assessment-area-maps.pdf" : "map-" + (currentMapIdx + 1) + ".pdf";
-      link.click();
-      URL.revokeObjectURL(link.href);
-    } catch (err) {
-      console.error("[PDF]", err);
-      alert("PDF generation failed. Please try again.");
-    } finally {
-      setIsPdfLoading(false);
-    }
+    setTimeout(() => window.print(), 100);
+  };
+  const handlePrintAll = () => {
+    setShowPrintModal(false);
+    // Cycle through all maps printing each one
+    let idx = 0;
+    const printNext = () => {
+      if (idx >= MAPS.length) return;
+      goToMap(idx);
+      idx++;
+      setTimeout(() => {
+        window.print();
+        if (idx < MAPS.length) setTimeout(printNext, 1000);
+      }, 600);
+    };
+    printNext();
   };
 
   return (
@@ -761,7 +757,7 @@ export default function AssessmentAreaMaps() {
         }
       `}</style>
 
-      <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif", height: "100%", minHeight: "600px" }}>
+      <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif" }}>
 
         {loading && (
           <div className="flex items-center justify-center h-full">
@@ -914,7 +910,7 @@ export default function AssessmentAreaMaps() {
         </div>
 
         {/* ── Print frame: full width, letter-landscape aspect ratio ───────── */}
-        <div className="aa-print-frame" style={{ width: '100%', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
+        <div className="aa-print-frame" style={{ width: '792px', margin: '12px auto', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
         <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
@@ -926,7 +922,7 @@ export default function AssessmentAreaMaps() {
 
         {/* ── Map Area: padding-bottom = 7.7/10.2 = 75.5% for landscape ─── */}
         <div
-          style={{ position: 'relative', width: '100%', paddingBottom: '56.25%' }}
+          style={{ position: 'relative', width: '100%', height: '550px' }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
@@ -1172,13 +1168,13 @@ export default function AssessmentAreaMaps() {
               <p className="text-xs text-gray-500 mb-4">Choose what to print or save as PDF.</p>
               <div className="flex flex-col gap-3">
                 <button
-                  onClick={() => triggerPdfDownload("current")} disabled={isPdfLoading}
+                  onClick={handlePrintCurrent}
                   className="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
                 >
                   🖨️ Print Current Map ({currentMap.title.split(" ")[0]})
                 </button>
                 <button
-                  onClick={() => triggerPdfDownload("series")} disabled={isPdfLoading}
+                  onClick={handlePrintAll}
                   className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white text-sm font-medium hover:bg-gray-800"
                 >
                   🗂️ Print All Maps ({MAPS.length} pages)
