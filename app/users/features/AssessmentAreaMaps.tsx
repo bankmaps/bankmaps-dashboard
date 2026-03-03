@@ -138,7 +138,7 @@ function buildPopupHTML(mapId: string, props: Record<string, any>): string {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AssessmentAreaMaps() {
   const mapContainerRef  = useRef<HTMLDivElement>(null);
-  const frameContainerRef = useRef<HTMLDivElement>(null);
+  const frameWrapperRef  = useRef<HTMLDivElement>(null);
   const mapRef           = useRef<any>(null);
   const slideTimerRef    = useRef<NodeJS.Timeout | null>(null);
   const isPausedRef      = useRef(false);
@@ -152,6 +152,7 @@ export default function AssessmentAreaMaps() {
   const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg, loading } = useOrganizations();
 
   const [mapLoaded,             setMapLoaded]             = useState(false);
+  const [frameDimensions,       setFrameDimensions]       = useState({ width: 800, height: 580 });
   const [currentMapIdx,         setCurrentMapIdx]         = useState(0);
   const [isPlaying,             setIsPlaying]             = useState(false);
   const [isTransitioning,       setIsTransitioning]       = useState(false);
@@ -167,7 +168,6 @@ export default function AssessmentAreaMaps() {
   const [showBranches,          setShowBranches]          = useState(true);
   const [branches,              setBranches]              = useState<any[]>([]);
   const [showBoundary,          setShowBoundary]          = useState(true);
-  const [frameDimensions,       setFrameDimensions]       = useState({ width: 800, height: 600 });
 
   const currentMap = MAPS[currentMapIdx];
   const config     = CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024];
@@ -529,26 +529,8 @@ export default function AssessmentAreaMaps() {
       }
     });
 
-mapRef.current = map;
+    mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
-  }, []);
-
-  // ResizeObserver
-  useEffect(() => {
-    if (!frameContainerRef.current) return;
-    const RATIO = 8.5 / 11;
-    const observer = new ResizeObserver(entries => {
-      for (const entry of entries) {
-        const availW = entry.contentRect.width;
-        const availH = entry.contentRect.height;
-        let w = availW;
-        let h = availW * RATIO;
-        if (h > availH) { h = availH; w = availH / RATIO; }
-        setFrameDimensions({ width: Math.floor(w), height: Math.floor(h) });
-      }
-    });
-    observer.observe(frameContainerRef.current);
-    return () => observer.disconnect();
   }, []);
 
   // ── Apply choropleth colors based on current map type ──────────────────────
@@ -764,6 +746,24 @@ mapRef.current = map;
     printNext();
   };
 
+  // Measure the constrained wrapper and fit frame to letter landscape ratio
+  useEffect(() => {
+    if (!frameWrapperRef.current) return;
+    const RATIO = 8.5 / 11;
+    const observe = (el: Element) => {
+      const availW = el.clientWidth;
+      const availH = el.clientHeight;
+      let w = availW;
+      let h = w * RATIO;
+      if (h > availH) { h = availH; w = h / RATIO; }
+      setFrameDimensions({ width: Math.floor(w), height: Math.floor(h) });
+    };
+    observe(frameWrapperRef.current);
+    const ro = new ResizeObserver(entries => { for (const e of entries) observe(e.target); });
+    ro.observe(frameWrapperRef.current);
+    return () => ro.disconnect();
+  }, []);
+
   return (
     <>
       {/* ── Print styles ────────────────────────────────────────────────── */}
@@ -777,7 +777,7 @@ mapRef.current = map;
         }
       `}</style>
 
-      <div ref={frameContainerRef} className="flex flex-col" style={{ fontFamily: "'Georgia', serif", width: "100%", height: "100%" }}>
+      <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif" }}>
 
         {loading && (
           <div className="flex items-center justify-center h-full">
@@ -930,7 +930,9 @@ mapRef.current = map;
         </div>
 
         {/* ── Print frame: full width, letter-landscape aspect ratio ───────── */}
-        <div className="aa-print-frame" style={{ width: frameDimensions.width + 'px', margin: '8px auto', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
+        {/* Constrained wrapper: height drives the ResizeObserver calculation */}
+        <div ref={frameWrapperRef} style={{ width: '100%', height: 'calc(100vh - 200px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+        <div className="aa-print-frame" style={{ width: frameDimensions.width + 'px', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)', flexShrink: 0 }}>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
         <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
@@ -940,7 +942,7 @@ mapRef.current = map;
           </p>
         </div>
 
-        {/* ── Map Area: padding-bottom = 7.7/10.2 = 75.5% for landscape ─── */}
+        {/* ── Map Area: height driven by ResizeObserver measurement ───────── */}
         <div
           style={{ position: 'relative', width: '100%', height: (frameDimensions.height - 62) + 'px' }}
           onMouseEnter={handleMouseEnter}
@@ -1135,6 +1137,7 @@ mapRef.current = map;
           </div> {/* end inner absolute div */}
         </div> {/* end aspect ratio wrapper */}
         </div> {/* end aa-print-frame */}
+        </div> {/* end frame wrapper */
 
         {/* ── Slideshow Controls ─────────────────────────────────────────── */}
         <div className="aa-no-print flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
