@@ -12,3 +12,7 @@ const nextConfig = {
 };
 
 module.exports = nextConfig;
+
+experimental: {
+  serverComponentsExternalPackages: ['@sparticuz/chromium', 'puppeteer-core']
+}
