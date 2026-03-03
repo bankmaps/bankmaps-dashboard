@@ -750,8 +750,12 @@ export default function AssessmentAreaMaps() {
     const RATIO = 8.5 / 11;
     const measure = (el: Element) => {
       const w = el.clientWidth; const h = el.clientHeight;
-      let fw = w; let fh = fw * RATIO;
-      if (fh > h) { fh = h; fw = fh / RATIO; }
+// Drive by width first, then check if height fits
+let fw = w;
+let fh = fw * RATIO;
+// If too tall, constrain by height instead
+if (fh > h) { fh = h; fw = fh / RATIO; }
+
       setFrameDimensions({ width: Math.floor(fw), height: Math.floor(fh) });
     };
     measure(frameWrapperRef.current);
