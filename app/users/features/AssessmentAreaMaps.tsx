@@ -749,13 +749,12 @@ export default function AssessmentAreaMaps() {
     if (!frameWrapperRef.current) return;
     const RATIO = 8.5 / 11;
     const measure = (el: Element) => {
-      const w = el.clientWidth; const h = el.clientHeight;
-// Drive by width first, then check if height fits
-let fw = w;
-let fh = fw * RATIO;
-// If too tall, constrain by height instead
-if (fh > h) { fh = h; fw = fh / RATIO; }
-
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      // Always drive from width; only constrain by height if it won't fit
+      let fw = w;
+      let fh = fw * RATIO;
+      if (fh > h) { fh = h; fw = fh / RATIO; }
       setFrameDimensions({ width: Math.floor(fw), height: Math.floor(fh) });
     };
     measure(frameWrapperRef.current);
@@ -931,7 +930,7 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
         </div>
 
         {/* ── Print frame: full width, letter-landscape aspect ratio ───────── */}
-        <div ref={frameWrapperRef} style={{ width: "100%", height: "calc(100vh - 120px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div ref={frameWrapperRef} style={{ width: "100%", height: "calc(100vh - 180px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="aa-print-frame" style={{ width: frameDimensions.width + 'px', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)', flexShrink: 0 }}>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
