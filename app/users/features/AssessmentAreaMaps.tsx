@@ -138,6 +138,7 @@ function buildPopupHTML(mapId: string, props: Record<string, any>): string {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function AssessmentAreaMaps() {
   const mapContainerRef  = useRef<HTMLDivElement>(null);
+  const frameContainerRef = useRef<HTMLDivElement>(null);
   const mapRef           = useRef<any>(null);
   const slideTimerRef    = useRef<NodeJS.Timeout | null>(null);
   const isPausedRef      = useRef(false);
@@ -166,6 +167,7 @@ export default function AssessmentAreaMaps() {
   const [showBranches,          setShowBranches]          = useState(true);
   const [branches,              setBranches]              = useState<any[]>([]);
   const [showBoundary,          setShowBoundary]          = useState(true);
+  const [frameDimensions,       setFrameDimensions]       = useState({ width: 800, height: 600 });
 
   const currentMap = MAPS[currentMapIdx];
   const config     = CENSUS_CONFIG[selectedYear] || CENSUS_CONFIG[2024];
@@ -528,7 +530,31 @@ export default function AssessmentAreaMaps() {
     });
 
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    // ── Measure available container space and fit to letter landscape ratio ──
+  useEffect(() => {
+    if (!frameContainerRef.current) return;
+    const RATIO = 8.5 / 11; // letter landscape height/width ratio
+
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        const availW = entry.contentRect.width;
+        const availH = entry.contentRect.height;
+        // Fit within available space maintaining letter landscape ratio
+        let w = availW;
+        let h = availW * RATIO;
+        if (h > availH) {
+          h = availH;
+          w = availH / RATIO;
+        }
+        setFrameDimensions({ width: Math.floor(w), height: Math.floor(h) });
+      }
+    });
+
+    observer.observe(frameContainerRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return () => { map.remove(); mapRef.current = null; };
   }, []);
 
   // ── Apply choropleth colors based on current map type ──────────────────────
@@ -757,7 +783,7 @@ export default function AssessmentAreaMaps() {
         }
       `}</style>
 
-      <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif" }}>
+      <div ref={frameContainerRef} className="flex flex-col" style={{ fontFamily: "'Georgia', serif", width: "100%", height: "100%" }}>
 
         {loading && (
           <div className="flex items-center justify-center h-full">
@@ -910,7 +936,7 @@ export default function AssessmentAreaMaps() {
         </div>
 
         {/* ── Print frame: full width, letter-landscape aspect ratio ───────── */}
-        <div className="aa-print-frame" style={{ width: '100%', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
+        <div className="aa-print-frame" style={{ width: frameDimensions.width + 'px', margin: '8px auto', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)' }}>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
         <div className={`px-6 py-3 bg-white border-b border-gray-100 ${isTransitioning ? "opacity-0" : "opacity-100"}`}>
@@ -922,13 +948,13 @@ export default function AssessmentAreaMaps() {
 
         {/* ── Map Area: padding-bottom = 7.7/10.2 = 75.5% for landscape ─── */}
         <div
-          style={{ position: 'relative', width: '100%', height: 'calc(100vh - 320px)' }}
+          style={{ position: 'relative', width: '100%', height: (frameDimensions.height - 62) + 'px' }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
           <div
             className="overflow-hidden"
-            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, overflow: 'hidden' }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
           >
           <div
             ref={mapContainerRef}
