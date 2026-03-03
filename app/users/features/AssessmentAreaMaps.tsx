@@ -529,32 +529,26 @@ export default function AssessmentAreaMaps() {
       }
     });
 
-    mapRef.current = map;
-    // ── Measure available container space and fit to letter landscape ratio ──
+mapRef.current = map;
+    return () => { map.remove(); mapRef.current = null; };
+  }, []);
+
+  // ResizeObserver
   useEffect(() => {
     if (!frameContainerRef.current) return;
-    const RATIO = 8.5 / 11; // letter landscape height/width ratio
-
+    const RATIO = 8.5 / 11;
     const observer = new ResizeObserver(entries => {
       for (const entry of entries) {
         const availW = entry.contentRect.width;
         const availH = entry.contentRect.height;
-        // Fit within available space maintaining letter landscape ratio
         let w = availW;
         let h = availW * RATIO;
-        if (h > availH) {
-          h = availH;
-          w = availH / RATIO;
-        }
+        if (h > availH) { h = availH; w = availH / RATIO; }
         setFrameDimensions({ width: Math.floor(w), height: Math.floor(h) });
       }
     });
-
     observer.observe(frameContainerRef.current);
     return () => observer.disconnect();
-  }, []);
-
-  return () => { map.remove(); mapRef.current = null; };
   }, []);
 
   // ── Apply choropleth colors based on current map type ──────────────────────
