@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       localStorage.setItem("jwt_token", tok);
     }, token);
 
-    const renderMap = async (url: string): Promise<Buffer> => {
+    const renderMap = async (url: string): Promise<Uint8Array> => {
       await page.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
       await page.waitForSelector(".mapboxgl-canvas", { timeout: 20000 });
       await new Promise(r => setTimeout(r, 3000)); // let map tiles finish rendering
@@ -53,14 +53,14 @@ export async function GET(req: NextRequest) {
         height: PAGE_HEIGHT_PX + "px",
         printBackground: true,
         margin: { top: "38px", right: "38px", bottom: "38px", left: "38px" },
-      }) as unknown as Buffer;
+      }) as unknown as Uint8Array;
     };
 
     if (mode === "current") {
       const idx = mapIdx ? parseInt(mapIdx) : 0;
       const url = pageUrl + (pageUrl.includes("?") ? "&" : "?") + "mapIdx=" + idx + "&pdf=1";
       const pdf = await renderMap(url);
-      return new NextResponse(pdf, {
+      return new NextResponse(new Uint8Array(pdf), {
         status: 200,
         headers: {
           "Content-Type":        "application/pdf",
@@ -82,7 +82,7 @@ export async function GET(req: NextRequest) {
       }
 
       const mergedBytes = await mergedPdf.save();
-      return new NextResponse(mergedBytes, {
+      return new NextResponse(new Uint8Array(mergedBytes), {
         status: 200,
         headers: {
           "Content-Type":        "application/pdf",
