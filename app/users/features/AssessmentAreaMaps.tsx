@@ -152,7 +152,7 @@ export default function AssessmentAreaMaps() {
   const { organizations, selectedOrgId, setSelectedOrgId, selectedOrg, loading } = useOrganizations();
 
   const [mapLoaded,             setMapLoaded]             = useState(false);
-  const [frameDimensions,       setFrameDimensions]       = useState({ width: 800, height: 580 });
+  const [frameDimensions, setFrameDimensions] = useState({ width: 800, height: 580 });
   const [currentMapIdx,         setCurrentMapIdx]         = useState(0);
   const [isPlaying,             setIsPlaying]             = useState(false);
   const [isTransitioning,       setIsTransitioning]       = useState(false);
@@ -745,24 +745,21 @@ export default function AssessmentAreaMaps() {
     };
     printNext();
   };
-
-  // Measure the constrained wrapper and fit frame to letter landscape ratio
   useEffect(() => {
     if (!frameWrapperRef.current) return;
     const RATIO = 8.5 / 11;
-    const observe = (el: Element) => {
-      const availW = el.clientWidth;
-      const availH = el.clientHeight;
-      let w = availW;
-      let h = w * RATIO;
-      if (h > availH) { h = availH; w = h / RATIO; }
-      setFrameDimensions({ width: Math.floor(w), height: Math.floor(h) });
+    const measure = (el: Element) => {
+      const w = el.clientWidth; const h = el.clientHeight;
+      let fw = w; let fh = fw * RATIO;
+      if (fh > h) { fh = h; fw = fh / RATIO; }
+      setFrameDimensions({ width: Math.floor(fw), height: Math.floor(fh) });
     };
-    observe(frameWrapperRef.current);
-    const ro = new ResizeObserver(entries => { for (const e of entries) observe(e.target); });
+    measure(frameWrapperRef.current);
+    const ro = new ResizeObserver(entries => entries.forEach(e => measure(e.target)));
     ro.observe(frameWrapperRef.current);
     return () => ro.disconnect();
   }, []);
+
 
   return (
     <>
@@ -930,8 +927,7 @@ export default function AssessmentAreaMaps() {
         </div>
 
         {/* ── Print frame: full width, letter-landscape aspect ratio ───────── */}
-        {/* Constrained wrapper: height drives the ResizeObserver calculation */}
-        <div ref={frameWrapperRef} style={{ width: '100%', height: 'calc(100vh - 200px)', display: 'flex', alignItems: 'flex-start', justifyContent: 'center' }}>
+        <div ref={frameWrapperRef} style={{ width: "100%", height: "calc(100vh - 120px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
         <div className="aa-print-frame" style={{ width: frameDimensions.width + 'px', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)', flexShrink: 0 }}>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
@@ -942,7 +938,7 @@ export default function AssessmentAreaMaps() {
           </p>
         </div>
 
-        {/* ── Map Area: height driven by ResizeObserver measurement ───────── */}
+        {/* ── Map Area: padding-bottom = 7.7/10.2 = 75.5% for landscape ─── */}
         <div
           style={{ position: 'relative', width: '100%', height: (frameDimensions.height - 62) + 'px' }}
           onMouseEnter={handleMouseEnter}

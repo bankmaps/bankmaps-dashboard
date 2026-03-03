@@ -121,18 +121,9 @@ export default function UsersPage() {
 
             {/* Main content area */}
             <div className="flex-1 flex flex-col">
-              <header className="bg-white border-b px-8 py-4 flex justify-between items-center">
-                <h1 className="text-xl font-semibold text-gray-900">
-                  {activeItem === "dashboard" ? "Dashboard" : activeItem.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
-                </h1>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-gray-600">Welcome, Stuart</span>
-                  <button className="px-4 py-2 bg-gray-800 text-white text-sm rounded hover:bg-gray-900">Logout</button>
-                </div>
-              </header>
 
-              <main className="p-8 overflow-auto">
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
+              <main className="p-4 overflow-hidden">
+                <div className="bg-white rounded-xl shadow border border-gray-200 p-4">
                   {activeItem === "dashboard" && <Dashboard />}
                   {activeItem === "aa-maps" && <AssessmentAreaMaps />}
                   {activeItem === "manage-profile" && <ManageProfile />}
