@@ -131,8 +131,8 @@ export default function UsersPage() {
                 </div>
               </header>
 
-              <main className="flex-1 p-8 overflow-auto">
-                <div className="bg-white rounded-xl shadow border border-gray-200 p-8 min-h-[70vh]">
+              <main className="p-8 overflow-auto">
+                <div className="bg-white rounded-xl shadow border border-gray-200 p-8">
                   {activeItem === "dashboard" && <Dashboard />}
                   {activeItem === "aa-maps" && <AssessmentAreaMaps />}
                   {activeItem === "manage-profile" && <ManageProfile />}
