@@ -122,14 +122,16 @@ export default function UsersPage() {
             {/* Main content area */}
             <div className="flex-1 flex flex-col">
 
-              <main className="p-4 overflow-hidden">
+              <main className="p-4 overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
+                {activeItem === "aa-maps" ? (
+                  <AssessmentAreaMaps />
+                ) : (
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-4">
                   {activeItem === "dashboard" && <Dashboard />}
-                  {activeItem === "aa-maps" && <AssessmentAreaMaps />}
                   {activeItem === "manage-profile" && <ManageProfile />}
                   {activeItem === "manage-users" && <ManageUsers />}
                   {activeItem === "distrib-list" && <DistributionLists />}
-                  {!["dashboard", "aa-maps", "manage-profile", "manage-users", "distrib-list"].includes(activeItem) && (
+                  {!["dashboard", "manage-profile", "manage-users", "distrib-list"].includes(activeItem) && (
                     <div className="text-center py-20 text-gray-500">
                       <p className="text-xl font-medium">
                         {activeItem.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon
@@ -137,6 +139,7 @@ export default function UsersPage() {
                     </div>
                   )}
                 </div>
+                )}
               </main>
             </div>
           </div>

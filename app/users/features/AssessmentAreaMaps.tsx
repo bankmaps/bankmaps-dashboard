@@ -784,24 +784,25 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
         }
       `}</style>
 
-      <div className="flex flex-col" style={{ fontFamily: "'Georgia', serif" }}>
+      {/* ── Card wrapper ─────────────────────────────────────────────────── */}
+      <div className="flex flex-col rounded-xl border border-gray-200 shadow-sm overflow-hidden bg-white" style={{ fontFamily: "'Georgia', serif", height: "calc(100vh - 100px)" }}>
 
         {loading && (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center flex-1">
             <p className="text-gray-500">Loading organizations...</p>
           </div>
         )}
 
         {!loading && organizations.length === 0 && (
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center flex-1">
             <p className="text-gray-500">No organizations found. Please create one first.</p>
           </div>
         )}
 
         {!loading && organizations.length > 0 && (
         <>
-        {/* ── Controls Bar ──────────────────────────────────────────────── */}
-        <div className="aa-no-print flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200 flex-wrap">
+        {/* ── Card Header: Controls ─────────────────────────────────────── */}
+        <div className="aa-no-print flex items-center gap-3 px-4 py-2 bg-white border-b border-gray-200 flex-wrap flex-shrink-0">
 
           {/* Organization selector */}
           <div className="flex items-center gap-2">
@@ -937,7 +938,8 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
         </div>
 
         {/* ── Print frame: full width, letter-landscape aspect ratio ───────── */}
-        <div ref={frameWrapperRef} style={{ width: "100%", height: "calc(100vh - 120px)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        {/* ── Card Body: Map fills remaining space ─────────────────────── */}
+        <div ref={frameWrapperRef} style={{ flex: 1, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "8px" }}>
         <div className="aa-print-frame" style={{ width: frameDimensions.width + 'px', border: '1px solid #ddd', boxShadow: '0 2px 12px rgba(0,0,0,0.10)', flexShrink: 0 }}>
 
         {/* ── Narrative Bar ─────────────────────────────────────────────── */}
@@ -1145,8 +1147,8 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
         </div> {/* end aa-print-frame */}
         </div> {/* end frame wrapper */}
 
-        {/* ── Slideshow Controls ─────────────────────────────────────────── */}
-        <div className="aa-no-print flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200">
+        {/* ── Card Footer: Slideshow Controls ──────────────────────────── */}
+        <div className="aa-no-print flex items-center justify-center gap-3 px-4 py-3 bg-gray-50 border-t border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-2">
             {MAPS.map((m, idx) => (
               <button
