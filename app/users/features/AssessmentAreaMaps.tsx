@@ -728,39 +728,125 @@ export default function AssessmentAreaMaps() {
 
   const [isPdfLoading, setIsPdfLoading] = useState<"current" | "series" | null>(null);
 
-  const triggerPdfDownload = async (mode: "current" | "series") => {
-    setIsPdfLoading(mode);
+  const captureMapAsPdf = async (idx: number): Promise<{ imgData: string; width: number; height: number }> => {
+    // Navigate to the map and wait for it to settle
+    goToMap(idx);
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Force Mapbox to re-render at full resolution
+    const map = mapRef.current;
+    if (!map) throw new Error("Map not initialized");
+    map.resize();
+    await new Promise<void>(resolve => {
+      if (map.loaded() && map.isStyleLoaded()) { resolve(); return; }
+      map.once("idle", () => resolve());
+      setTimeout(resolve, 3000); // fallback
+    });
+
+    // Capture canvas
+    const canvas = map.getCanvas();
+    const imgData = canvas.toDataURL("image/png");
+    return { imgData, width: canvas.width, height: canvas.height };
+  };
+
+  const buildPagePdf = async (idx: number, jsPDF: any): Promise<InstanceType<typeof jsPDF>> => {
+    const { imgData } = await captureMapAsPdf(idx);
+    const map = MAPS[idx];
+
+    // Letter landscape: 279.4 x 215.9 mm
+    const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
+    const PW = 279.4; const PH = 215.9;
+    const margin = 8;
+
+    // Header
+    pdf.setFontSize(13);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(30, 30, 30);
+    pdf.text(map.title, margin, margin + 5);
+
+    pdf.setFontSize(8);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(100, 100, 100);
+    const subtitle = `${selectedOrg?.name || "—"}  ·  Year: ${selectedYear}  ·  ${map.description}`;
+    pdf.text(subtitle, margin, margin + 10);
+
+    // Divider
+    pdf.setDrawColor(200, 200, 200);
+    pdf.line(margin, margin + 13, PW - margin, margin + 13);
+
+    // Map image — fill remaining space
+    const imgY = margin + 16;
+    const imgH = PH - imgY - margin - 8; // leave room for footer
+    const imgW = PW - margin * 2;
+    pdf.addImage(imgData, "PNG", margin, imgY, imgW, imgH, undefined, "FAST");
+
+    // Footer
+    pdf.setFontSize(7);
+    pdf.setTextColor(150, 150, 150);
+    pdf.text("© Mapbox, © OpenStreetMap", margin, PH - 3);
+    pdf.text("BankMaps CRA Assistant", PW - margin, PH - 3, { align: "right" });
+
+    return pdf;
+  };
+
+  const handlePrintCurrent = async () => {
+    setShowPrintModal(false);
+    setIsPdfLoading("current");
     try {
-      const token = localStorage.getItem("jwt_token") || "";
-      // Include ?print=aa-maps so Puppeteer auto-switches to the map tab
-      const pageUrl = window.location.origin + window.location.pathname + "?print=aa-maps";
-      const params = new URLSearchParams({
-        url: pageUrl,
-        mode,
-        token,
-        ...(mode === "current" ? { mapIdx: String(currentMapIdx) } : {}),
-      });
-      const res = await fetch(`/api/pdf?${params.toString()}`);
-      if (!res.ok) throw new Error(await res.text());
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = mode === "current"
-        ? `${MAPS[currentMapIdx].title.replace(/\s+/g, "-").toLowerCase()}.pdf`
-        : "assessment-area-maps.pdf";
-      a.click();
-      URL.revokeObjectURL(url);
+      const { default: jsPDF } = await import("jspdf");
+      const pdf = await buildPagePdf(currentMapIdx, jsPDF);
+      pdf.save(`${MAPS[currentMapIdx].title.replace(/\s+/g, "-").toLowerCase()}.pdf`);
     } catch (err: any) {
-      console.error("[PDF] Download failed:", err);
+      console.error("[PDF]", err);
       alert("PDF generation failed: " + (err.message || "Unknown error"));
     } finally {
       setIsPdfLoading(null);
     }
   };
 
-  const handlePrintCurrent = () => triggerPdfDownload("current");
-  const handlePrintAll     = () => triggerPdfDownload("series");
+  const handlePrintAll = async () => {
+    setShowPrintModal(false);
+    setIsPdfLoading("series");
+    const originalIdx = currentMapIdx;
+    try {
+      const { default: jsPDF } = await import("jspdf");
+      let mergedPdf: any = null;
+      for (let i = 0; i < MAPS.length; i++) {
+        const pdf = await buildPagePdf(i, jsPDF);
+        if (i === 0) {
+          mergedPdf = pdf;
+        } else {
+          // Copy page into first doc
+          const pageData = pdf.output("arraybuffer");
+          const { PDFDocument } = await import("pdf-lib");
+          const src = await PDFDocument.load(pageData);
+          const base = await PDFDocument.load(mergedPdf.output("arraybuffer"));
+          const [copied] = await base.copyPages(src, [0]);
+          base.addPage(copied);
+          mergedPdf = { _pdflib: base };
+          // For final save, use pdf-lib bytes
+          if (i === MAPS.length - 1) {
+            const bytes = await base.save();
+            const blob = new Blob([bytes], { type: "application/pdf" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url; a.download = "assessment-area-maps.pdf"; a.click();
+            URL.revokeObjectURL(url);
+            goToMap(originalIdx);
+            return;
+          }
+        }
+      }
+      // Single map fallback
+      mergedPdf?.save?.("assessment-area-maps.pdf");
+    } catch (err: any) {
+      console.error("[PDF]", err);
+      alert("PDF generation failed: " + (err.message || "Unknown error"));
+    } finally {
+      goToMap(originalIdx);
+      setIsPdfLoading(null);
+    }
+  };
   // Notify Mapbox whenever the frame is resized so the canvas fills it
   useEffect(() => {
     if (!mapRef.current) return;

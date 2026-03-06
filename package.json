@@ -9,18 +9,19 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@sparticuz/chromium": "^133.0.0",
-    "pdf-lib": "^1.17.1",
-    "puppeteer-core": "^24.0.0",
     "@neondatabase/serverless": "^1.0.2",
+    "@sparticuz/chromium": "^133.0.0",
     "@turf/turf": "^7.3.4",
     "drizzle-orm": "^0.45.1",
     "groq-sdk": "^0.37.0",
     "jsonwebtoken": "^9.0.3",
+    "jspdf": "^4.2.0",
     "mapbox-gl": "^3.18.1",
     "mysql2": "^3.17.0",
     "next": "16.1.6",
+    "pdf-lib": "^1.17.1",
     "pg": "^8.18.0",
+    "puppeteer-core": "^24.0.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-select": "^5.10.2"
