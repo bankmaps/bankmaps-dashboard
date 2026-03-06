@@ -810,35 +810,24 @@ export default function AssessmentAreaMaps() {
     const originalIdx = currentMapIdx;
     try {
       const { default: jsPDF } = await import("jspdf");
-      let mergedPdf: any = null;
+      const { PDFDocument } = await import("pdf-lib");
+      const merged = await PDFDocument.create();
+
       for (let i = 0; i < MAPS.length; i++) {
         const pdf = await buildPagePdf(i, jsPDF);
-        if (i === 0) {
-          mergedPdf = pdf;
-        } else {
-          // Copy page into first doc
-          const pageData = pdf.output("arraybuffer");
-          const { PDFDocument } = await import("pdf-lib");
-          const src = await PDFDocument.load(pageData);
-          const base = await PDFDocument.load(mergedPdf.output("arraybuffer"));
-          const [copied] = await base.copyPages(src, [0]);
-          base.addPage(copied);
-          mergedPdf = { _pdflib: base };
-          // For final save, use pdf-lib bytes
-          if (i === MAPS.length - 1) {
-            const bytes = await base.save();
-            const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "application/pdf" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url; a.download = "assessment-area-maps.pdf"; a.click();
-            URL.revokeObjectURL(url);
-            goToMap(originalIdx);
-            return;
-          }
-        }
+        const pageBytes = pdf.output("arraybuffer");
+        const src = await PDFDocument.load(pageBytes);
+        const [copied] = await merged.copyPages(src, [0]);
+        merged.addPage(copied);
       }
-      // Single map fallback
-      mergedPdf?.save?.("assessment-area-maps.pdf");
+
+      const bytes = await merged.save();
+      const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "assessment-area-maps.pdf"; a.click();
+      URL.revokeObjectURL(url);
+      goToMap(originalIdx);
     } catch (err: any) {
       console.error("[PDF]", err);
       alert("PDF generation failed: " + (err.message || "Unknown error"));
