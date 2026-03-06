@@ -756,9 +756,7 @@ export default function AssessmentAreaMaps() {
     glCanvas.style.visibility = "hidden";
     const { toPng } = await import("html-to-image");
     const overlayDataUrl = await toPng(area, {
-      width: W,
-      height: H,
-      style: { transform: `scale(${W / area.offsetWidth})`, transformOrigin: "top left" },
+      pixelRatio: W / area.offsetWidth,
       skipFonts: true,
     });
     glCanvas.style.visibility = "visible";
