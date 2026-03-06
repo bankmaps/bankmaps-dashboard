@@ -749,9 +749,9 @@ export default function AssessmentAreaMaps() {
 
   // Draw a legend box directly onto the PDF at crisp vector quality
   const drawLegend = (pdf: any, x: number, y: number, title: string, items: { label: string; color: string }[]) => {
-    const rowH = 5; const swatchSize = 3; const pad = 3;
-    const boxW = 52;
-    const boxH = pad + 5 + items.length * rowH + pad;
+    const rowH = 6; const swatchSize = 3.5; const pad = 3.5;
+    const boxW = 58;
+    const boxH = pad + 6 + items.length * rowH + pad;
 
     // Background
     pdf.setFillColor(255, 255, 255);
@@ -759,16 +759,16 @@ export default function AssessmentAreaMaps() {
     pdf.roundedRect(x, y, boxW, boxH, 1, 1, "FD");
 
     // Title
-    pdf.setFontSize(6.5);
+    pdf.setFontSize(8);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(50, 50, 50);
-    pdf.text(title, x + pad, y + pad + 3.5);
+    pdf.text(title, x + pad, y + pad + 4);
 
     // Items
     pdf.setFont("helvetica", "normal");
-    pdf.setFontSize(6);
+    pdf.setFontSize(7);
     items.forEach(({ label, color }, i) => {
-      const iy = y + pad + 6 + i * rowH;
+      const iy = y + pad + 7 + i * rowH;
       const r = parseInt(color.slice(1, 3), 16);
       const g = parseInt(color.slice(3, 5), 16);
       const b = parseInt(color.slice(5, 7), 16);
@@ -776,7 +776,7 @@ export default function AssessmentAreaMaps() {
       pdf.setDrawColor(180, 180, 180);
       pdf.rect(x + pad, iy, swatchSize, swatchSize, "FD");
       pdf.setTextColor(60, 60, 60);
-      pdf.text(label, x + pad + swatchSize + 2, iy + swatchSize - 0.5);
+      pdf.text(label, x + pad + swatchSize + 2.5, iy + swatchSize - 0.3);
     });
   };
 
@@ -904,23 +904,39 @@ export default function AssessmentAreaMaps() {
       const items = Object.entries(INCOME_COLORS)
         .filter(([k]) => !k.includes(" Income"))
         .map(([label, color]) => ({ label, color }));
-      drawLegend(pdf, margin + 2, imgY + imgH - 48, "Income Level", items);
+      drawLegend(pdf, margin + 2, imgY + imgH - 52, "Income Level", items);
     } else if (mapDef.id === "majority-minority") {
       const items = Object.entries(MINORITY_COLORS).map(([label, color]) => ({ label, color }));
-      drawLegend(pdf, margin + 2, imgY + imgH - 52, "Majority Minority", items);
+      drawLegend(pdf, margin + 2, imgY + imgH - 60, "Majority Minority", items);
     } else if (mapDef.id === "boundaries") {
       const items = Object.entries(BOUNDARY_COLORS).map(([label, color]) => ({ label, color }));
-      drawLegend(pdf, margin + 2, imgY + imgH - 28, "Assessment Area", items);
+      drawLegend(pdf, margin + 2, imgY + imgH - 34, "Assessment Area", items);
     }
 
-    // Branches legend
-    drawLegend(pdf, PW - margin - 54, imgY + imgH - 22, "Branches", [
+    // Boundary line legend - bottom right (all maps)
+    const lineBoxW = 46; const lineBoxH = 14;
+    const lineBoxX = PW - margin - lineBoxW - 2;
+    const lineBoxY = imgY + imgH - lineBoxH - 2;
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(200, 200, 200);
+    pdf.roundedRect(lineBoxX, lineBoxY, lineBoxW, lineBoxH, 1, 1, "FD");
+    pdf.setDrawColor(0, 102, 255);
+    pdf.setLineWidth(1);
+    pdf.line(lineBoxX + 3.5, lineBoxY + 7, lineBoxX + 13, lineBoxY + 7);
+    pdf.setLineWidth(0.1);
+    pdf.setFontSize(7);
+    pdf.setFont("helvetica", "normal");
+    pdf.setTextColor(60, 60, 60);
+    pdf.text("Assessment Area", lineBoxX + 15, lineBoxY + 8);
+
+    // Branches legend - above boundary line legend
+    drawLegend(pdf, PW - margin - 64, imgY + imgH - 34, "Branches", [
       { label: "Full Service Branch", color: "#cc0000" }
     ]);
 
-    // Summary table - top right
+    // Summary table - top right, inside map frame
     if (summaryData) {
-      drawSummaryTable(pdf, PW - margin - 70, imgY + 2, mapDef.id);
+      drawSummaryTable(pdf, PW - margin - 74, imgY + 3, mapDef.id);
     }
 
     // Footer
