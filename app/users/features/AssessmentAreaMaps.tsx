@@ -728,58 +728,62 @@ export default function AssessmentAreaMaps() {
   const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
 
   const captureMapAsPdf = async (idx: number): Promise<{ imgData: string; width: number; height: number }> => {
-    // Navigate to the map and wait for it to settle
     goToMap(idx);
     await new Promise(r => setTimeout(r, 1000));
 
-    // Force Mapbox to re-render at full resolution
     const map = mapRef.current;
     if (!map) throw new Error("Map not initialized");
     map.resize();
+
     await new Promise<void>(resolve => {
       if (map.loaded() && map.isStyleLoaded()) { resolve(); return; }
       map.once("idle", () => resolve());
-      setTimeout(resolve, 3000); // fallback
+      setTimeout(resolve, 3000);
+    });
+    await new Promise(r => setTimeout(r, 500));
+
+    const container = mapContainerRef.current;
+    if (!container) throw new Error("Map container not found");
+
+    const { default: html2canvas } = await import("html2canvas");
+    const canvasEl = await html2canvas(container, {
+      useCORS: true,
+      allowTaint: true,
+      scale: 2,
+      logging: false,
     });
 
-    // Capture canvas
-    const canvas = map.getCanvas();
-    const imgData = canvas.toDataURL("image/png");
-    return { imgData, width: canvas.width, height: canvas.height };
+    const imgData = canvasEl.toDataURL("image/png");
+    return { imgData, width: canvasEl.width, height: canvasEl.height };
   };
 
   const buildPagePdf = async (idx: number, jsPDF: any): Promise<InstanceType<typeof jsPDF>> => {
     const { imgData } = await captureMapAsPdf(idx);
-    const map = MAPS[idx];
+    const mapDef = MAPS[idx];
 
-    // Letter landscape: 279.4 x 215.9 mm
     const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
     const PW = 279.4; const PH = 215.9;
     const margin = 8;
 
-    // Header
     pdf.setFontSize(13);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(30, 30, 30);
-    pdf.text(map.title, margin, margin + 5);
+    pdf.text(mapDef.title, margin, margin + 5);
 
     pdf.setFontSize(8);
     pdf.setFont("helvetica", "normal");
     pdf.setTextColor(100, 100, 100);
-    const subtitle = `${selectedOrg?.name || "—"}  ·  Year: ${selectedYear}  ·  ${map.description}`;
+    const subtitle = `${selectedOrg?.name || "—"}  ·  Year: ${selectedYear}  ·  ${mapDef.description}`;
     pdf.text(subtitle, margin, margin + 10);
 
-    // Divider
     pdf.setDrawColor(200, 200, 200);
     pdf.line(margin, margin + 13, PW - margin, margin + 13);
 
-    // Map image — fill remaining space
     const imgY = margin + 16;
-    const imgH = PH - imgY - margin - 8; // leave room for footer
+    const imgH = PH - imgY - margin - 8;
     const imgW = PW - margin * 2;
     pdf.addImage(imgData, "PNG", margin, imgY, imgW, imgH, undefined, "FAST");
 
-    // Footer
     pdf.setFontSize(7);
     pdf.setTextColor(150, 150, 150);
     pdf.text("© Mapbox, © OpenStreetMap", margin, PH - 3);
@@ -1024,6 +1028,13 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
             className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 disabled:opacity-50"
           >
             {isPdfLoading === "current" ? "⏳ Generating..." : "🖨️ Print Current"}
+          </button>
+          <button
+            onClick={handlePrintAll}
+            disabled={isPdfLoading !== null}
+            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 disabled:opacity-50"
+          >
+            {isPdfLoading === "series" ? "⏳ Generating..." : "🗂️ Print All"}
           </button>
         </div>
 
