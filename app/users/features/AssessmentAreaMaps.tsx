@@ -727,7 +727,7 @@ export default function AssessmentAreaMaps() {
   const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
   const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
 
-  const captureMapAsPdf = async (idx: number): Promise<{ imgData: string; width: number; height: number }> => {
+  const captureMapAsPdf = async (idx: number): Promise<{ mapImg: string; overlayImg: string; width: number; height: number }> => {
     goToMap(idx);
     await new Promise(r => setTimeout(r, 1000));
 
@@ -735,6 +735,7 @@ export default function AssessmentAreaMaps() {
     if (!map) throw new Error("Map not initialized");
     map.resize();
 
+    // Wait for map to finish rendering
     await new Promise<void>(resolve => {
       if (map.loaded() && map.isStyleLoaded()) { resolve(); return; }
       map.once("idle", () => resolve());
@@ -742,29 +743,39 @@ export default function AssessmentAreaMaps() {
     });
     await new Promise(r => setTimeout(r, 500));
 
+    // 1. Capture Mapbox WebGL canvas directly (works because preserveDrawingBuffer: true)
+    const glCanvas = map.getCanvas();
+    const mapImg = glCanvas.toDataURL("image/png");
+
+    // 2. Capture overlay elements (legends, summary, markers) via html2canvas
+    //    Temporarily hide the mapbox canvas so html2canvas only gets overlays
     const container = mapContainerRef.current;
     if (!container) throw new Error("Map container not found");
 
+    glCanvas.style.opacity = "0";
     const { default: html2canvas } = await import("html2canvas");
-    const canvasEl = await html2canvas(container, {
+    const overlayCanvas = await html2canvas(container, {
       useCORS: true,
       allowTaint: true,
       scale: 2,
       logging: false,
+      backgroundColor: null, // transparent background
     });
+    glCanvas.style.opacity = "1";
 
-    const imgData = canvasEl.toDataURL("image/png");
-    return { imgData, width: canvasEl.width, height: canvasEl.height };
+    const overlayImg = overlayCanvas.toDataURL("image/png");
+    return { mapImg, overlayImg, width: glCanvas.width, height: glCanvas.height };
   };
 
   const buildPagePdf = async (idx: number, jsPDF: any): Promise<InstanceType<typeof jsPDF>> => {
-    const { imgData } = await captureMapAsPdf(idx);
+    const { mapImg, overlayImg } = await captureMapAsPdf(idx);
     const mapDef = MAPS[idx];
 
     const pdf = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
     const PW = 279.4; const PH = 215.9;
     const margin = 8;
 
+    // Header
     pdf.setFontSize(13);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(30, 30, 30);
@@ -782,8 +793,13 @@ export default function AssessmentAreaMaps() {
     const imgY = margin + 16;
     const imgH = PH - imgY - margin - 8;
     const imgW = PW - margin * 2;
-    pdf.addImage(imgData, "PNG", margin, imgY, imgW, imgH, undefined, "FAST");
 
+    // Layer 1: Mapbox map
+    pdf.addImage(mapImg, "PNG", margin, imgY, imgW, imgH, undefined, "FAST");
+    // Layer 2: Overlays (legends, summary, etc) on top
+    pdf.addImage(overlayImg, "PNG", margin, imgY, imgW, imgH, undefined, "FAST");
+
+    // Footer
     pdf.setFontSize(7);
     pdf.setTextColor(150, 150, 150);
     pdf.text("© Mapbox, © OpenStreetMap", margin, PH - 3);
