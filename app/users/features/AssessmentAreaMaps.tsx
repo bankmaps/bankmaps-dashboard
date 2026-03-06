@@ -726,25 +726,41 @@ export default function AssessmentAreaMaps() {
   const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
   const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
 
-  const handlePrintCurrent = () => {
+  const [isPdfLoading, setIsPdfLoading] = useState(false);
+
+  const triggerPdfDownload = async (mode: "current" | "series") => {
     setShowPrintModal(false);
-    setTimeout(() => window.print(), 100);
+    setIsPdfLoading(true);
+    try {
+      const token = localStorage.getItem("jwt_token") || "";
+      const pageUrl = encodeURIComponent(window.location.href.split("?")[0]);
+      const params = new URLSearchParams({
+        url: pageUrl,
+        mode,
+        token,
+        ...(mode === "current" ? { mapIdx: String(currentMapIdx) } : {}),
+      });
+      const res = await fetch(`/api/pdf?${params.toString()}`);
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = mode === "current"
+        ? `${MAPS[currentMapIdx].title.replace(/\s+/g, "-").toLowerCase()}.pdf`
+        : "assessment-area-maps.pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error("[PDF] Download failed:", err);
+      alert("PDF generation failed: " + (err.message || "Unknown error"));
+    } finally {
+      setIsPdfLoading(false);
+    }
   };
-  const handlePrintAll = () => {
-    setShowPrintModal(false);
-    // Cycle through all maps printing each one
-    let idx = 0;
-    const printNext = () => {
-      if (idx >= MAPS.length) return;
-      goToMap(idx);
-      idx++;
-      setTimeout(() => {
-        window.print();
-        if (idx < MAPS.length) setTimeout(printNext, 1000);
-      }, 600);
-    };
-    printNext();
-  };
+
+  const handlePrintCurrent = () => triggerPdfDownload("current");
+  const handlePrintAll     = () => triggerPdfDownload("series");
   // Notify Mapbox whenever the frame is resized so the canvas fills it
   useEffect(() => {
     if (!mapRef.current) return;
@@ -931,9 +947,10 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
           {/* Print button */}
           <button
             onClick={() => setShowPrintModal(true)}
-            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400"
+            disabled={isPdfLoading}
+            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 disabled:opacity-50"
           >
-            🖨️ Print / Save
+            {isPdfLoading ? "⏳ Generating PDF..." : "🖨️ Print / Save"}
           </button>
         </div>
 
