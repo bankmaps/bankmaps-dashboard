@@ -774,7 +774,7 @@ export default function AssessmentAreaMaps() {
     // Draw overlay at natural size - pixelRatio already made it match GL canvas resolution
     ctx.drawImage(overlayImg, 0, 0);
 
-    return composite.toDataURL("image/png");
+    return composite.toDataURL("image/jpeg", 1.0);
   };
 
   const buildPagePdf = async (idx: number, jsPDF: any): Promise<InstanceType<typeof jsPDF>> => {
@@ -802,7 +802,7 @@ export default function AssessmentAreaMaps() {
     const imgY = margin + 16;
     const imgH = PH - imgY - margin - 8;
     const imgW = PW - margin * 2;
-    pdf.addImage(imgData, "PNG", margin, imgY, imgW, imgH, undefined, "FAST");
+    pdf.addImage(imgData, "JPEG", margin, imgY, imgW, imgH, undefined, "NONE");
 
     pdf.setFontSize(7);
     pdf.setTextColor(150, 150, 150);
