@@ -765,12 +765,14 @@ export default function AssessmentAreaMaps() {
     const overlayImg = new Image();
     await new Promise<void>(resolve => { overlayImg.onload = () => resolve(); overlayImg.src = overlayDataUrl; });
 
+    // Use the larger of GL canvas or overlay image for composite size
     const composite = document.createElement("canvas");
     composite.width = W;
     composite.height = H;
     const ctx = composite.getContext("2d")!;
     ctx.drawImage(glCanvas, 0, 0);
-    ctx.drawImage(overlayImg, 0, 0, W, H);
+    // Draw overlay at natural size - pixelRatio already made it match GL canvas resolution
+    ctx.drawImage(overlayImg, 0, 0);
 
     return composite.toDataURL("image/png");
   };
