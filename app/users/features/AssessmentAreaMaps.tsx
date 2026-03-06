@@ -754,36 +754,25 @@ export default function AssessmentAreaMaps() {
 
     // Capture overlays only (hide GL canvas first)
     glCanvas.style.visibility = "hidden";
-    const { default: html2canvas } = await import("html2canvas");
-    const overlayCanvas = await html2canvas(area, {
-      useCORS: true,
-      allowTaint: true,
-      scale: W / area.offsetWidth,
-      logging: false,
-      backgroundColor: null,
-      onclone: (_doc: Document, el: HTMLElement) => {
-        // Strip unsupported CSS color functions (lab, oklch, etc) that html2canvas can't parse
-        el.querySelectorAll("*").forEach((node) => {
-          const s = (node as HTMLElement).style;
-          if (!s) return;
-          ["color", "backgroundColor", "borderColor", "outlineColor"].forEach(prop => {
-            const val = s.getPropertyValue(prop);
-            if (val && (val.includes("lab(") || val.includes("oklch(") || val.includes("color("))) {
-              s.setProperty(prop, "");
-            }
-          });
-        });
-      },
+    const { toPng } = await import("html-to-image");
+    const overlayDataUrl = await toPng(area, {
+      width: W,
+      height: H,
+      style: { transform: `scale(${W / area.offsetWidth})`, transformOrigin: "top left" },
+      skipFonts: true,
     });
     glCanvas.style.visibility = "visible";
 
     // Composite onto a single canvas
+    const overlayImg = new Image();
+    await new Promise<void>(resolve => { overlayImg.onload = () => resolve(); overlayImg.src = overlayDataUrl; });
+
     const composite = document.createElement("canvas");
     composite.width = W;
     composite.height = H;
     const ctx = composite.getContext("2d")!;
     ctx.drawImage(glCanvas, 0, 0);
-    ctx.drawImage(overlayCanvas, 0, 0, W, H);
+    ctx.drawImage(overlayImg, 0, 0, W, H);
 
     return composite.toDataURL("image/png");
   };
