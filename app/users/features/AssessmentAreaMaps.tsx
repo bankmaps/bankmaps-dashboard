@@ -730,59 +730,145 @@ export default function AssessmentAreaMaps() {
 
   const captureMapAsPdf = async (idx: number): Promise<string> => {
     goToMap(idx);
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 1200));
 
     const map = mapRef.current;
     if (!map) throw new Error("Map not initialized");
-
-    const area = mapAreaRef.current;
-    if (!area) throw new Error("Map area not found");
-
-    // Temporarily resize the map container to 2x for high-res capture
-    const SCALE = 2;
-    const origWidth  = area.offsetWidth;
-    const origHeight = area.offsetHeight;
-    area.style.width  = `${origWidth  * SCALE}px`;
-    area.style.height = `${origHeight * SCALE}px`;
     map.resize();
 
-    // Wait for map to re-render at new size
     await new Promise<void>(resolve => {
+      if (map.loaded() && map.isStyleLoaded()) { resolve(); return; }
       map.once("idle", () => resolve());
       setTimeout(resolve, 3000);
     });
     await new Promise(r => setTimeout(r, 500));
 
-    const glCanvas = map.getCanvas();
-    const W = glCanvas.width;
-    const H = glCanvas.height;
+    // Capture just the GL canvas — sharp, no HTML capture needed
+    return map.getCanvas().toDataURL("image/jpeg", 0.95);
+  };
 
-    // Capture overlays at same scale
-    glCanvas.style.visibility = "hidden";
-    const { toPng } = await import("html-to-image");
-    const overlayDataUrl = await toPng(area, {
-      pixelRatio: 1,
-      skipFonts: true,
+  // Draw a legend box directly onto the PDF at crisp vector quality
+  const drawLegend = (pdf: any, x: number, y: number, title: string, items: { label: string; color: string }[]) => {
+    const rowH = 5; const swatchSize = 3; const pad = 3;
+    const boxW = 52;
+    const boxH = pad + 5 + items.length * rowH + pad;
+
+    // Background
+    pdf.setFillColor(255, 255, 255);
+    pdf.setDrawColor(200, 200, 200);
+    pdf.roundedRect(x, y, boxW, boxH, 1, 1, "FD");
+
+    // Title
+    pdf.setFontSize(6.5);
+    pdf.setFont("helvetica", "bold");
+    pdf.setTextColor(50, 50, 50);
+    pdf.text(title, x + pad, y + pad + 3.5);
+
+    // Items
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(6);
+    items.forEach(({ label, color }, i) => {
+      const iy = y + pad + 6 + i * rowH;
+      const r = parseInt(color.slice(1, 3), 16);
+      const g = parseInt(color.slice(3, 5), 16);
+      const b = parseInt(color.slice(5, 7), 16);
+      pdf.setFillColor(r, g, b);
+      pdf.setDrawColor(180, 180, 180);
+      pdf.rect(x + pad, iy, swatchSize, swatchSize, "FD");
+      pdf.setTextColor(60, 60, 60);
+      pdf.text(label, x + pad + swatchSize + 2, iy + swatchSize - 0.5);
     });
-    glCanvas.style.visibility = "visible";
+  };
 
-    // Restore original size
-    area.style.width  = "";
-    area.style.height = "";
-    map.resize();
+  // Draw the summary table directly onto PDF
+  const drawSummaryTable = (pdf: any, x: number, y: number, mapId: string) => {
+    if (!summaryData) return;
+    const pad = 3; const rowH = 4.5;
 
-    // Composite
-    const overlayImg = new Image();
-    await new Promise<void>(resolve => { overlayImg.onload = () => resolve(); overlayImg.src = overlayDataUrl; });
+    if (mapId === "boundaries" && summaryData.income) {
+      const lines = [
+        `Assessment area: ${summaryData.msas?.[0]?.msa || ""}`,
+        `${summaryData.income.totalTracts} census tracts`,
+      ];
+      const boxW = 80; const boxH = pad * 2 + lines.length * rowH + 2;
+      pdf.setFillColor(255, 255, 255);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.roundedRect(x, y, boxW, boxH, 1, 1, "FD");
+      pdf.setFontSize(6); pdf.setFont("helvetica", "normal"); pdf.setTextColor(40, 40, 40);
+      lines.forEach((line, i) => pdf.text(line, x + pad, y + pad + 3 + i * rowH));
+    }
 
-    const composite = document.createElement("canvas");
-    composite.width  = W;
-    composite.height = H;
-    const ctx = composite.getContext("2d")!;
-    ctx.drawImage(glCanvas, 0, 0);
-    ctx.drawImage(overlayImg, 0, 0, W, H);
+    if (mapId === "income-level" && summaryData.income) {
+      const { items, totalTracts, totalHouseholds, lmSubtotal } = summaryData.income;
+      const cols = ["Income Level", "# Tracts", "%", "# HH", "%"];
+      const colX = [x + pad, x + 28, x + 37, x + 46, x + 58];
+      const boxW = 68; const boxH = pad * 2 + (items.length + 3) * rowH;
+      pdf.setFillColor(255, 255, 255); pdf.setDrawColor(0, 0, 0);
+      pdf.roundedRect(x, y, boxW, boxH, 1, 1, "FD");
+      pdf.setFontSize(5.5); pdf.setFont("helvetica", "bold"); pdf.setTextColor(40, 40, 40);
+      cols.forEach((c, i) => pdf.text(c, colX[i], y + pad + 3));
+      pdf.setFont("helvetica", "normal");
+      items.forEach((item: any, i: number) => {
+        const ry = y + pad + 3 + (i + 1) * rowH;
+        pdf.text(item.label, colX[0], ry);
+        pdf.text(String(item.tracts), colX[1], ry);
+        pdf.text(`${item.tractPct}%`, colX[2], ry);
+        pdf.text(Number(item.households).toLocaleString(), colX[3], ry);
+        pdf.text(`${item.hhPct}%`, colX[4], ry);
+      });
+      const totY = y + pad + 3 + (items.length + 1) * rowH;
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Total", colX[0], totY);
+      pdf.text(String(totalTracts), colX[1], totY);
+      pdf.text("100%", colX[2], totY);
+      pdf.text(Number(totalHouseholds).toLocaleString(), colX[3], totY);
+      pdf.text("100%", colX[4], totY);
+      if (lmSubtotal) {
+        const lmY = totY + rowH;
+        pdf.setTextColor(180, 0, 0);
+        pdf.text("LMI Subtotal", colX[0], lmY);
+        pdf.text(String(lmSubtotal.tracts), colX[1], lmY);
+        pdf.text(`${lmSubtotal.tractPct}%`, colX[2], lmY);
+        pdf.text(Number(lmSubtotal.households).toLocaleString(), colX[3], lmY);
+        pdf.text(`${lmSubtotal.hhPct}%`, colX[4], lmY);
+      }
+    }
 
-    return composite.toDataURL("image/jpeg", 1.0);
+    if (mapId === "majority-minority" && summaryData.minority) {
+      const { items, totalTracts, totalHouseholds, mmSubtotal } = summaryData.minority;
+      const cols = ["Group", "# Tracts", "%", "# HH", "%"];
+      const colX = [x + pad, x + 28, x + 37, x + 46, x + 58];
+      const boxW = 68; const boxH = pad * 2 + (items.length + 3) * rowH;
+      pdf.setFillColor(255, 255, 255); pdf.setDrawColor(0, 0, 0);
+      pdf.roundedRect(x, y, boxW, boxH, 1, 1, "FD");
+      pdf.setFontSize(5.5); pdf.setFont("helvetica", "bold"); pdf.setTextColor(40, 40, 40);
+      cols.forEach((c, i) => pdf.text(c, colX[i], y + pad + 3));
+      pdf.setFont("helvetica", "normal");
+      items.forEach((item: any, i: number) => {
+        const ry = y + pad + 3 + (i + 1) * rowH;
+        pdf.text(item.label, colX[0], ry);
+        pdf.text(String(item.tracts), colX[1], ry);
+        pdf.text(`${item.tractPct}%`, colX[2], ry);
+        pdf.text(Number(item.households).toLocaleString(), colX[3], ry);
+        pdf.text(`${item.hhPct}%`, colX[4], ry);
+      });
+      const totY = y + pad + 3 + (items.length + 1) * rowH;
+      pdf.setFont("helvetica", "bold");
+      pdf.text("Total", colX[0], totY);
+      pdf.text(String(totalTracts), colX[1], totY);
+      pdf.text("100%", colX[2], totY);
+      pdf.text(Number(totalHouseholds).toLocaleString(), colX[3], totY);
+      pdf.text("100%", colX[4], totY);
+      if (mmSubtotal) {
+        const mmY = totY + rowH;
+        pdf.setTextColor(180, 0, 0);
+        pdf.text("MM Subtotal", colX[0], mmY);
+        pdf.text(String(mmSubtotal.tracts), colX[1], mmY);
+        pdf.text(`${mmSubtotal.tractPct}%`, colX[2], mmY);
+        pdf.text(Number(mmSubtotal.households).toLocaleString(), colX[3], mmY);
+        pdf.text(`${mmSubtotal.hhPct}%`, colX[4], mmY);
+      }
+    }
   };
 
   const buildPagePdf = async (idx: number, jsPDF: any): Promise<InstanceType<typeof jsPDF>> => {
@@ -793,6 +879,7 @@ export default function AssessmentAreaMaps() {
     const PW = 279.4; const PH = 215.9;
     const margin = 8;
 
+    // Header
     pdf.setFontSize(13);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(30, 30, 30);
@@ -801,17 +888,42 @@ export default function AssessmentAreaMaps() {
     pdf.setFontSize(8);
     pdf.setFont("helvetica", "normal");
     pdf.setTextColor(100, 100, 100);
-    const subtitle = `${selectedOrg?.name || "—"}  ·  Year: ${selectedYear}  ·  ${mapDef.description}`;
-    pdf.text(subtitle, margin, margin + 10);
+    pdf.text(`${selectedOrg?.name || "—"}  ·  Year: ${selectedYear}  ·  ${mapDef.description}`, margin, margin + 10);
 
     pdf.setDrawColor(200, 200, 200);
     pdf.line(margin, margin + 13, PW - margin, margin + 13);
 
+    // Map image
     const imgY = margin + 16;
     const imgH = PH - imgY - margin - 8;
     const imgW = PW - margin * 2;
     pdf.addImage(imgData, "JPEG", margin, imgY, imgW, imgH, undefined, "NONE");
 
+    // Crisp vector legends drawn on top
+    if (mapDef.id === "income-level") {
+      const items = Object.entries(INCOME_COLORS)
+        .filter(([k]) => !k.includes(" Income"))
+        .map(([label, color]) => ({ label, color }));
+      drawLegend(pdf, margin + 2, imgY + imgH - 48, "Income Level", items);
+    } else if (mapDef.id === "majority-minority") {
+      const items = Object.entries(MINORITY_COLORS).map(([label, color]) => ({ label, color }));
+      drawLegend(pdf, margin + 2, imgY + imgH - 52, "Majority Minority", items);
+    } else if (mapDef.id === "boundaries") {
+      const items = Object.entries(BOUNDARY_COLORS).map(([label, color]) => ({ label, color }));
+      drawLegend(pdf, margin + 2, imgY + imgH - 28, "Assessment Area", items);
+    }
+
+    // Branches legend
+    drawLegend(pdf, PW - margin - 54, imgY + imgH - 22, "Branches", [
+      { label: "Full Service Branch", color: "#cc0000" }
+    ]);
+
+    // Summary table - top right
+    if (summaryData) {
+      drawSummaryTable(pdf, PW - margin - 70, imgY + 2, mapDef.id);
+    }
+
+    // Footer
     pdf.setFontSize(7);
     pdf.setTextColor(150, 150, 150);
     pdf.text("© Mapbox, © OpenStreetMap", margin, PH - 3);
