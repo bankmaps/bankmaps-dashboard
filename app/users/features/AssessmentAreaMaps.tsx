@@ -827,7 +827,7 @@ export default function AssessmentAreaMaps() {
           // For final save, use pdf-lib bytes
           if (i === MAPS.length - 1) {
             const bytes = await base.save();
-            const blob = new Blob([bytes], { type: "application/pdf" });
+            const blob = new Blob([bytes.buffer as ArrayBuffer], { type: "application/pdf" });
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url; a.download = "assessment-area-maps.pdf"; a.click();
