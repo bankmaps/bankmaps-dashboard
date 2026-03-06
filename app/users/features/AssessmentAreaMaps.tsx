@@ -758,9 +758,22 @@ export default function AssessmentAreaMaps() {
     const overlayCanvas = await html2canvas(area, {
       useCORS: true,
       allowTaint: true,
-      scale: W / area.offsetWidth, // match GL canvas resolution
+      scale: W / area.offsetWidth,
       logging: false,
       backgroundColor: null,
+      onclone: (_doc: Document, el: HTMLElement) => {
+        // Strip unsupported CSS color functions (lab, oklch, etc) that html2canvas can't parse
+        el.querySelectorAll("*").forEach((node) => {
+          const s = (node as HTMLElement).style;
+          if (!s) return;
+          ["color", "backgroundColor", "borderColor", "outlineColor"].forEach(prop => {
+            const val = s.getPropertyValue(prop);
+            if (val && (val.includes("lab(") || val.includes("oklch(") || val.includes("color("))) {
+              s.setProperty(prop, "");
+            }
+          });
+        });
+      },
     });
     glCanvas.style.visibility = "visible";
 
@@ -1046,6 +1059,13 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
             className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 disabled:opacity-50"
           >
             {isPdfLoading === "current" ? "⏳ Generating..." : "🖨️ Print Current"}
+          </button>
+          <button
+            onClick={handlePrintAll}
+            disabled={isPdfLoading !== null}
+            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 disabled:opacity-50"
+          >
+            {isPdfLoading === "series" ? "⏳ Generating..." : "🗂️ Print All"}
           </button>
         </div>
 
