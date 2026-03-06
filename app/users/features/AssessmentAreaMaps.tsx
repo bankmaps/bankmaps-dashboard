@@ -732,8 +732,8 @@ export default function AssessmentAreaMaps() {
     setIsPdfLoading(mode);
     try {
       const token = localStorage.getItem("jwt_token") || "";
-      // Use the base URL without query params - do NOT double-encode
-      const pageUrl = window.location.origin + window.location.pathname;
+      // Include ?print=aa-maps so Puppeteer auto-switches to the map tab
+      const pageUrl = window.location.origin + window.location.pathname + "?print=aa-maps";
       const params = new URLSearchParams({
         url: pageUrl,
         mode,
@@ -944,6 +944,7 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
 
           <div className="flex-1" />
 
+          {/* Print button */}
           {/* Print buttons */}
           <button
             onClick={handlePrintCurrent}
@@ -1215,6 +1216,7 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
             {currentMapIdx + 1} / {MAPS.length}
           </span>
         </div>
+
         </>
         )}
       </div>

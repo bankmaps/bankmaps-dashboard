@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import TokenProvider from "./features/TokenProvider";
 import ManageProfile from "./features/ManageProfile";
 import ManageUsers from "./features/ManageUsers";
@@ -12,6 +12,22 @@ import { OrganizationsProvider } from "./features/OrganizationsContext";
 export default function UsersPage() {
   const [openSection, setOpenSection] = useState<string | null>("Dashboard");
   const [activeItem, setActiveItem] = useState<string>("dashboard");
+
+  // Auto-switch to the correct tab if ?print=<tab> is in the URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const printTab = params.get("print");
+    if (printTab) {
+      setActiveItem(printTab);
+      // Also open the correct menu section
+      const sectionMap: Record<string, string> = {
+        "aa-maps": "Live Reports",
+        "cra-reports": "Live Reports",
+        "fair-lending": "Live Reports",
+      };
+      if (sectionMap[printTab]) setOpenSection(sectionMap[printTab]);
+    }
+  }, []);
 
   const menuGroups = [
     {
