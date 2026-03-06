@@ -789,7 +789,6 @@ export default function AssessmentAreaMaps() {
   };
 
   const handlePrintCurrent = async () => {
-    setShowPrintModal(false);
     setIsPdfLoading("current");
     try {
       const { default: jsPDF } = await import("jspdf");
@@ -804,7 +803,6 @@ export default function AssessmentAreaMaps() {
   };
 
   const handlePrintAll = async () => {
-    setShowPrintModal(false);
     setIsPdfLoading("series");
     const originalIdx = currentMapIdx;
     try {
