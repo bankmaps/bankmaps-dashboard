@@ -13,7 +13,14 @@ async function getBrowser() {
   const chromium  = (await import("@sparticuz/chromium")).default;
   const puppeteer = (await import("puppeteer-core")).default;
   return puppeteer.launch({
-    args: chromium.args,
+    args: [
+      ...chromium.args,
+      "--enable-webgl",
+      "--use-gl=swiftshader",
+      "--enable-accelerated-2d-canvas",
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+    ],
     defaultViewport: { width: PAGE_WIDTH_PX, height: PAGE_HEIGHT_PX },
     executablePath: await chromium.executablePath(),
     headless: true,
@@ -42,25 +49,9 @@ export async function GET(req: NextRequest) {
     }, token);
 
     const renderMap = async (url: string): Promise<Uint8Array> => {
-      console.log("[PDF] Navigating to:", url);
       await page.goto(url, { waitUntil: "networkidle0", timeout: 30000 });
-      
-      // Check if token was injected correctly
-      const tokenCheck = await page.evaluate(() => !!localStorage.getItem("jwt_token"));
-      console.log("[PDF] Token in localStorage:", tokenCheck);
-
-      // Log page title and any console errors
-      page.on("console", msg => console.log("[PDF PAGE]", msg.text()));
-
-      // Check if the map container exists at all
-      const mapContainerExists = await page.evaluate(() => !!document.querySelector(".mapboxgl-canvas, [ref='mapContainerRef'], #map"));
-      console.log("[PDF] Map container exists:", mapContainerExists);
-
-      // Wait longer for the map to initialize
-      console.log("[PDF] Waiting for .mapboxgl-canvas...");
-      await page.waitForSelector(".mapboxgl-canvas", { timeout: 30000 });
-      console.log("[PDF] Canvas found, waiting for tiles...");
-      await new Promise(r => setTimeout(r, 5000));
+      await page.waitForSelector(".mapboxgl-canvas", { timeout: 20000 });
+      await new Promise(r => setTimeout(r, 3000)); // let map tiles finish rendering
       await page.addStyleTag({
         content: `.aa-no-print { display: none !important; } body { margin: 0; padding: 0; }`
       });
