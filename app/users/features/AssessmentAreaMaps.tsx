@@ -726,14 +726,14 @@ export default function AssessmentAreaMaps() {
   const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
   const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
 
-  const [isPdfLoading, setIsPdfLoading] = useState(false);
+  const [isPdfLoading, setIsPdfLoading] = useState<"current" | "series" | null>(null);
 
   const triggerPdfDownload = async (mode: "current" | "series") => {
-    setShowPrintModal(false);
-    setIsPdfLoading(true);
+    setIsPdfLoading(mode);
     try {
       const token = localStorage.getItem("jwt_token") || "";
-      const pageUrl = encodeURIComponent(window.location.href.split("?")[0]);
+      // Use the base URL without query params - do NOT double-encode
+      const pageUrl = window.location.origin + window.location.pathname;
       const params = new URLSearchParams({
         url: pageUrl,
         mode,
@@ -755,7 +755,7 @@ export default function AssessmentAreaMaps() {
       console.error("[PDF] Download failed:", err);
       alert("PDF generation failed: " + (err.message || "Unknown error"));
     } finally {
-      setIsPdfLoading(false);
+      setIsPdfLoading(null);
     }
   };
 
@@ -944,13 +944,20 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
 
           <div className="flex-1" />
 
-          {/* Print button */}
+          {/* Print buttons */}
           <button
-            onClick={() => setShowPrintModal(true)}
-            disabled={isPdfLoading}
+            onClick={handlePrintCurrent}
+            disabled={isPdfLoading !== null}
             className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 disabled:opacity-50"
           >
-            {isPdfLoading ? "⏳ Generating PDF..." : "🖨️ Print / Save"}
+            {isPdfLoading === "current" ? "⏳ Generating..." : "🖨️ Print Current"}
+          </button>
+          <button
+            onClick={handlePrintAll}
+            disabled={isPdfLoading !== null}
+            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 disabled:opacity-50"
+          >
+            {isPdfLoading === "series" ? "⏳ Generating..." : "🗂️ Print All"}
           </button>
         </div>
 
@@ -1208,36 +1215,6 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
             {currentMapIdx + 1} / {MAPS.length}
           </span>
         </div>
-        {/* ── Print Modal ───────────────────────────────────────────────── */}
-        {showPrintModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-            <div className="bg-white rounded-xl shadow-2xl p-6 w-80">
-              <h3 className="text-base font-bold text-gray-800 mb-1">Print / Save Map</h3>
-              <p className="text-xs text-gray-500 mb-4">Choose what to print or save as PDF.</p>
-              <div className="flex flex-col gap-3">
-                <button
-                  onClick={handlePrintCurrent}
-                  className="w-full px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700"
-                >
-                  🖨️ Print Current Map ({currentMap.title.split(" ")[0]})
-                </button>
-                <button
-                  onClick={handlePrintAll}
-                  className="w-full px-4 py-2 rounded-lg bg-gray-700 text-white text-sm font-medium hover:bg-gray-800"
-                >
-                  🗂️ Print All Maps ({MAPS.length} pages)
-                </button>
-                <button
-                  onClick={() => setShowPrintModal(false)}
-                  className="w-full px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-sm hover:border-gray-400"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         </>
         )}
       </div>
