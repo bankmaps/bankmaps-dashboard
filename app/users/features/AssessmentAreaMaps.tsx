@@ -161,7 +161,7 @@ export default function AssessmentAreaMaps() {
   const [showTractNums,         setShowTractNums]         = useState(false);
   const [boundaries,            setBoundaries]            = useState<any[]>([]);
   const [assessmentGeoids,      setAssessmentGeoids]      = useState<string[]>([]);
-  const [showPrintModal,        setShowPrintModal]        = useState(false);
+  const [isPdfLoading, setIsPdfLoading] = useState<"current" | "series" | null>(null);
   const [showHover,             setShowHover]             = useState(true);
   const [showSummary,           setShowSummary]           = useState(true);
   const [summaryData,           setSummaryData]           = useState<any>(null);
@@ -318,6 +318,7 @@ export default function AssessmentAreaMaps() {
       style: "mapbox://styles/mapbox/streets-v12",
       center: [-98.5, 39.8],
       zoom: 3.5,
+      preserveDrawingBuffer: true,
     });
 
     // NavigationControl moved to custom position below title box
@@ -726,8 +727,6 @@ export default function AssessmentAreaMaps() {
   const handleMouseEnter = () => { isPausedRef.current = true;  setIsPlaying(false); };
   const handleMouseLeave = () => { isPausedRef.current = false; setIsPlaying(true);  };
 
-  const [isPdfLoading, setIsPdfLoading] = useState<"current" | "series" | null>(null);
-
   const captureMapAsPdf = async (idx: number): Promise<{ imgData: string; width: number; height: number }> => {
     // Navigate to the map and wait for it to settle
     goToMap(idx);
@@ -1028,13 +1027,6 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
           >
             {isPdfLoading === "current" ? "⏳ Generating..." : "🖨️ Print Current"}
           </button>
-          <button
-            onClick={handlePrintAll}
-            disabled={isPdfLoading !== null}
-            className="text-xs px-3 py-1 rounded-full border font-medium bg-white text-gray-600 border-gray-300 hover:border-gray-400 disabled:opacity-50"
-          >
-            {isPdfLoading === "series" ? "⏳ Generating..." : "🗂️ Print All"}
-          </button>
         </div>
 
         {/* ── Print frame: full width, letter-landscape aspect ratio ───────── */}
@@ -1291,7 +1283,6 @@ if (fh > h) { fh = h; fw = fh / RATIO; }
             {currentMapIdx + 1} / {MAPS.length}
           </span>
         </div>
-
         </>
         )}
       </div>
