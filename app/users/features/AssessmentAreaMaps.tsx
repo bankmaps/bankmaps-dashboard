@@ -734,45 +734,53 @@ export default function AssessmentAreaMaps() {
 
     const map = mapRef.current;
     if (!map) throw new Error("Map not initialized");
+
+    const area = mapAreaRef.current;
+    if (!area) throw new Error("Map area not found");
+
+    // Temporarily resize the map container to 2x for high-res capture
+    const SCALE = 2;
+    const origWidth  = area.offsetWidth;
+    const origHeight = area.offsetHeight;
+    area.style.width  = `${origWidth  * SCALE}px`;
+    area.style.height = `${origHeight * SCALE}px`;
     map.resize();
 
-    // Wait for map tiles to finish
+    // Wait for map to re-render at new size
     await new Promise<void>(resolve => {
-      if (map.loaded() && map.isStyleLoaded()) { resolve(); return; }
       map.once("idle", () => resolve());
       setTimeout(resolve, 3000);
     });
     await new Promise(r => setTimeout(r, 500));
 
-    const area = mapAreaRef.current;
-    if (!area) throw new Error("Map area not found");
-
-    // Composite: draw GL canvas first, then html2canvas overlays on top
     const glCanvas = map.getCanvas();
     const W = glCanvas.width;
     const H = glCanvas.height;
 
-    // Capture overlays only (hide GL canvas first)
+    // Capture overlays at same scale
     glCanvas.style.visibility = "hidden";
     const { toPng } = await import("html-to-image");
     const overlayDataUrl = await toPng(area, {
-      pixelRatio: W / area.offsetWidth,
+      pixelRatio: 1,
       skipFonts: true,
     });
     glCanvas.style.visibility = "visible";
 
-    // Composite onto a single canvas
+    // Restore original size
+    area.style.width  = "";
+    area.style.height = "";
+    map.resize();
+
+    // Composite
     const overlayImg = new Image();
     await new Promise<void>(resolve => { overlayImg.onload = () => resolve(); overlayImg.src = overlayDataUrl; });
 
-    // Use the larger of GL canvas or overlay image for composite size
     const composite = document.createElement("canvas");
-    composite.width = W;
+    composite.width  = W;
     composite.height = H;
     const ctx = composite.getContext("2d")!;
     ctx.drawImage(glCanvas, 0, 0);
-    // Draw overlay at natural size - pixelRatio already made it match GL canvas resolution
-    ctx.drawImage(overlayImg, 0, 0);
+    ctx.drawImage(overlayImg, 0, 0, W, H);
 
     return composite.toDataURL("image/jpeg", 1.0);
   };
