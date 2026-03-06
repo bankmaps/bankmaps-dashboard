@@ -783,91 +783,90 @@ export default function AssessmentAreaMaps() {
   // Draw the summary table directly onto PDF
   const drawSummaryTable = (pdf: any, x: number, y: number, mapId: string) => {
     if (!summaryData) return;
-    const pad = 3; const rowH = 4.5;
+    const pad = 3.5; const rowH = 5; const fs = 6.5;
+    const colW = [24, 12, 10, 16, 10]; // label, tracts, %, hh, %
+    const boxW = colW.reduce((a, b) => a + b, 0) + pad * 2;
 
     if (mapId === "boundaries" && summaryData.income) {
       const lines = [
-        `Assessment area: ${summaryData.msas?.[0]?.msa || ""}`,
+        summaryData.msas?.length === 1 ? `MSA: ${summaryData.msas[0].msa}` :
+        summaryData.msas?.length > 1 ? `${summaryData.msas.map((m:any) => m.msa).join(', ')}` : "",
         `${summaryData.income.totalTracts} census tracts`,
       ];
-      const boxW = 80; const boxH = pad * 2 + lines.length * rowH + 2;
-      pdf.setFillColor(255, 255, 255);
-      pdf.setDrawColor(0, 0, 0);
-      pdf.roundedRect(x, y, boxW, boxH, 1, 1, "FD");
-      pdf.setFontSize(6); pdf.setFont("helvetica", "normal"); pdf.setTextColor(40, 40, 40);
-      lines.forEach((line, i) => pdf.text(line, x + pad, y + pad + 3 + i * rowH));
+      const bW = 80; const bH = pad * 2 + lines.length * rowH + 2;
+      pdf.setFillColor(255,255,255); pdf.setDrawColor(180,180,180);
+      pdf.roundedRect(x, y, bW, bH, 1, 1, "FD");
+      pdf.setFontSize(fs); pdf.setFont("helvetica","normal"); pdf.setTextColor(40,40,40);
+      lines.forEach((line, i) => pdf.text(line, x + pad, y + pad + 4 + i * rowH));
+      return;
     }
+
+    const drawTable = (items: any[], totalTracts: number, totalHouseholds: number, subtotal: any, subtotalLabel: string, labelTransform?: (s:string)=>string) => {
+      const order_income = ['Low','Moderate','Middle','Upper','NA'];
+      const order_minority = ['Asian Majority','Black Majority','Hispanic Majority','Black+Hispanic Majority','Combined Majority','White Majority','NA'];
+      const order = mapId === 'income-level' ? order_income : order_minority;
+      const sorted = [...items].sort((a:any,b:any) => order.indexOf(a.label) - order.indexOf(b.label));
+      const rows = sorted.length + 2 + (subtotal ? 1 : 0);
+      const boxH = pad * 2 + rowH + rows * rowH;
+      pdf.setFillColor(255,255,255); pdf.setDrawColor(180,180,180);
+      pdf.roundedRect(x, y, boxW, boxH, 1, 1, "FD");
+
+      // Header
+      let cx = x + pad;
+      pdf.setFontSize(fs - 0.5); pdf.setFont("helvetica","bold"); pdf.setTextColor(80,80,80);
+      const headers = ["", "# Tracts", "%", "# HH", "%"];
+      colW.forEach((w, i) => { pdf.text(headers[i], cx + (i > 0 ? w : 0), y + pad + 4, i > 0 ? {align:"right"} : {}); cx += w; });
+
+      // Divider
+      pdf.setDrawColor(200,200,200);
+      pdf.line(x + pad, y + pad + 5.5, x + boxW - pad, y + pad + 5.5);
+
+      // Rows
+      pdf.setFont("helvetica","normal"); pdf.setTextColor(40,40,40);
+      sorted.forEach((row: any, i: number) => {
+        const ry = y + pad + 4 + (i + 1) * rowH + 1;
+        const label = labelTransform ? labelTransform(row.label) : row.label;
+        cx = x + pad;
+        pdf.setFontSize(fs);
+        pdf.text(label, cx, ry); cx += colW[0];
+        pdf.text(String(row.tract_count ?? ""), cx, ry, {align:"right"}); cx += colW[1];
+        pdf.text(row.tract_pct != null ? `${row.tract_pct}%` : "", cx, ry, {align:"right"}); cx += colW[2];
+        pdf.text(row.household_count != null ? Number(row.household_count).toLocaleString() : "", cx, ry, {align:"right"}); cx += colW[3];
+        pdf.text(row.household_pct != null ? `${row.household_pct}%` : "", cx, ry, {align:"right"});
+      });
+
+      // Total row
+      const totY = y + pad + 4 + (sorted.length + 1) * rowH + 1;
+      pdf.setDrawColor(200,200,200);
+      pdf.line(x + pad, totY - 2, x + boxW - pad, totY - 2);
+      pdf.setFont("helvetica","bold"); pdf.setTextColor(40,40,40);
+      cx = x + pad;
+      pdf.text("Total", cx, totY); cx += colW[0];
+      pdf.text(String(totalTracts), cx, totY, {align:"right"}); cx += colW[1];
+      pdf.text("100%", cx, totY, {align:"right"}); cx += colW[2];
+      pdf.text(Number(totalHouseholds).toLocaleString(), cx, totY, {align:"right"}); cx += colW[3];
+      pdf.text("100%", cx, totY, {align:"right"});
+
+      // Subtotal row
+      if (subtotal) {
+        const smY = totY + rowH;
+        pdf.setFont("helvetica","normal"); pdf.setTextColor(180,0,0);
+        cx = x + pad;
+        pdf.text(subtotalLabel, cx, smY); cx += colW[0];
+        pdf.text(String(subtotal.tract_count ?? ""), cx, smY, {align:"right"}); cx += colW[1];
+        pdf.text(subtotal.tract_pct != null ? `${subtotal.tract_pct}%` : "", cx, smY, {align:"right"}); cx += colW[2];
+        pdf.text(subtotal.household_count != null ? Number(subtotal.household_count).toLocaleString() : "", cx, smY, {align:"right"}); cx += colW[3];
+        pdf.text(subtotal.household_pct != null ? `${subtotal.household_pct}%` : "", cx, smY, {align:"right"});
+      }
+    };
 
     if (mapId === "income-level" && summaryData.income) {
       const { items, totalTracts, totalHouseholds, lmSubtotal } = summaryData.income;
-      const cols = ["Income Level", "# Tracts", "%", "# HH", "%"];
-      const colX = [x + pad, x + 28, x + 37, x + 46, x + 58];
-      const boxW = 68; const boxH = pad * 2 + (items.length + 3) * rowH;
-      pdf.setFillColor(255, 255, 255); pdf.setDrawColor(0, 0, 0);
-      pdf.roundedRect(x, y, boxW, boxH, 1, 1, "FD");
-      pdf.setFontSize(5.5); pdf.setFont("helvetica", "bold"); pdf.setTextColor(40, 40, 40);
-      cols.forEach((c, i) => pdf.text(c, colX[i], y + pad + 3));
-      pdf.setFont("helvetica", "normal");
-      items.forEach((item: any, i: number) => {
-        const ry = y + pad + 3 + (i + 1) * rowH;
-        pdf.text(item.label, colX[0], ry);
-        pdf.text(String(item.tracts), colX[1], ry);
-        pdf.text(`${item.tractPct}%`, colX[2], ry);
-        pdf.text(Number(item.households).toLocaleString(), colX[3], ry);
-        pdf.text(`${item.hhPct}%`, colX[4], ry);
-      });
-      const totY = y + pad + 3 + (items.length + 1) * rowH;
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Total", colX[0], totY);
-      pdf.text(String(totalTracts), colX[1], totY);
-      pdf.text("100%", colX[2], totY);
-      pdf.text(Number(totalHouseholds).toLocaleString(), colX[3], totY);
-      pdf.text("100%", colX[4], totY);
-      if (lmSubtotal) {
-        const lmY = totY + rowH;
-        pdf.setTextColor(180, 0, 0);
-        pdf.text("LMI Subtotal", colX[0], lmY);
-        pdf.text(String(lmSubtotal.tracts), colX[1], lmY);
-        pdf.text(`${lmSubtotal.tractPct}%`, colX[2], lmY);
-        pdf.text(Number(lmSubtotal.households).toLocaleString(), colX[3], lmY);
-        pdf.text(`${lmSubtotal.hhPct}%`, colX[4], lmY);
-      }
+      drawTable(items, totalTracts, totalHouseholds, lmSubtotal, "Low-Moderate");
     }
-
     if (mapId === "majority-minority" && summaryData.minority) {
       const { items, totalTracts, totalHouseholds, mmSubtotal } = summaryData.minority;
-      const cols = ["Group", "# Tracts", "%", "# HH", "%"];
-      const colX = [x + pad, x + 28, x + 37, x + 46, x + 58];
-      const boxW = 68; const boxH = pad * 2 + (items.length + 3) * rowH;
-      pdf.setFillColor(255, 255, 255); pdf.setDrawColor(0, 0, 0);
-      pdf.roundedRect(x, y, boxW, boxH, 1, 1, "FD");
-      pdf.setFontSize(5.5); pdf.setFont("helvetica", "bold"); pdf.setTextColor(40, 40, 40);
-      cols.forEach((c, i) => pdf.text(c, colX[i], y + pad + 3));
-      pdf.setFont("helvetica", "normal");
-      items.forEach((item: any, i: number) => {
-        const ry = y + pad + 3 + (i + 1) * rowH;
-        pdf.text(item.label, colX[0], ry);
-        pdf.text(String(item.tracts), colX[1], ry);
-        pdf.text(`${item.tractPct}%`, colX[2], ry);
-        pdf.text(Number(item.households).toLocaleString(), colX[3], ry);
-        pdf.text(`${item.hhPct}%`, colX[4], ry);
-      });
-      const totY = y + pad + 3 + (items.length + 1) * rowH;
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Total", colX[0], totY);
-      pdf.text(String(totalTracts), colX[1], totY);
-      pdf.text("100%", colX[2], totY);
-      pdf.text(Number(totalHouseholds).toLocaleString(), colX[3], totY);
-      pdf.text("100%", colX[4], totY);
-      if (mmSubtotal) {
-        const mmY = totY + rowH;
-        pdf.setTextColor(180, 0, 0);
-        pdf.text("MM Subtotal", colX[0], mmY);
-        pdf.text(String(mmSubtotal.tracts), colX[1], mmY);
-        pdf.text(`${mmSubtotal.tractPct}%`, colX[2], mmY);
-        pdf.text(Number(mmSubtotal.households).toLocaleString(), colX[3], mmY);
-        pdf.text(`${mmSubtotal.hhPct}%`, colX[4], mmY);
-      }
+      drawTable(items, totalTracts, totalHouseholds, mmSubtotal, "Maj. Minority", (s) => s.replace(" Majority",""));
     }
   };
 
@@ -913,26 +912,30 @@ export default function AssessmentAreaMaps() {
       drawLegend(pdf, margin + 2, imgY + imgH - 34, "Assessment Area", items);
     }
 
-    // Boundary line legend - bottom right (all maps)
-    const lineBoxW = 46; const lineBoxH = 14;
-    const lineBoxX = PW - margin - lineBoxW - 2;
-    const lineBoxY = imgY + imgH - lineBoxH - 2;
-    pdf.setFillColor(255, 255, 255);
-    pdf.setDrawColor(200, 200, 200);
-    pdf.roundedRect(lineBoxX, lineBoxY, lineBoxW, lineBoxH, 1, 1, "FD");
-    pdf.setDrawColor(0, 102, 255);
-    pdf.setLineWidth(1);
-    pdf.line(lineBoxX + 3.5, lineBoxY + 7, lineBoxX + 13, lineBoxY + 7);
-    pdf.setLineWidth(0.1);
-    pdf.setFontSize(7);
-    pdf.setFont("helvetica", "normal");
-    pdf.setTextColor(60, 60, 60);
-    pdf.text("Assessment Area", lineBoxX + 15, lineBoxY + 8);
-
-    // Branches legend - above boundary line legend
-    drawLegend(pdf, PW - margin - 64, imgY + imgH - 34, "Branches", [
-      { label: "Full Service Branch", color: "#cc0000" }
-    ]);
+    // Combined Branches + Assessment Area legend - bottom right
+    const comboItems = [{ label: "Full Service Branch", color: "#cc0000" }];
+    const cPad = 3.5; const cRowH = 6; const cSwatchSize = 3.5;
+    const cBoxW = 58;
+    const cBoxH = cPad + 6 + (comboItems.length + 1) * cRowH + cPad + 4;
+    const cBoxX = PW - margin - cBoxW - 2;
+    const cBoxY = imgY + imgH - cBoxH - 2;
+    pdf.setFillColor(255,255,255); pdf.setDrawColor(200,200,200);
+    pdf.roundedRect(cBoxX, cBoxY, cBoxW, cBoxH, 1, 1, "FD");
+    // Title
+    pdf.setFontSize(8); pdf.setFont("helvetica","bold"); pdf.setTextColor(50,50,50);
+    pdf.text("Map Features", cBoxX + cPad, cBoxY + cPad + 4);
+    // Branch row
+    const br = parseInt("#cc0000".slice(1,3),16), bg = parseInt("#cc0000".slice(3,5),16), bb = parseInt("#cc0000".slice(5,7),16);
+    pdf.setFillColor(br, bg, bb); pdf.setDrawColor(180,180,180);
+    pdf.rect(cBoxX + cPad, cBoxY + cPad + 7, cSwatchSize, cSwatchSize, "FD");
+    pdf.setFont("helvetica","normal"); pdf.setFontSize(7); pdf.setTextColor(60,60,60);
+    pdf.text("Full Service Branch", cBoxX + cPad + cSwatchSize + 2.5, cBoxY + cPad + 7 + cSwatchSize - 0.3);
+    // Assessment Area line row
+    const lineY = cBoxY + cPad + 7 + cRowH;
+    pdf.setDrawColor(0, 102, 255); pdf.setLineWidth(1);
+    pdf.line(cBoxX + cPad, lineY + cSwatchSize/2, cBoxX + cPad + cSwatchSize + 5, lineY + cSwatchSize/2);
+    pdf.setLineWidth(0.1); pdf.setTextColor(60,60,60);
+    pdf.text("Assessment Area", cBoxX + cPad + cSwatchSize + 7, lineY + cSwatchSize - 0.3);
 
     // Summary table - top right, inside map frame
     if (summaryData) {
