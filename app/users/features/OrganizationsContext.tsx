@@ -27,28 +27,41 @@ export function OrganizationsProvider({ children }: { children: ReactNode }) {
   const [selectedOrgId, setSelectedOrgId] = useState<number | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("jwt_token");
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+    let attempts = 0;
+    const maxAttempts = 10;
 
-    fetch("/api/organizations", { 
-      headers: { Authorization: `Bearer ${token}` } 
-    })
-      .then(r => r.json())
-      .then(data => {
-        const orgs = data.organizations || [];
-        setOrganizations(orgs);
-        if (orgs.length > 0 && !selectedOrgId) {
-          setSelectedOrgId(orgs[0].id);
+    const tryFetch = () => {
+      const token = localStorage.getItem("jwt_token");
+
+      if (!token) {
+        attempts++;
+        if (attempts < maxAttempts) {
+          setTimeout(tryFetch, 300);
+        } else {
+          setLoading(false);
         }
-        setLoading(false);
+        return;
+      }
+
+      fetch("/api/organizations", {
+        headers: { Authorization: `Bearer ${token}` }
       })
-      .catch(err => {
-        console.error("Failed to fetch organizations:", err);
-        setLoading(false);
-      });
+        .then(r => r.json())
+        .then(data => {
+          const orgs = data.organizations || [];
+          setOrganizations(orgs);
+          if (orgs.length > 0 && !selectedOrgId) {
+            setSelectedOrgId(orgs[0].id);
+          }
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch organizations:", err);
+          setLoading(false);
+        });
+    };
+
+    tryFetch();
   }, []);
 
   const selectedOrg = organizations.find(o => o.id === selectedOrgId) || null;

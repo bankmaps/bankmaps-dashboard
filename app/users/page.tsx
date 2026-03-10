@@ -138,7 +138,7 @@ export default function UsersPage() {
             {/* Main content area */}
             <div className="flex-1 flex flex-col">
 
-              <main className="p-4 overflow-hidden" style={{ height: "calc(100vh - 64px)" }}>
+              <main className="p-4 overflow-y-auto" style={{ height: "calc(100vh - 64px)" }}>
                 {activeItem === "aa-maps" ? (
                   <AssessmentAreaMaps />
                 ) : (
