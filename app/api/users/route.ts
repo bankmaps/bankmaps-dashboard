@@ -242,36 +242,39 @@ export async function POST(req: NextRequest) {
 
     // ── Cache org-level HMDA (primary lender) ────────────────────────────────
     const linkedHmda = body.linked?.hmda || null;
-    console.log('[HMDA_ORG] body.linked:', JSON.stringify(body.linked));
-    console.log('[HMDA_ORG] linkedHmda:', linkedHmda, typeof linkedHmda);
     if (linkedHmda) {
       await sql`DELETE FROM cached_hmda_org WHERE organization_id = ${organization_id} AND is_affiliate = false`;
       await sql`
         INSERT INTO cached_hmda_org (
-          organization_id, lender_id, lender, lender_state, is_affiliate,
-          year, applications_received, application_dollars,
-          originated_loans, originated_dollars,
+          year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid,
+          state, st, town, county, msa, msa_number, tract_number, property_value, borrower_income,
+          purchaser_type, financing_type, loan_purpose, occupancy, lien, open_or_closed_end,
+          business_or_commercial, reverse_mortgage, action_taken, product, amount,
+          applications_received, application_dollars, originated_loans, originated_dollars,
           originated_and_purchased_loans, originated_and_purchased_loan_dollars,
-          approved_not_accepted, approved_not_accepted_dollars,
-          denied_applications, denied_application_dollars,
-          purchased_loans, purchased_loan_dollars,
-          withdrawn_applications, withdrawn_application_dollars,
-          cached_at
+          approved_not_accepted, approved_not_accepted_dollars, denied_applications,
+          denied_application_dollars, purchased_loans, purchased_loan_dollars,
+          withdrawn_applications, withdrawn_application_dollars, spread, rate, income_level,
+          borrower_income_level, majority_minority, borrower_race, borrower_ethnicity,
+          borrower_gender, minority_status, borrower_age, coapplicant,
+          organization_id, is_affiliate, cached_at
         )
         SELECT
-          ${organization_id}::bigint, h.lender_id, h.lender, h.lender_state, false,
-          h.year::int,
-          SUM(h.applications_received::numeric), SUM(h.application_dollars::numeric),
-          SUM(h.originated_loans::numeric), SUM(h.originated_dollars::numeric),
-          SUM(h.originated_and_purchased_loans::numeric), SUM(h.originated_and_purchased_loan_dollars::numeric),
-          SUM(h.approved_not_accepted::numeric), SUM(h.approved_not_accepted_dollars::numeric),
-          SUM(h.denied_applications::numeric), SUM(h.denied_application_dollars::numeric),
-          SUM(h.purchased_loans::numeric), SUM(h.purchased_loan_dollars::numeric),
-          SUM(h.withdrawn_applications::numeric), SUM(h.withdrawn_application_dollars::numeric),
-          NOW()
+          h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid,
+          h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number,
+          h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, h.loan_purpose,
+          h.occupancy, h.lien, h.open_or_closed_end, h.business_or_commercial, h.reverse_mortgage,
+          h.action_taken, h.product, h.amount, h.applications_received, h.application_dollars,
+          h.originated_loans, h.originated_dollars, h.originated_and_purchased_loans,
+          h.originated_and_purchased_loan_dollars, h.approved_not_accepted,
+          h.approved_not_accepted_dollars, h.denied_applications, h.denied_application_dollars,
+          h.purchased_loans, h.purchased_loan_dollars, h.withdrawn_applications,
+          h.withdrawn_application_dollars, h.spread, h.rate, h.income_level,
+          h.borrower_income_level, h.majority_minority, h.borrower_race, h.borrower_ethnicity,
+          h.borrower_gender, h.minority_status, h.borrower_age, h.coapplicant,
+          ${organization_id}::bigint, false, NOW()
         FROM hmda_us h
         WHERE h.lender_id = ${linkedHmda}
-        GROUP BY h.lender_id, h.lender, h.lender_state, h.year
       `;
       console.log(`[HMDA_ORG] ✅ Cached primary lender ${linkedHmda}`);
     }
@@ -284,32 +287,35 @@ export async function POST(req: NextRequest) {
         if (!aff.hmda_lender_id) continue;
         await sql`
           INSERT INTO cached_hmda_org (
-            organization_id, lender_id, lender, lender_state, is_affiliate,
-            affiliate_name, affiliate_type,
-            year, applications_received, application_dollars,
-            originated_loans, originated_dollars,
+            year, lender, lender_id, lender_state, regulator, uniqueid, geoid, statecountyid,
+            state, st, town, county, msa, msa_number, tract_number, property_value, borrower_income,
+            purchaser_type, financing_type, loan_purpose, occupancy, lien, open_or_closed_end,
+            business_or_commercial, reverse_mortgage, action_taken, product, amount,
+            applications_received, application_dollars, originated_loans, originated_dollars,
             originated_and_purchased_loans, originated_and_purchased_loan_dollars,
-            approved_not_accepted, approved_not_accepted_dollars,
-            denied_applications, denied_application_dollars,
-            purchased_loans, purchased_loan_dollars,
-            withdrawn_applications, withdrawn_application_dollars,
-            cached_at
+            approved_not_accepted, approved_not_accepted_dollars, denied_applications,
+            denied_application_dollars, purchased_loans, purchased_loan_dollars,
+            withdrawn_applications, withdrawn_application_dollars, spread, rate, income_level,
+            borrower_income_level, majority_minority, borrower_race, borrower_ethnicity,
+            borrower_gender, minority_status, borrower_age, coapplicant,
+            organization_id, is_affiliate, affiliate_name, affiliate_type, cached_at
           )
           SELECT
-            ${organization_id}::bigint, h.lender_id, h.lender, h.lender_state, true,
-            ${aff.name}, ${aff.type},
-            h.year::int,
-            SUM(h.applications_received::numeric), SUM(h.application_dollars::numeric),
-            SUM(h.originated_loans::numeric), SUM(h.originated_dollars::numeric),
-            SUM(h.originated_and_purchased_loans::numeric), SUM(h.originated_and_purchased_loan_dollars::numeric),
-            SUM(h.approved_not_accepted::numeric), SUM(h.approved_not_accepted_dollars::numeric),
-            SUM(h.denied_applications::numeric), SUM(h.denied_application_dollars::numeric),
-            SUM(h.purchased_loans::numeric), SUM(h.purchased_loan_dollars::numeric),
-            SUM(h.withdrawn_applications::numeric), SUM(h.withdrawn_application_dollars::numeric),
-            NOW()
+            h.year, h.lender, h.lender_id, h.lender_state, h.regulator, h.uniqueid, h.geoid,
+            h.statecountyid, h.state, h.st, h.town, h.county, h.msa, h.msa_number, h.tract_number,
+            h.property_value, h.borrower_income, h.purchaser_type, h.financing_type, h.loan_purpose,
+            h.occupancy, h.lien, h.open_or_closed_end, h.business_or_commercial, h.reverse_mortgage,
+            h.action_taken, h.product, h.amount, h.applications_received, h.application_dollars,
+            h.originated_loans, h.originated_dollars, h.originated_and_purchased_loans,
+            h.originated_and_purchased_loan_dollars, h.approved_not_accepted,
+            h.approved_not_accepted_dollars, h.denied_applications, h.denied_application_dollars,
+            h.purchased_loans, h.purchased_loan_dollars, h.withdrawn_applications,
+            h.withdrawn_application_dollars, h.spread, h.rate, h.income_level,
+            h.borrower_income_level, h.majority_minority, h.borrower_race, h.borrower_ethnicity,
+            h.borrower_gender, h.minority_status, h.borrower_age, h.coapplicant,
+            ${organization_id}::bigint, true, ${aff.name}, ${aff.type}, NOW()
           FROM hmda_us h
           WHERE h.lender_id = ${aff.hmda_lender_id}
-          GROUP BY h.lender_id, h.lender, h.lender_state, h.year
         `;
         console.log(`[HMDA_ORG] ✅ Cached affiliate ${aff.name} (${aff.hmda_lender_id})`);
       }
