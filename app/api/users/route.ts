@@ -242,6 +242,8 @@ export async function POST(req: NextRequest) {
 
     // ── Cache org-level HMDA (primary lender) ────────────────────────────────
     const linkedHmda = body.linked?.hmda || null;
+    console.log('[HMDA_ORG] body.linked:', JSON.stringify(body.linked));
+    console.log('[HMDA_ORG] linkedHmda:', linkedHmda, typeof linkedHmda);
     if (linkedHmda) {
       await sql`DELETE FROM cached_hmda_org WHERE organization_id = ${organization_id} AND is_affiliate = false`;
       await sql`
