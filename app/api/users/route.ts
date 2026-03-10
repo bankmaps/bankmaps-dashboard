@@ -258,14 +258,14 @@ export async function POST(req: NextRequest) {
         )
         SELECT
           ${organization_id}::bigint, h.lender_id, h.lender, h.lender_state, false,
-          h.year,
-          SUM(h.applications_received), SUM(h.application_dollars),
-          SUM(h.originated_loans), SUM(h.originated_dollars),
-          SUM(h.originated_and_purchased_loans), SUM(h.originated_and_purchased_loan_dollars),
-          SUM(h.approved_not_accepted), SUM(h.approved_not_accepted_dollars),
-          SUM(h.denied_applications), SUM(h.denied_application_dollars),
-          SUM(h.purchased_loans), SUM(h.purchased_loan_dollars),
-          SUM(h.withdrawn_applications), SUM(h.withdrawn_application_dollars),
+          h.year::int,
+          SUM(h.applications_received::numeric), SUM(h.application_dollars::numeric),
+          SUM(h.originated_loans::numeric), SUM(h.originated_dollars::numeric),
+          SUM(h.originated_and_purchased_loans::numeric), SUM(h.originated_and_purchased_loan_dollars::numeric),
+          SUM(h.approved_not_accepted::numeric), SUM(h.approved_not_accepted_dollars::numeric),
+          SUM(h.denied_applications::numeric), SUM(h.denied_application_dollars::numeric),
+          SUM(h.purchased_loans::numeric), SUM(h.purchased_loan_dollars::numeric),
+          SUM(h.withdrawn_applications::numeric), SUM(h.withdrawn_application_dollars::numeric),
           NOW()
         FROM hmda_us h
         WHERE h.lender_id = ${linkedHmda}
@@ -296,14 +296,14 @@ export async function POST(req: NextRequest) {
           SELECT
             ${organization_id}::bigint, h.lender_id, h.lender, h.lender_state, true,
             ${aff.name}, ${aff.type},
-            h.year,
-            SUM(h.applications_received), SUM(h.application_dollars),
-            SUM(h.originated_loans), SUM(h.originated_dollars),
-            SUM(h.originated_and_purchased_loans), SUM(h.originated_and_purchased_loan_dollars),
-            SUM(h.approved_not_accepted), SUM(h.approved_not_accepted_dollars),
-            SUM(h.denied_applications), SUM(h.denied_application_dollars),
-            SUM(h.purchased_loans), SUM(h.purchased_loan_dollars),
-            SUM(h.withdrawn_applications), SUM(h.withdrawn_application_dollars),
+            h.year::int,
+            SUM(h.applications_received::numeric), SUM(h.application_dollars::numeric),
+            SUM(h.originated_loans::numeric), SUM(h.originated_dollars::numeric),
+            SUM(h.originated_and_purchased_loans::numeric), SUM(h.originated_and_purchased_loan_dollars::numeric),
+            SUM(h.approved_not_accepted::numeric), SUM(h.approved_not_accepted_dollars::numeric),
+            SUM(h.denied_applications::numeric), SUM(h.denied_application_dollars::numeric),
+            SUM(h.purchased_loans::numeric), SUM(h.purchased_loan_dollars::numeric),
+            SUM(h.withdrawn_applications::numeric), SUM(h.withdrawn_application_dollars::numeric),
             NOW()
           FROM hmda_us h
           WHERE h.lender_id = ${aff.hmda_lender_id}
