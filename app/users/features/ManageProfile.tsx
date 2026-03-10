@@ -374,6 +374,7 @@ export default function ManageProfile() {
   if (loading) return <div style={{ padding:'48px', textAlign:'center', color:'#6b7280' }}>Loading profile...</div>;
 
   return (
+    <div style={{ height:'100%', overflowY:'auto' }}>
     <div style={{ maxWidth:'800px', margin:'0 auto', padding:'32px 24px' }}>
       <h1 style={{ fontSize:'28px', fontWeight:700, marginBottom:'32px', color:'#111827' }}>Manage Profile</h1>
 
@@ -598,6 +599,7 @@ export default function ManageProfile() {
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
     </div>
   );
 }
