@@ -63,14 +63,14 @@ export async function POST(req: NextRequest) {
     `;
 
     const [newOrg] = await sql`
-      INSERT INTO organizations (user_id, bluehost_id, name, type, regulator, states, linked_sources, geographies, custom_context, created_at)
+      INSERT INTO organizations (user_id, bluehost_id, name, type, regulator, states, linked_sources, geographies, custom_context, affiliates, created_at)
       VALUES (${User.id}, ${bluehost_id}, ${body.name}, ${body.type}, ${body.regulator}, ${JSON.stringify(body.states || [])}::jsonb, ${JSON.stringify(body.linked || {})}::jsonb, ${JSON.stringify(body.geographies?.map((area: any) => ({
           ...area,
           state: typeof area.state === 'string' ? JSON.parse(area.state) : (area.state || []),
           county: typeof area.county === 'string' ? JSON.parse(area.county) : (area.county || []),
           town: typeof area.town === 'string' ? JSON.parse(area.town) : (area.town || []),
           tract_number: typeof area.tract_number === 'string' ? JSON.parse(area.tract_number) : (area.tract_number || []),
-        })) || [])}::jsonb, ${body.customContext || null}, NOW())
+        })) || [])}::jsonb, ${body.customContext || null}, ${JSON.stringify(body.affiliates || [])}::jsonb, NOW())
       RETURNING id;
     `;
 

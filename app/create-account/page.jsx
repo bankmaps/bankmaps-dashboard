@@ -96,6 +96,20 @@ export default function Page() {
   const [geographyName, setGeographyName] = useState('');      // free text
   
   const [selectedGeographies, setSelectedGeographies] = useState([]);   // array of complete geographies added
+
+  // ── Affiliate state ──────────────────────────────────────
+  const [addAffiliate, setAddAffiliate] = useState(null);       // null | 'yes' | 'no'
+  const [affiliates, setAffiliates] = useState([]);             // confirmed affiliates
+  const [currentAffiliate, setCurrentAffiliate] = useState({
+    name: '',
+    type: '',
+    state: '',
+    hmda_lender_id: null,
+    hmda_lender_name: null,
+  });
+  const [affiliateCandidates, setAffiliateCandidates] = useState([]);
+  const [affiliateMatch, setAffiliateMatch] = useState(null);
+  const [affiliateOverride, setAffiliateOverride] = useState(null); // selected lender_id override
   
   useEffect(() => {
     fetch('/data/hmda_list.json')
@@ -345,6 +359,32 @@ console.log('geographiesList sample:', geographiesList.slice(0, 3));
     filteredNcuaList,
   ]);
 
+  // ── Affiliate fuzzy match ───────────────────────────────
+  useEffect(() => {
+    const { name, state } = currentAffiliate;
+    if (!name.trim() || !state) {
+      setAffiliateCandidates([]);
+      setAffiliateMatch(null);
+      setAffiliateOverride(null);
+      return;
+    }
+    const timer = setTimeout(() => {
+      const filtered = state ? hmdaList.filter(i => i.lender_state === state) : hmdaList;
+      const scored = filtered.map(item => ({
+        label: `${item.lender} (${item.lender_state})`,
+        value: item.lender_id,
+        lender: item.lender,
+        score: similarity(name, item.lender),
+      }));
+      const sorted = [...scored].sort((a, b) => b.score - a.score);
+      const candidates = [...scored].sort((a, b) => a.label.localeCompare(b.label, 'en', { sensitivity: 'base' }));
+      setAffiliateCandidates(candidates);
+      setAffiliateMatch(sorted[0] || null);
+      setAffiliateOverride(sorted[0]?.value || null);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [currentAffiliate.name, currentAffiliate.state, hmdaList]);
+
   const stateOptions = useMemo(() => {
     if (!hqStates.length) return [];
 
@@ -378,6 +418,8 @@ console.log('geographiesList sample:', geographiesList.slice(0, 3));
     selectedStates.length > 0;
 
   const canProceedStep2 = true; // optional: could require at least one selectedLenderPerSource later
+  const canProceedStep2b = addAffiliate === 'no' || addAffiliate === null ||
+    (addAffiliate === 'yes' && affiliates.length >= 0); // always ok to proceed from affiliate step
 
   const canProceedStep3 = selectedGeographies.length > 0; // placeholder — tighten later if geographies required
   const canProceedStep4 = true; // placeholder
@@ -385,11 +427,12 @@ console.log('geographiesList sample:', geographiesList.slice(0, 3));
   const canProceed =
     currentStep === 1 ? canProceedStep1 :
     currentStep === 2 ? canProceedStep2 :
-    currentStep === 3 ? canProceedStep3 :
+    currentStep === 3 ? canProceedStep2b :
+    currentStep === 4 ? canProceedStep3 :
     canProceedStep4;
 
   const nextStep = () => {
-    if (currentStep < 4 && canProceed) {
+    if (currentStep < 5 && canProceed) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -413,6 +456,7 @@ const handleSave = async () => {
     geographies: selectedGeographies,
     customContext: customContext.trim(),
     linked: selectedLenderPerSource,
+    affiliates,
   };
 
   setIsSaving(true); // Show loading state
@@ -590,6 +634,173 @@ const handleSave = async () => {
       ))}
     </div>
   );
+
+const renderStep2b = () => {
+  const affiliateTypeOptions = ['Mortgage', 'Consumer Finance', 'Commercial Finance', 'Other'];
+  const effectiveHmdaId = affiliateOverride;
+  const effectiveHmdaName = affiliateCandidates.find(c => c.value === affiliateOverride)?.lender || affiliateMatch?.lender || null;
+
+  const canAddAffiliate =
+    currentAffiliate.name.trim().length >= 2 &&
+    currentAffiliate.type &&
+    currentAffiliate.state;
+
+  const handleAddAffiliate = () => {
+    if (!canAddAffiliate) return;
+    setAffiliates(prev => [...prev, {
+      name: currentAffiliate.name.trim(),
+      type: currentAffiliate.type,
+      state: currentAffiliate.state,
+      hmda_lender_id: effectiveHmdaId || null,
+      hmda_lender_name: effectiveHmdaName || null,
+    }]);
+    setCurrentAffiliate({ name: '', type: '', state: '', hmda_lender_id: null, hmda_lender_name: null });
+    setAffiliateMatch(null);
+    setAffiliateOverride(null);
+    setAffiliateCandidates([]);
+    setAddAffiliate('yes'); // keep showing the form for "add another"
+  };
+
+  return (
+    <div>
+      <h2>Step 3 – Affiliates</h2>
+      <p style={{ color: '#666', marginBottom: '24px' }}>
+        Does this organization have any lending affiliates whose HMDA data should be included?
+      </p>
+
+      {addAffiliate === null && (
+        <div style={{ display: 'flex', gap: '16px', marginBottom: '32px' }}>
+          <button
+            onClick={() => setAddAffiliate('yes')}
+            style={{ padding: '12px 32px', borderRadius: '6px', border: '2px solid #0066cc', background: 'white', color: '#0066cc', fontWeight: '600', cursor: 'pointer', fontSize: '15px' }}
+          >
+            Yes, add an affiliate
+          </button>
+          <button
+            onClick={() => setAddAffiliate('no')}
+            style={{ padding: '12px 32px', borderRadius: '6px', border: '2px solid #6c757d', background: 'white', color: '#6c757d', fontWeight: '600', cursor: 'pointer', fontSize: '15px' }}
+          >
+            No, continue
+          </button>
+        </div>
+      )}
+
+      {addAffiliate === 'no' && affiliates.length === 0 && (
+        <div style={{ padding: '16px', background: '#f8f9fa', borderRadius: '8px', color: '#666', marginBottom: '24px' }}>
+          No affiliates added. You can continue to the next step.
+          <button onClick={() => setAddAffiliate(null)} style={{ marginLeft: '16px', background: 'none', border: 'none', color: '#0066cc', cursor: 'pointer', textDecoration: 'underline' }}>
+            Change
+          </button>
+        </div>
+      )}
+
+      {addAffiliate === 'yes' && (
+        <div style={{ background: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '8px', padding: '24px', marginBottom: '24px' }}>
+          <div style={{ display: 'grid', gap: '20px', marginBottom: '20px' }}>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Affiliate Name *</label>
+              <input
+                type="text"
+                value={currentAffiliate.name}
+                onChange={e => setCurrentAffiliate(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g. ABC Mortgage LLC"
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Type of Affiliate *</label>
+              <select
+                value={currentAffiliate.type}
+                onChange={e => setCurrentAffiliate(prev => ({ ...prev, type: e.target.value }))}
+                style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}
+              >
+                <option value="">— Select Type —</option>
+                {affiliateTypeOptions.map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>Affiliate Headquarters State *</label>
+              <Select
+                options={stateOptions}
+                value={stateOptions.find(o => o.value === currentAffiliate.state) || null}
+                onChange={opt => setCurrentAffiliate(prev => ({ ...prev, state: opt?.value || '' }))}
+                placeholder="Select state..."
+                isClearable
+                isSearchable
+              />
+            </div>
+
+            {currentAffiliate.name.trim().length >= 2 && currentAffiliate.state && (
+              <div>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: '500' }}>HMDA Match</label>
+                {affiliateMatch ? (
+                  <div style={{ padding: '10px 14px', background: '#e8f4fd', borderRadius: '6px', border: '1px solid #b8d8f0', marginBottom: '10px', fontSize: '14px' }}>
+                    Best match: <strong>{affiliateMatch.lender}</strong> ({Math.round(affiliateMatch.score * 100)}% similarity)
+                  </div>
+                ) : (
+                  <div style={{ color: '#999', fontSize: '14px', marginBottom: '10px' }}>No strong match found</div>
+                )}
+                <select
+                  value={affiliateOverride || ''}
+                  onChange={e => setAffiliateOverride(e.target.value || null)}
+                  style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ccc', fontSize: '14px' }}
+                >
+                  <option value="">— Skip / No HMDA link —</option>
+                  {affiliateCandidates.map(c => (
+                    <option key={c.value} value={c.value}>{c.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          <button
+            onClick={handleAddAffiliate}
+            disabled={!canAddAffiliate}
+            style={{
+              padding: '10px 24px', background: canAddAffiliate ? '#0066cc' : '#ccc',
+              color: 'white', border: 'none', borderRadius: '6px',
+              cursor: canAddAffiliate ? 'pointer' : 'not-allowed', fontWeight: '500',
+            }}
+          >
+            + Add Affiliate
+          </button>
+        </div>
+      )}
+
+      {affiliates.length > 0 && (
+        <div>
+          <h4 style={{ marginBottom: '12px' }}>Added affiliates:</h4>
+          <ul style={{ listStyle: 'none', padding: 0 }}>
+            {affiliates.map((aff, i) => (
+              <li key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#fff', border: '1px solid #dee2e6', borderRadius: '6px', marginBottom: '8px' }}>
+                <span>
+                  <strong>{aff.name}</strong> &nbsp;·&nbsp; {aff.type} &nbsp;·&nbsp; {aff.state}
+                  {aff.hmda_lender_name && <span style={{ color: '#0066cc' }}> &nbsp;·&nbsp; HMDA: {aff.hmda_lender_name}</span>}
+                </span>
+                <button
+                  onClick={() => setAffiliates(prev => prev.filter((_, idx) => idx !== i))}
+                  style={{ background: '#dc3545', color: 'white', border: 'none', borderRadius: '4px', padding: '4px 10px', cursor: 'pointer' }}
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button
+            onClick={() => setAddAffiliate('yes')}
+            style={{ padding: '8px 20px', background: 'white', color: '#0066cc', border: '1px solid #0066cc', borderRadius: '6px', cursor: 'pointer', marginTop: '8px' }}
+          >
+            + Add another affiliate
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const renderStep3 = () => (
   <div>
@@ -883,7 +1094,7 @@ const renderStep3 = () => (
       <h1>Create Account</h1>
 
       <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', margin: '32px 0' }}>
-        {[1, 2, 3, 4].map((s) => (
+        {[1, 2, 3, 4, 5].map((s) => (
           <div
             key={s}
             style={{
@@ -906,7 +1117,8 @@ const renderStep3 = () => (
 
       {currentStep === 1 ? renderStep1() :
        currentStep === 2 ? renderStep2() :
-       currentStep === 3 ? renderStep3() :
+       currentStep === 3 ? renderStep2b() :
+       currentStep === 4 ? renderStep3() :
        renderStep4()}
 
       <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '48px' }}>
@@ -926,7 +1138,7 @@ const renderStep3 = () => (
           </button>
         )}
 
-        {currentStep < 4 ? (
+        {currentStep < 5 ? (
           <button
             onClick={nextStep}
             disabled={!canProceed}
