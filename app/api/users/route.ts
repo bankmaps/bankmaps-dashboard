@@ -240,6 +240,79 @@ export async function POST(req: NextRequest) {
     const [count] = await sql`SELECT COUNT(*) AS cnt FROM cached_hmda WHERE organization_id = ${organization_id}`;
     console.log(`[HMDA] ✅ ${count.cnt} records`);
 
+    // ── Cache org-level HMDA (primary lender) ────────────────────────────────
+    const linkedHmda = body.linked?.hmda || null;
+    if (linkedHmda) {
+      await sql`DELETE FROM cached_hmda_org WHERE organization_id = ${organization_id} AND is_affiliate = false`;
+      await sql`
+        INSERT INTO cached_hmda_org (
+          organization_id, lender_id, lender, lender_state, is_affiliate,
+          year, applications_received, application_dollars,
+          originated_loans, originated_dollars,
+          originated_and_purchased_loans, originated_and_purchased_loan_dollars,
+          approved_not_accepted, approved_not_accepted_dollars,
+          denied_applications, denied_application_dollars,
+          purchased_loans, purchased_loan_dollars,
+          withdrawn_applications, withdrawn_application_dollars,
+          cached_at
+        )
+        SELECT
+          ${organization_id}::bigint, h.lender_id, h.lender, h.lender_state, false,
+          h.year,
+          SUM(h.applications_received), SUM(h.application_dollars),
+          SUM(h.originated_loans), SUM(h.originated_dollars),
+          SUM(h.originated_and_purchased_loans), SUM(h.originated_and_purchased_loan_dollars),
+          SUM(h.approved_not_accepted), SUM(h.approved_not_accepted_dollars),
+          SUM(h.denied_applications), SUM(h.denied_application_dollars),
+          SUM(h.purchased_loans), SUM(h.purchased_loan_dollars),
+          SUM(h.withdrawn_applications), SUM(h.withdrawn_application_dollars),
+          NOW()
+        FROM hmda_us h
+        WHERE h.lender_id = ${linkedHmda}
+        GROUP BY h.lender_id, h.lender, h.lender_state, h.year
+      `;
+      console.log(`[HMDA_ORG] ✅ Cached primary lender ${linkedHmda}`);
+    }
+
+    // ── Cache org-level HMDA (affiliates) ────────────────────────────────────
+    const affiliates = body.affiliates || [];
+    if (affiliates.length > 0) {
+      await sql`DELETE FROM cached_hmda_org WHERE organization_id = ${organization_id} AND is_affiliate = true`;
+      for (const aff of affiliates) {
+        if (!aff.hmda_lender_id) continue;
+        await sql`
+          INSERT INTO cached_hmda_org (
+            organization_id, lender_id, lender, lender_state, is_affiliate,
+            affiliate_name, affiliate_type,
+            year, applications_received, application_dollars,
+            originated_loans, originated_dollars,
+            originated_and_purchased_loans, originated_and_purchased_loan_dollars,
+            approved_not_accepted, approved_not_accepted_dollars,
+            denied_applications, denied_application_dollars,
+            purchased_loans, purchased_loan_dollars,
+            withdrawn_applications, withdrawn_application_dollars,
+            cached_at
+          )
+          SELECT
+            ${organization_id}::bigint, h.lender_id, h.lender, h.lender_state, true,
+            ${aff.name}, ${aff.type},
+            h.year,
+            SUM(h.applications_received), SUM(h.application_dollars),
+            SUM(h.originated_loans), SUM(h.originated_dollars),
+            SUM(h.originated_and_purchased_loans), SUM(h.originated_and_purchased_loan_dollars),
+            SUM(h.approved_not_accepted), SUM(h.approved_not_accepted_dollars),
+            SUM(h.denied_applications), SUM(h.denied_application_dollars),
+            SUM(h.purchased_loans), SUM(h.purchased_loan_dollars),
+            SUM(h.withdrawn_applications), SUM(h.withdrawn_application_dollars),
+            NOW()
+          FROM hmda_us h
+          WHERE h.lender_id = ${aff.hmda_lender_id}
+          GROUP BY h.lender_id, h.lender, h.lender_state, h.year
+        `;
+        console.log(`[HMDA_ORG] ✅ Cached affiliate ${aff.name} (${aff.hmda_lender_id})`);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       message: `Cached ${count.cnt} HMDA records`,
