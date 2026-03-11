@@ -77,25 +77,6 @@ export async function POST(req: NextRequest) {
     const auth = await getUserAndOrg(req, sql, organizationId);
     if (!auth) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-    // Ensure table exists
-    await sql`
-      CREATE TABLE IF NOT EXISTS pdf_chunks_org (
-        id SERIAL PRIMARY KEY,
-        organization_id INTEGER NOT NULL,
-        uploaded_by INTEGER NOT NULL,
-        filename TEXT NOT NULL,
-        chunk_id INTEGER NOT NULL,
-        total_chunks INTEGER NOT NULL,
-        page_start INTEGER,
-        page_end INTEGER,
-        chunk_text TEXT NOT NULL,
-        embedding VECTOR(${EMBEDDING_DIM}),
-        file_size_bytes BIGINT,
-        inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        UNIQUE(organization_id, filename, chunk_id)
-      )
-    `;
-
     // Delete existing chunks for this file (re-upload)
     await sql`
       DELETE FROM pdf_chunks_org 
