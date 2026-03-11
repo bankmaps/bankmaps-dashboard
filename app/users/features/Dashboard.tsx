@@ -1,41 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useOrganizations } from "./OrganizationsContext";
 
 export default function Dashboard() {
-  const [organizations, setOrganizations] = useState<any[]>([]);
+  const { organizations, loading } = useOrganizations();
   const [cacheStatuses, setCacheStatuses] = useState<Record<number, any>>({});
-  const [loading, setLoading] = useState(true);
 
-  // Fetch user's organizations
+  // Start polling cache status once orgs are loaded
   useEffect(() => {
-    const fetchOrganizations = async () => {
-      const token = localStorage.getItem('jwt_token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await fetch('/api/users', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = await res.json();
-        setOrganizations(data.organizations || []);
-        
-        // Start polling for cache status on each org
-        data.organizations?.forEach((org: any) => {
-          pollCacheStatus(org.id, token);
-        });
-      } catch (err) {
-        console.error('Failed to fetch organizations:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchOrganizations();
-  }, []);
+    if (loading || organizations.length === 0) return;
+    const token = localStorage.getItem('jwt_token');
+    if (!token) return;
+    organizations.forEach((org: any) => {
+      pollCacheStatus(org.id, token);
+    });
+  }, [loading, organizations]);
 
   // Poll cache status for an organization
   const pollCacheStatus = async (orgId: number, token: string) => {
