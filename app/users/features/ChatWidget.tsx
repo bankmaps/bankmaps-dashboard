@@ -112,16 +112,17 @@ export default function ChatWidget({ organizationId, pageContext }: ChatWidgetPr
   const handleFileUpload = async (file: File) => {
     if (!file) return;
     const isPdf = file.type === "application/pdf" || file.name.endsWith(".pdf");
+    const isDocx = file.name.endsWith(".docx") || file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
     const isImage = file.type.startsWith("image/");
     const isTxt = file.type === "text/plain" || file.name.endsWith(".txt");
 
-    if (!isPdf && !isImage && !isTxt) {
-      alert("Supported files: PDF, TXT, or images.");
+    if (!isPdf && !isDocx && !isImage && !isTxt) {
+      alert("Supported files: PDF, DOCX, TXT, or images.");
       return;
     }
 
-    // PDFs and text files get indexed into pdf_chunks_org for persistent search
-    if ((isPdf || isTxt) && organizationId) {
+    // PDFs, DOCX, and text files get indexed into pdf_chunks_org for persistent search
+    if ((isPdf || isDocx || isTxt) && organizationId) {
       setUploadingDoc(true);
       setUploadDocStatus(`Indexing ${file.name}...`);
       try {
@@ -494,7 +495,7 @@ export default function ChatWidget({ organizationId, pageContext }: ChatWidgetPr
                   <path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5v10.5c0 .55-.45 1-1 1s-1-.45-1-1V6H10v9.5c0 1.38 1.12 2.5 2.5 2.5s2.5-1.12 2.5-2.5V5c0-2.21-1.79-4-4-4S7 2.79 7 5v12.5c0 3.04 2.46 5.5 5.5 5.5s5.5-2.46 5.5-5.5V6h-1.5z"/>
                 </svg>
               </button>
-              <input ref={fileInputRef} type="file" accept=".pdf,image/*" style={{ display: "none" }}
+              <input ref={fileInputRef} type="file" accept=".pdf,.docx,.txt,image/*" style={{ display: "none" }}
                 onChange={e => e.target.files?.[0] && handleFileUpload(e.target.files[0])} />
               <textarea
                 ref={inputRef}
