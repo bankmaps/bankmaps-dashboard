@@ -35,10 +35,10 @@ Geographies: ${(selectedOrg.geographies || []).map((g: any) => `${g.name} (${g.t
 Current view: Dashboard overview
 Organizations: ${selectedOrg.name} with ${(selectedOrg.geographies || []).length} assessment area(s).`;
 
-      case "aa-maps":
+      case "maps":
         return `${base}
 
-Current view: Assessment Area Maps
+Current view: Maps
 The user is viewing their CRA assessment area maps including income level (LMI) and majority-minority tract analysis. They can see choropleth maps of census tracts, branch locations, and summary statistics for their defined assessment areas.`;
 
       case "manage-profile":
@@ -89,7 +89,7 @@ Current view: ${activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.sli
     {
       title: "Live Reports",
       items: [
-        { id: "aa-maps", label: "Assessment Area Maps" },
+        { id: "maps", label: "Maps" },
         { id: "cra-reports", label: "CRA Reports" },
         { id: "fair-lending", label: "Fair Lending Reports" },
         { id: "outreach", label: "Outreach Activities" },
@@ -173,7 +173,7 @@ Current view: ${activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.sli
       {/* Main content area */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="p-4 overflow-y-auto" style={{ height: "100vh" }}>
-          {activeItem === "aa-maps" ? (
+          {activeItem === "maps" ? (
             <Maps />
           ) : (
             <div className="bg-white rounded-xl shadow border border-gray-200 p-4">
@@ -213,7 +213,7 @@ export default function UsersPage() {
     if (printTab) {
       setActiveItem(printTab);
       const sectionMap: Record<string, string> = {
-        "aa-maps": "Live Reports",
+        "maps": "Live Reports",
         "cra-reports": "Live Reports",
         "fair-lending": "Live Reports",
       };
