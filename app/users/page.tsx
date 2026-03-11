@@ -6,7 +6,7 @@ import ManageProfile from "./features/ManageProfile";
 import ManageUsers from "./features/ManageUsers";
 import DistributionLists from "./features/DistributionLists";
 import Dashboard from "./features/Dashboard";
-import AssessmentAreaMaps from "./features/AssessmentAreaMaps";
+import Maps from "./features/Maps";
 import ChatWidget from "./features/ChatWidget";
 import MyDocuments from "./features/MyDocuments";
 import { OrganizationsProvider, useOrganizations } from "./features/OrganizationsContext";
@@ -174,7 +174,7 @@ Current view: ${activeItem.split("-").map(w => w.charAt(0).toUpperCase() + w.sli
       <div className="flex-1 flex flex-col overflow-hidden">
         <main className="p-4 overflow-y-auto" style={{ height: "100vh" }}>
           {activeItem === "aa-maps" ? (
-            <AssessmentAreaMaps />
+            <Maps />
           ) : (
             <div className="bg-white rounded-xl shadow border border-gray-200 p-4">
               {activeItem === "dashboard" && <Dashboard />}
