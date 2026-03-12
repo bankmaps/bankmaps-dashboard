@@ -6,7 +6,7 @@ import ManageProfile from "./features/ManageProfile";
 import ManageUsers from "./features/ManageUsers";
 import DistributionLists from "./features/DistributionLists";
 import Dashboard from "./features/Dashboard";
-import AssessmentAreaMaps from "./features/AssessmentAreaMaps";
+import AssessmentAreaMaps from "./features/Maps";
 import { OrganizationsProvider } from "./features/OrganizationsContext";
 import UploadCenter from "./features/UploadCenter";
 
