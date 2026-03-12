@@ -8,6 +8,7 @@ import DistributionLists from "./features/DistributionLists";
 import Dashboard from "./features/Dashboard";
 import AssessmentAreaMaps from "./features/Maps";
 import { OrganizationsProvider } from "./features/OrganizationsContext";
+import DownloadCenter from "./features/DownloadCenter";
 import UploadCenter from "./features/UploadCenter";
 
 export default function UsersPage() {
@@ -79,8 +80,8 @@ export default function UsersPage() {
     {
       title: "Download Center",
       items: [
-        { id: "new-files", label: "New Files" },
-        { id: "archives", label: "Archives" },
+        { id: "download-center", label: "Reports & Maps" },
+        { id: "upload-file",     label: "Upload Data" },
       ],
     },
   ];
@@ -145,11 +146,12 @@ export default function UsersPage() {
                 ) : (
                 <div className="bg-white rounded-xl shadow border border-gray-200 p-4">
                   {activeItem === "dashboard" && <Dashboard />}
-                  {activeItem === "manage-profile" && <ManageProfile />}
+                  {activeItem === "manage-profile"  && <ManageProfile />}
+                  {activeItem === "download-center" && <DownloadCenter />}
+                  {activeItem === "upload-file"     && <UploadCenter />}
                   {activeItem === "manage-users" && <ManageUsers />}
                   {activeItem === "distrib-list" && <DistributionLists />}
-                  {activeItem === "upload-file" && <UploadCenter />}
-                  {!["dashboard", "manage-profile", "manage-users", "distrib-list", "upload-file"].includes(activeItem) && (
+                  {!["dashboard", "manage-profile", "manage-users", "distrib-list", "download-center", "upload-file"].includes(activeItem) && (
                     <div className="text-center py-20 text-gray-500">
                       <p className="text-xl font-medium">
                         {activeItem.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} – coming soon

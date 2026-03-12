@@ -1,21 +1,66 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useOrganizations } from "./OrganizationsContext";
 
 export default function Dashboard() {
-  const { organizations, loading } = useOrganizations();
+  const [organizations, setOrganizations] = useState<any[]>([]);
   const [cacheStatuses, setCacheStatuses] = useState<Record<number, any>>({});
+  const [loading, setLoading] = useState(true);
+  const [staleInfo, setStaleInfo]   = useState<{ stale: boolean; reason: string | null; orgId: number; geoNames: string[] } | null>(null);
+  const [staleDismissed, setStaleDismissed] = useState(false);
+  const [regenGeo, setRegenGeo]     = useState<string>('');
+  const [regenLoading, setRegenLoading] = useState(false);
+  const [categories, setCategories] = useState<any>(null);
 
-  // Start polling cache status once orgs are loaded
+  // Fetch user's organizations
   useEffect(() => {
-    if (loading || organizations.length === 0) return;
-    const token = localStorage.getItem('jwt_token');
-    if (!token) return;
-    organizations.forEach((org: any) => {
-      pollCacheStatus(org.id, token);
-    });
-  }, [loading, organizations]);
+    const fetchOrganizations = async () => {
+      const token = localStorage.getItem('jwt_token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/users', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        const orgs = data.organizations || [];
+        setOrganizations(orgs);
+
+        // Check for stale reports
+        const token2 = localStorage.getItem('jwt_token');
+        for (const org of orgs) {
+          const sr = await fetch(`/api/generate-reports?orgId=${org.id}`, {
+            headers: { 'Authorization': `Bearer ${token2}` }
+          });
+          const sd = await sr.json();
+          if (sd.stale) {
+            setStaleInfo({
+              stale: true,
+              reason: sd.staleReason,
+              orgId: org.id,
+              geoNames: [...new Set((sd.reports || []).map((r: any) => r.geography_name) as string[])],
+            });
+            setCategories(sd.categories);
+            break;
+          }
+        }
+
+        // Start polling for cache status on each org
+        data.organizations?.forEach((org: any) => {
+          pollCacheStatus(org.id, token);
+        });
+      } catch (err) {
+        console.error('Failed to fetch organizations:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchOrganizations();
+  }, []);
 
   // Poll cache status for an organization
   const pollCacheStatus = async (orgId: number, token: string) => {
@@ -48,8 +93,67 @@ export default function Dashboard() {
     );
   }
 
+  const handleRegenerate = async () => {
+    if (!staleInfo || !regenGeo) return;
+    const token = localStorage.getItem('jwt_token');
+    setRegenLoading(true);
+    try {
+      // Get all available category IDs for the selected geo
+      const allCats = [
+        ...(categories?.maps ?? []),
+        ...(categories?.reports ?? []),
+        ...(categories?.other ?? []),
+      ].filter((c: any) => c.available).map((c: any) => c.id);
+
+      await fetch('/api/generate-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          orgId: staleInfo.orgId,
+          geographyName: regenGeo,
+          categories: allCats,
+          triggeredBy: 'manual',
+          replaceExisting: false,
+        }),
+      });
+      setStaleDismissed(true);
+    } catch (e) { console.error(e); }
+    setRegenLoading(false);
+  };
+
   return (
     <div className="space-y-8">
+      {/* Stale reports banner */}
+      {staleInfo?.stale && !staleDismissed && (
+        <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 flex items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="text-amber-500 text-xl mt-0.5">⚠</span>
+            <div>
+              <p className="font-semibold text-amber-900 text-sm">Your reports may be out of date</p>
+              <p className="text-amber-700 text-sm mt-0.5">{staleInfo.reason || 'A recent change may not be reflected in your generated reports.'}</p>
+              <div className="flex items-center gap-3 mt-3 flex-wrap">
+                <select
+                  value={regenGeo}
+                  onChange={e => setRegenGeo(e.target.value)}
+                  className="text-sm border border-amber-300 rounded-md px-3 py-1.5 bg-white text-amber-900 focus:outline-none"
+                >
+                  <option value="">— Select geography —</option>
+                  {staleInfo.geoNames.map(g => <option key={g} value={g}>{g}</option>)}
+                </select>
+                <button
+                  onClick={handleRegenerate}
+                  disabled={!regenGeo || regenLoading}
+                  className="text-sm bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white font-medium px-4 py-1.5 rounded-md transition-colors"
+                >
+                  {regenLoading ? 'Queuing…' : 'Regenerate Now'}
+                </button>
+              </div>
+            </div>
+          </div>
+          <button onClick={() => setStaleDismissed(true)} className="text-amber-400 hover:text-amber-600 text-lg leading-none mt-0.5">✕</button>
+        </div>
+      )}
+
       <div>
         <h2 className="text-3xl font-bold text-gray-900">Dashboard</h2>
         <p className="mt-2 text-gray-600">Welcome back! Here's an overview of your organizations.</p>

@@ -19,7 +19,53 @@ interface Geography {
   county: string[];
   town: string[];
   tract_number: string[];
+  auto_generate?: boolean;
+  auto_generate_categories?: string[];
 }
+
+// Compact category selector config — mirrors CATEGORY_GROUPS in generate-reports route
+const AUTO_GEN_GROUPS = [
+  {
+    label: 'Maps',
+    items: [
+      { id: 'boundary_maps',    label: 'Boundary Maps',              dataGate: null          },
+      { id: 'demographic_maps', label: 'Demographic Maps',           dataGate: null          },
+      { id: 'hmda_maps',        label: 'HMDA Maps',                  dataGate: 'hmda'        },
+      { id: 'small_biz_maps',   label: 'Small Business Maps',        dataGate: 'sblar'       },
+      { id: 'outreach_maps',    label: 'Outreach Maps',              dataGate: 'outreach'    },
+      { id: 'donations_maps',   label: 'Donations Maps',             dataGate: 'donations'   },
+      { id: 'investments_maps', label: 'Investments Maps',           dataGate: 'investments' },
+      { id: 'cd_maps',          label: 'Community Dev Maps',         dataGate: 'cd'          },
+      { id: 'branch_maps',      label: 'Branch Maps',                dataGate: 'branch'      },
+    ],
+  },
+  {
+    label: 'Performance Reports',
+    items: [
+      { id: 'cra_performance',     label: 'CRA Performance',              dataGate: null          },
+      { id: 'fair_lending',        label: 'Fair Lending Performance',      dataGate: 'hmda'        },
+      { id: 'lending_test',        label: 'Lending Test',                  dataGate: 'hmda'        },
+      { id: 'redlining',           label: 'Redlining',                     dataGate: 'hmda'        },
+      { id: 'race_eth_gmi',        label: 'Race / Ethnicity / GMI',        dataGate: 'hmda'        },
+      { id: 'hmda_outlier',        label: 'HMDA Outlier',                  dataGate: 'hmda'        },
+      { id: 'outreach_reports',    label: 'Outreach',                      dataGate: 'outreach'    },
+      { id: 'donations_reports',   label: 'Donations',                     dataGate: 'donations'   },
+      { id: 'investments_reports', label: 'Investments',                   dataGate: 'investments' },
+      { id: 'cd_reports',          label: 'Community Dev',                 dataGate: 'cd'          },
+    ],
+  },
+  {
+    label: 'Other',
+    items: [
+      { id: 'tract_lists',         label: 'Tract Lists',                   dataGate: null    },
+      { id: 'hmda_tract_reports',  label: 'HMDA Tract Reports',            dataGate: 'hmda'  },
+      { id: 'sblar_tract_reports', label: 'Small Biz Tract Reports',       dataGate: 'sblar' },
+      { id: 'hmda_rankings',       label: 'HMDA Rankings',                 dataGate: 'hmda'  },
+      { id: 'sblar_rankings',      label: 'Small Biz Rankings',            dataGate: 'sblar' },
+      { id: 'branch_rankings',     label: 'Branch Rankings',               dataGate: 'branch'},
+    ],
+  },
+];
 
 // ── Levenshtein similarity ────────────────────────────────
 const similarity = (a: string, b: string): number => {
@@ -83,7 +129,9 @@ export default function ManageProfile() {
   const [editingGeoIdx, setEditingGeoIdx] = useState<number | null>(null);
   const [editingGeo, setEditingGeo]       = useState<Geography | null>(null);
   const [showAddGeo, setShowAddGeo]       = useState(false);
-  const [newGeo, setNewGeo]               = useState<Geography>({ name:'', type:'', state:[], county:[], town:[], tract_number:[] });
+  const [newGeo, setNewGeo]               = useState<Geography>({ name:'', type:'', state:[], county:[], town:[], tract_number:[], auto_generate:true, auto_generate_categories:['boundary_maps'] });
+  const [generatingGeo, setGeneratingGeo] = useState<string | null>(null);
+  const [availableGates, setAvailableGates] = useState<Set<string>>(new Set());
 
   // ── Reference data ────────────────────────────────────
   const [hmdaList, setHmdaList]     = useState<any[]>([]);
@@ -254,6 +302,12 @@ export default function ManageProfile() {
       if (!res.ok) throw new Error("Failed to save organization");
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
+      // Trigger stale-report generation for linked_sources edits
+      geographies.forEach(geo => {
+        if (geo.auto_generate && geo.auto_generate_categories?.length) {
+          triggerGeneration(geo, 'linked_sources').catch(() => {});
+        }
+      });
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -261,7 +315,46 @@ export default function ManageProfile() {
     }
   };
 
-  // ── Geo helpers ───────────────────────────────────────
+  // ── Load available data gates ─────────────────────────────────
+  useEffect(() => {
+    if (!orgId || !token) return;
+    fetch(`/api/generate-reports?orgId=${orgId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(d => {
+        const gates = new Set<string>();
+        const allCats = [
+          ...(d.categories?.maps ?? []),
+          ...(d.categories?.reports ?? []),
+          ...(d.categories?.other ?? []),
+        ];
+        allCats.forEach((c: any) => { if (c.available) gates.add(c.id); });
+        setAvailableGates(gates);
+      })
+      .catch(() => {});
+  }, [orgId, token]);
+
+  // ── Trigger background report generation ──────────────────────
+  const triggerGeneration = async (geo: Geography, triggeredBy: string) => {
+    if (!geo.auto_generate || !geo.auto_generate_categories?.length || !orgId) return;
+    setGeneratingGeo(geo.name);
+    try {
+      await fetch('/api/generate-reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          orgId,
+          geographyName: geo.name,
+          categories: geo.auto_generate_categories,
+          triggeredBy,
+          replaceExisting: false,
+          linkedSources,
+        }),
+      });
+    } catch (e) { console.warn('[GENERATE]', e); }
+    setGeneratingGeo(null);
+  };
+
+  // ── Geo helpers ─────────────────────────────────────────────────────
   const handleDeleteGeo = (idx: number) => setGeographies(prev => prev.filter((_,i) => i !== idx));
 
   const handleEditGeo = (idx: number) => {
@@ -271,18 +364,23 @@ export default function ManageProfile() {
 
   const handleSaveGeo = () => {
     if (!editingGeo || editingGeoIdx === null) return;
-    setGeographies(prev => prev.map((g,i) => i === editingGeoIdx ? editingGeo : g));
+    const updated = editingGeo;
+    setGeographies(prev => prev.map((g,i) => i === editingGeoIdx ? updated : g));
     setEditingGeoIdx(null);
     setEditingGeo(null);
+    triggerGeneration(updated, 'geography_save');
   };
 
   const handleAddGeo = () => {
     if (!newGeo.name.trim() || !newGeo.type) return;
-    setGeographies(prev => [...prev, newGeo]);
-    setNewGeo({ name:'', type:'', state:[], county:[], town:[], tract_number:[] });
+    const added = { ...newGeo };
+    setGeographies(prev => [...prev, added]);
+    setNewGeo({ name:'', type:'', state:[], county:[], town:[], tract_number:[], auto_generate:true, auto_generate_categories:['boundary_maps'] });
     setShowAddGeo(false);
+    triggerGeneration(added, 'geography_save');
   };
 
+  // ── Affiliate helpers ─────────────────────────────────────────────────────
   // ── Affiliate helpers ─────────────────────────────────
   const handleAddAffiliate = () => {
     if (!newAffiliate.name.trim() || !newAffiliate.type || !newAffiliate.state) return;
@@ -352,6 +450,76 @@ export default function ManageProfile() {
               setGeo({...geo, tract_number:v});
             }} placeholder="Select tracts..." />
         </div>
+        {/* Auto-generate reports selector */}
+        <div style={{ borderTop:'1px solid #e5e7eb', paddingTop:'16px', marginTop:'4px' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom: geo.auto_generate ? '12px' : '0' }}>
+            <label style={{ display:'flex', alignItems:'center', gap:'8px', cursor:'pointer', userSelect:'none' }}>
+              <input
+                type="checkbox"
+                checked={geo.auto_generate ?? true}
+                onChange={e => setGeo({ ...geo, auto_generate: e.target.checked })}
+                style={{ width:'15px', height:'15px', accentColor:'#0d9488', cursor:'pointer' }}
+              />
+              <span style={{ fontSize:'13px', fontWeight:600, color:'#374151' }}>Auto-generate reports on save</span>
+            </label>
+            {geo.auto_generate && (
+              <button
+                type="button"
+                onClick={() => {
+                  const all = AUTO_GEN_GROUPS.flatMap(g => g.items.map(i => i.id));
+                  const enabledCount = (geo.auto_generate_categories ?? []).length;
+                  setGeo({ ...geo, auto_generate_categories: enabledCount === all.length ? [] : all });
+                }}
+                style={{ fontSize:'11px', color:'#0d9488', background:'none', border:'none', cursor:'pointer', padding:'2px 4px', textDecoration:'underline' }}
+              >
+                {(geo.auto_generate_categories ?? []).length === AUTO_GEN_GROUPS.flatMap(g => g.items).length ? 'Deselect all' : 'Select all'}
+              </button>
+            )}
+          </div>
+
+          {geo.auto_generate && (
+            <div style={{ display:'flex', gap:'20px', flexWrap:'wrap' }}>
+              {AUTO_GEN_GROUPS.map(group => (
+                <div key={group.label} style={{ minWidth:'180px', flex:'1' }}>
+                  <p style={{ fontSize:'11px', fontWeight:700, color:'#6b7280', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'6px' }}>
+                    {group.label}
+                  </p>
+                  {group.items.map(item => {
+                    const isAvailable = !item.dataGate || availableGates.has(item.id);
+                    const isChecked   = (geo.auto_generate_categories ?? []).includes(item.id);
+                    return (
+                      <label key={item.id} style={{
+                        display:'flex', alignItems:'center', gap:'6px', marginBottom:'4px',
+                        cursor: isAvailable ? 'pointer' : 'not-allowed',
+                        opacity: isAvailable ? 1 : 0.4,
+                      }}
+                        title={!isAvailable ? `Upload ${item.dataGate} data to enable` : undefined}
+                      >
+                        <input
+                          type="checkbox"
+                          disabled={!isAvailable}
+                          checked={isChecked && isAvailable}
+                          onChange={e => {
+                            const cats = geo.auto_generate_categories ?? [];
+                            setGeo({
+                              ...geo,
+                              auto_generate_categories: e.target.checked
+                                ? [...cats, item.id]
+                                : cats.filter(c => c !== item.id),
+                            });
+                          }}
+                          style={{ width:'13px', height:'13px', accentColor:'#0d9488' }}
+                        />
+                        <span style={{ fontSize:'12px', color: isAvailable ? '#374151' : '#9ca3af' }}>{item.label}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div style={{ display:'flex', gap:'12px', marginTop:'8px' }}>
           <button onClick={onSave} style={btnPrimary}>{saveLabel}</button>
           <button onClick={onCancel} style={btnSecondary}>Cancel</button>
@@ -374,7 +542,6 @@ export default function ManageProfile() {
   if (loading) return <div style={{ padding:'48px', textAlign:'center', color:'#6b7280' }}>Loading profile...</div>;
 
   return (
-    <div style={{ height:'100%', overflowY:'auto' }}>
     <div style={{ maxWidth:'800px', margin:'0 auto', padding:'32px 24px' }}>
       <h1 style={{ fontSize:'28px', fontWeight:700, marginBottom:'32px', color:'#111827' }}>Manage Profile</h1>
 
@@ -550,7 +717,19 @@ export default function ManageProfile() {
               ) : (
                 <div style={{ padding:'14px 16px', display:'flex', justifyContent:'space-between', alignItems:'flex-start', background:'#f9fafb' }}>
                   <div>
-                    <p style={{ fontWeight:600, color:'#111827', marginBottom:'2px' }}>{geo.name}</p>
+                    <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'2px' }}>
+                      <p style={{ fontWeight:600, color:'#111827', margin:0 }}>{geo.name}</p>
+                      {generatingGeo === geo.name && (
+                        <span style={{ fontSize:'11px', background:'#f0fdf4', color:'#0d9488', border:'1px solid #bbf7d0', borderRadius:'12px', padding:'1px 8px', fontWeight:500 }}>
+                          ⟳ Generating reports…
+                        </span>
+                      )}
+                      {geo.auto_generate === false && (
+                        <span style={{ fontSize:'11px', background:'#fef9c3', color:'#92400e', border:'1px solid #fde68a', borderRadius:'12px', padding:'1px 8px', fontWeight:500 }}>
+                          Auto-generate off
+                        </span>
+                      )}
+                    </div>
                     <p style={{ fontSize:'13px', color:'#6b7280' }}>{geo.type}</p>
                     <p style={{ fontSize:'12px', color:'#9ca3af', marginTop:'4px' }}>
                       States: {geo.state?.join(', ')||'—'} &nbsp;·&nbsp;
@@ -599,7 +778,6 @@ export default function ManageProfile() {
       </div>
 
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
     </div>
   );
 }
