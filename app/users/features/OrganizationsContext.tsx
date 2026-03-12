@@ -9,6 +9,8 @@ interface Organization {
   regulator: string;
   geographies: any[];
   states: any[];
+  linked_sources: Record<string, any>;
+  [key: string]: any;
 }
 
 interface OrganizationsContextType {
