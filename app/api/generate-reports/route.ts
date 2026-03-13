@@ -78,10 +78,10 @@ async function resolveGates(sql: any, orgId: number, linkedSources: Record<strin
   if (linkedSources?.hmda)   g.add('hmda');
   if (linkedSources?.cra)    g.add('sblar');
   if (linkedSources?.branch) g.add('branch');
-  const [hn] = await sql`SELECT COUNT(*)::int AS n FROM hmda_lar_org WHERE organization_id=${orgId}`;
-  const [sn] = await sql`SELECT COUNT(*)::int AS n FROM sblar_org    WHERE organization_id=${orgId}`;
-  if ((hn?.n ?? 0) > 0) g.add('hmda');
-  if ((sn?.n ?? 0) > 0) g.add('sblar');
+  const [hn] = await sql`SELECT CAST(COUNT(*) AS integer) AS n FROM hmda_lar_org WHERE organization_id=${orgId}`;
+  const [sn] = await sql`SELECT CAST(COUNT(*) AS integer) AS n FROM sblar_org WHERE organization_id=${orgId}`;
+  if (parseInt(String(hn?.n ?? 0)) > 0) g.add('hmda');
+  if (parseInt(String(sn?.n ?? 0)) > 0) g.add('sblar');
   return g;
 }
 
@@ -117,10 +117,10 @@ export async function markStale(sql: any, orgId: number, reason: string) {
 
 async function clearStaleIfDone(sql: any, orgId: number) {
   const [r] = await sql`
-    SELECT COUNT(*)::int AS n FROM generated_reports
+    SELECT CAST(COUNT(*) AS integer) AS n FROM generated_reports
     WHERE organization_id=${orgId} AND status IN ('pending','generating')
   `;
-  if ((r?.n ?? 1) === 0) {
+  if (parseInt(String(r?.n ?? 1)) === 0) {
     await sql`
       UPDATE organizations
       SET reports_stale=FALSE, reports_stale_reason=NULL, reports_stale_since=NULL
