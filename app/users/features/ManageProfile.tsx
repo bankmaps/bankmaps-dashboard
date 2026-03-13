@@ -333,6 +333,23 @@ export default function ManageProfile() {
       .catch(() => {});
   }, [orgId, token]);
 
+  // ── Rebuild geography_tracts + map_boundaries (fire-and-forget) ──────────
+  const rebuildGeography = (geo: Geography) => {
+    if (!orgId) return;
+    const payload = { organization_id: orgId, geographies: [geo] };
+    const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+    // Populate geography_tracts
+    fetch('/api/geography-tracts/populate', {
+      method: 'POST', headers,
+      body: JSON.stringify(payload),
+    }).catch(e => console.warn('[GEO-TRACTS]', e));
+    // Regenerate map_boundaries
+    fetch('/api/boundaries/generate', {
+      method: 'POST', headers,
+      body: JSON.stringify(payload),
+    }).catch(e => console.warn('[BOUNDARIES]', e));
+  };
+
   // ── Trigger background report generation ──────────────────────
   const triggerGeneration = async (geo: Geography, triggeredBy: string) => {
     if (!geo.auto_generate || !geo.auto_generate_categories?.length || !orgId) return;
@@ -368,6 +385,7 @@ export default function ManageProfile() {
     setGeographies(prev => prev.map((g,i) => i === editingGeoIdx ? updated : g));
     setEditingGeoIdx(null);
     setEditingGeo(null);
+    rebuildGeography(updated);
     triggerGeneration(updated, 'geography_save');
   };
 
@@ -377,6 +395,7 @@ export default function ManageProfile() {
     setGeographies(prev => [...prev, added]);
     setNewGeo({ name:'', type:'', state:[], county:[], town:[], tract_number:[], auto_generate:true, auto_generate_categories:['boundary_maps'] });
     setShowAddGeo(false);
+    rebuildGeography(added);
     triggerGeneration(added, 'geography_save');
   };
 
